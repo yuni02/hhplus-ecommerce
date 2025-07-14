@@ -1,20 +1,17 @@
-# 기술적 계층 기준 시퀀스 다이어그램 (Redis)
+# 시퀀스 다이어그램
 
 ## 1️⃣ 잔액 조회 API
 
 ```mermaid
 sequenceDiagram
     participant Client as Client
-    participant API as API_Gateway
     participant App as Application
     participant DB as Database
 
-    Client->>+API: GET /api/balance/{userId}
-    API->>+App: 잔액 조회 요청
+    Client->>+App: GET /api/balance/{userId}
     App->>+DB: USER 테이블 조회
     DB-->>-App: 잔액 정보 반환
-    App-->>-API: 잔액 정보 응답
-    API-->>-Client: HTTP 200 + 잔액 정보
+    App-->>-Client: HTTP 200 + 잔액 정보
 
     Note over App: 간단한 조회는 DB 직접 접근
 ```
@@ -23,16 +20,12 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Client as 클라이언트
-    participant API as API Gateway
+    participant Client as Client
     participant App as Application
-    participant Redis as Redis Cache
+    participant Redis as Redis
     participant DB as Database
-    participant Kafka as Kafka
 
-    Client->>+API: POST /api/balance/charge
-    API->>+App: 잔액 충전 요청
-
+    Client->>+App: POST /api/balance/charge
     App->>+Redis: 분산 락 획득 (user:{userId}:lock)
     Redis-->>-App: 락 획득 성공
 
@@ -41,43 +34,49 @@ sequenceDiagram
     DB->>DB: USER_BALANCE_TX 생성
     DB-->>-App: 트랜잭션 커밋
 
-    App->>Redis: 잔액 캐시 업데이트
     App->>Redis: 분산 락 해제
+    App-->>-Client: HTTP 200 + 충전 결과
 
-    App->>+Kafka: 잔액 변경 이벤트 발행
-    Kafka->>Kafka: balance-changed 토픽
-    Kafka-->>-App: 이벤트 발행 완료
-
-    App-->>-API: 충전 완료 응답
-    API-->>-Client: HTTP 200 + 충전 결과
+    Note over App: 간단한 충전은 동기 처리로 충분
 ```
 
 ## 2️⃣ 상품 조회 API
 
 ```mermaid
 sequenceDiagram
-    participant Client as 클라이언트
-    participant API as API Gateway
+    participant Client as Client
     participant App as Application
-    participant Redis as Redis Cache
+    participant Cache as Redis Cache
     participant DB as Database
 
-    Client->>+API: GET /api/products
-    API->>+App: 상품 목록 조회 요청
-
-    App->>+Redis: 상품 목록 캐시 조회
+    Client->>+App: GET /api/products
+    App->>+Cache: 상품 목록 캐시 조회
 
     alt 캐시 히트
-        Redis-->>App: 캐시된 상품 목록
+        Cache-->>App: 캐시된 상품 목록
     else 캐시 미스
-        Redis-->>-App: 캐시 없음
+        Cache-->>-App: 캐시 없음
         App->>+DB: PRODUCT 테이블 조회
         DB-->>-App: 상품 목록 반환
-        App->>Redis: 상품 목록 캐시 저장 (TTL: 1분)
+        App->>Cache: 상품 목록 캐시 저장 (TTL: 1분)
     end
 
-    App-->>-API: 상품 목록 응답
-    API-->>-Client: HTTP 200 + 상품 목록
+    App-->>-Client: HTTP 200 + 상품 목록
+```
+
+## 3️⃣ 보유 쿠폰 조회 API
+
+```mermaid
+sequenceDiagram
+    participant Client as Client
+    participant App as Application
+    participant DB as Database
+
+    Client->>+App: GET /api/users/coupons
+    App->>+DB: USER_COUPON 테이블 조회
+    DB->>DB: WHERE user_id = ? AND status = 'AVAILABLE'
+    DB-->>-App: 보유 쿠폰 목록 반환
+    App-->>-Client: HTTP 200 + 보유 쿠폰 목록
 ```
 
 ## 3️⃣ 선착순 쿠폰 발급 API
@@ -85,15 +84,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Client as Client
-    participant API as API_Gateway
     participant App as Application
-    participant Redis as Redis_Lock
+    participant Redis as Redis
     participant DB as Database
 
-    Client->>API: POST /api/coupons/couponId/issue
-    API->>App: 쿠폰 발급 요청
-
-    App->>Redis: 분산락 획득 (필수)
+    Client->>App: POST /api/coupons/{couponId}/issue
+    App->>Redis: 분산락 획득 (coupon:{couponId}:lock)
     Redis-->>App: 락 획득 성공
 
     App->>DB: 쿠폰 발급 가능 여부 확인
@@ -106,44 +102,40 @@ sequenceDiagram
         DB-->>App: 트랜잭션 커밋
 
         App->>Redis: 분산락 해제
-        App-->>API: 발급 성공 응답
+        App-->>Client: HTTP 200 + 발급 성공
     else 발급 불가
         App->>Redis: 분산락 해제
-        App-->>API: 발급 실패 응답
+        App-->>Client: HTTP 400 + 발급 실패
     end
 
-    API-->>Client: HTTP 응답
-
-    Note over Redis: 동시성 제어만 Redis 사용
+    Note over Redis: 동시성 제어를 위한 분산락 사용
 ```
 
 ## 4️⃣ 주문/결제 API
 
 ```mermaid
 sequenceDiagram
-    participant Client as 클라이언트
-    participant API as API Gateway
+    participant Client as Client
     participant App as Application
-    participant Redis as Redis Cache
+    participant Redis as Redis
     participant DB as Database
     participant External as 외부 데이터플랫폼
 
-    Client->>+API: POST /api/orders
-    API->>+App: 주문 요청
-
+    Client->>App: POST /api/orders
+    
     Note over App, DB: 1. 재고 확인 및 예약
-    App->>+Redis: 상품별 분산 락 획득
-    Redis-->>-App: 락 획득 성공
+    App->>Redis: 상품별 분산 락 획득
+    Redis-->>App: 락 획득 성공
 
-    App->>+DB: 재고 확인
-    DB-->>-App: 재고 정보 반환
+    App->>DB: 재고 확인
+    DB-->>App: 재고 정보 반환
 
     alt 재고 부족
         App->>Redis: 분산 락 해제
-        App-->>API: 주문 실패 (재고 부족)
+        App-->>Client: HTTP 400 + 주문 실패 (재고 부족)
     else 재고 충분
         Note over App, DB: 2. 주문 생성 및 결제 처리
-        App->>+DB: 트랜잭션 시작
+        App->>DB: 트랜잭션 시작
         DB->>DB: ORDER 생성 (status=PROCESSING)
         DB->>DB: ORDER_ITEM 생성
         DB->>DB: PRODUCT.stock 차감
@@ -155,52 +147,124 @@ sequenceDiagram
         DB->>DB: USER.balance 차감
         DB->>DB: USER_BALANCE_TX 생성
         DB->>DB: ORDER.status = COMPLETED
-        DB-->>-App: 트랜잭션 커밋
+        DB-->>App: 트랜잭션 커밋
 
         App->>Redis: 분산 락 해제
 
-        Note over App, External: 3. 동기적 데이터 전송
+        Note over App, External: 3. 비동기 데이터 전송
         App->>External: 주문 통계 데이터 전송 (REST API)
 
-        App-->>-API: 주문 성공 응답
+        App-->>Client: HTTP 200 + 주문 성공
     end
-
-    API-->>-Client: HTTP 응답
 ```
 
 ## 5️⃣ 인기 상품 조회 API
 
 ```mermaid
 sequenceDiagram
-    participant Client as 클라이언트
-    participant API as API Gateway
+    participant Client as Client
     participant App as Application
+    participant Cache as Redis Cache
     participant DB as Database
 
-    Client->>+API: GET /api/products/popular
-    API->>+App: 인기 상품 조회 요청
+    Client->>+App: GET /api/products/popular
+    
+    App->>+Cache: 인기 상품 캐시 조회
+    
+    alt 캐시 히트
+        Cache-->>App: 캐시된 인기 상품 목록
+    else 캐시 미스
+        Cache-->>-App: 캐시 없음
+        App->>+DB: 최근 3일 판매량 기준 상위 5개 상품 조회
+        DB->>DB: SELECT * FROM PRODUCT_STAT
+        DB->>DB: WHERE date >= CURDATE() - INTERVAL 3 DAY
+        DB->>DB: ORDER BY quantity_sold DESC LIMIT 5
+        DB-->>-App: 인기 상품 목록 반환
+        
+        App->>Cache: 인기 상품 캐시 저장 (TTL: 30분)
+    end
 
-    App->>+DB: 최근 3일 판매량 기준 상위 5개 상품 조회
-    DB->>DB: SELECT * FROM PRODUCT_STAT
-    DB->>DB: WHERE date >= CURDATE() - INTERVAL 3 DAY
-    DB->>DB: ORDER BY quantity_sold DESC LIMIT 5
-    DB-->>-App: 인기 상품 목록 반환
-
-    App-->>-API: 인기 상품 목록 응답
-    API-->>-Client: HTTP 200 + 인기 상품 목록
+    App-->>-Client: HTTP 200 + 인기 상품 목록
 ```
 
-## 📊 실시간 통계 처리 (Kafka Consumer)
+## 📊 실시간 통계 처리
 
 ```mermaid
 sequenceDiagram
     participant Order as 주문 서비스
+    participant Async as 비동기 처리
     participant DB as Database
 
-    Note over Order, DB: 주문 완료 시 즉시 통계 업데이트
+    Note over Order, DB: 주문 완료 후 비동기 통계 업데이트
     Order->>Order: 주문 처리 완료
-    Order->>+DB: 통계 테이블 업데이트
-    DB->>DB: UPDATE PRODUCT_STAT SET quantity_sold = quantity_sold + ?
-    DB->>DB: WHERE product_id = ? AND date = CURDATE()
-    DB-->>-Order: 업데이트 완료
+    Order->>+Async: 통계 업데이트 요청 (비동기)
+    Async->>+DB: 통계 테이블 업데이트
+    DB->>DB: UPSERT PRODUCT_STAT
+    DB-->>-Async: 업데이트 완료
+    Async-->>-Order: 처리 완료
 ```
+
+## 📋 추가 API 목록
+
+### 상품 관리 API
+```mermaid
+sequenceDiagram
+    participant Client as Client
+    participant App as Application
+    participant DB as Database
+
+    Note over Client, DB: 상품 상세 조회
+    Client->>+App: GET /api/products/{productId}
+    App->>+DB: PRODUCT 테이블 조회
+    DB-->>-App: 상품 상세 정보 반환
+    App-->>-Client: HTTP 200 + 상품 정보
+```
+
+### 주문 내역 조회 API
+```mermaid
+sequenceDiagram
+    participant Client as Client
+    participant App as Application
+    participant DB as Database
+
+    Note over Client, DB: 사용자 주문 내역 조회
+    Client->>+App: GET /api/users/orders
+    App->>+DB: ORDER 테이블 조회
+    DB->>DB: WHERE user_id = ? ORDER BY created_at DESC
+    DB-->>-App: 주문 내역 목록 반환
+    App-->>-Client: HTTP 200 + 주문 내역
+```
+
+### 잔액 거래 내역 조회 API
+```mermaid
+sequenceDiagram
+    participant Client as Client
+    participant App as Application
+    participant DB as Database
+
+    Note over Client, DB: 잔액 거래 내역 조회
+    Client->>+App: GET /api/users/balance/history
+    App->>+DB: USER_BALANCE_TX 테이블 조회
+    DB->>DB: WHERE user_id = ? ORDER BY created_at DESC
+    DB-->>-App: 거래 내역 목록 반환
+    App-->>-Client: HTTP 200 + 거래 내역
+```
+
+## 🔹 주요 개선사항
+
+### **1. 구조 단순화**
+- API Gateway 제거로 복잡성 감소
+- Client → Application 직접 통신
+- 개발 및 디버깅 용이성 향상
+
+### **2. 성능 최적화**
+- 불필요한 네트워크 홉 제거
+- 응답 시간 단축
+- 장애 지점 감소
+
+### **3. 개발 효율성**
+- 단일 애플리케이션 관리
+- 배포 및 모니터링 단순화
+- 로컬 개발 환경 최적화
+
+이제 모든 API가 Client → Application 직접 통신 구조로 단순화되었습니다!
