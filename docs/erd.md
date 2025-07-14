@@ -5,6 +5,7 @@ erDiagram
     
     USER {
         BIGINT id PK
+        VARCHAR username    "로그인 아이디 (UNIQUE)"
         VARCHAR name
         INT balance
         DATETIME created_at

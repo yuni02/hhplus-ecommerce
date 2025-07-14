@@ -9,7 +9,7 @@ sequenceDiagram
     participant App as Application
     participant DB as Database
 
-    Client->>+API: GET /balance/{userId}
+    Client->>+API: GET /api/balance/{userId}
     API->>+App: 잔액 조회 요청
     App->>+DB: USER 테이블 조회
     DB-->>-App: 잔액 정보 반환
@@ -30,7 +30,7 @@ sequenceDiagram
     participant DB as Database
     participant Kafka as Kafka
 
-    Client->>+API: POST /balance/charge
+    Client->>+API: POST /api/balance/charge
     API->>+App: 잔액 충전 요청
     
     App->>+Redis: 분산 락 획득 (user:{userId}:lock)
@@ -62,7 +62,7 @@ sequenceDiagram
     participant Redis as Redis Cache
     participant DB as Database
 
-    Client->>+API: GET /products
+    Client->>+API: GET /api/products
     API->>+App: 상품 목록 조회 요청
     
     App->>+Redis: 상품 목록 캐시 조회
@@ -90,7 +90,7 @@ sequenceDiagram
     participant Redis as Redis_Lock
     participant DB as Database
 
-    Client->>API: POST /coupons/couponId/issue
+    Client->>API: POST /api/coupons/couponId/issue
     API->>App: 쿠폰 발급 요청
 
     App->>Redis: 분산락 획득 (필수)
@@ -128,7 +128,7 @@ sequenceDiagram
     participant DB as Database
     participant External as 외부 데이터플랫폼
 
-    Client->>+API: POST /orders
+    Client->>+API: POST /api/orders
     API->>+App: 주문 요청
 
     Note over App, DB: 1. 재고 확인 및 예약
@@ -177,7 +177,7 @@ sequenceDiagram
     participant App as Application
     participant DB as Database
     
-    Client->>+API: GET /products/popular
+    Client->>+API: GET /api/products/popular
     API->>+App: 인기 상품 조회 요청
     
     App->>+DB: 최근 3일 판매량 기준 상위 5개 상품 조회
