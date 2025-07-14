@@ -1,189 +1,233 @@
-# 이커머스 시퀀스 다이어그램 - ERD 연동
+# 기술적 계층 기준 시퀀스 다이어그램 (Redis + Kafka)
 
 ## 1️⃣ 잔액 조회 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Balance as 잔액
+    participant Client as Client
+    participant API as API_Gateway
+    participant App as Application
+    participant DB as Database
 
-    User->>+Balance: 잔액 조회 요청
-    Balance->>Balance: 해당 회원의 잔액 조회
-    Balance-->>-User: 잔액 정보 반환
+    Client->>+API: GET /balance/{userId}
+    API->>+App: 잔액 조회 요청
+    App->>+DB: USER 테이블 조회
+    DB-->>-App: 잔액 정보 반환
+    App-->>-API: 잔액 정보 응답
+    API-->>-Client: HTTP 200 + 잔액 정보
+
+    Note over App: 간단한 조회는 DB 직접 접근
 ```
 
 ## 1️⃣ 잔액 충전 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Balance as 잔액
-    participant BalanceTx as 잔액거래내역
+    participant Client as 클라이언트
+    participant API as API Gateway
+    participant App as Application
+    participant Redis as Redis Cache
+    participant DB as Database
+    participant Kafka as Kafka
 
-    User->>+Balance: 잔액 충전 요청 (충전금액)
-    Balance->>Balance: 충전 금액 유효성 검사
-    Balance->>Balance: 현재 잔액에 충전금액 추가 (USER.balance 업데이트)
-    Balance->>+BalanceTx: 충전 내역 기록 (USER_BALANCE_TX 생성)
-    BalanceTx->>BalanceTx: tx_type=DEPOSIT, amount=+충전금액
-    BalanceTx-->>-Balance: 거래내역 저장 완료
-    Balance-->>-User: 충전 완료된 잔액 정보 반환
+    Client->>+API: POST /balance/charge
+    API->>+App: 잔액 충전 요청
+    
+    App->>+Redis: 분산 락 획득 (user:{userId}:lock)
+    Redis-->>-App: 락 획득 성공
+    
+    App->>+DB: 트랜잭션 시작
+    DB->>DB: USER.balance 업데이트
+    DB->>DB: USER_BALANCE_TX 생성
+    DB-->>-App: 트랜잭션 커밋
+    
+    App->>Redis: 잔액 캐시 업데이트
+    App->>Redis: 분산 락 해제
+    
+    App->>+Kafka: 잔액 변경 이벤트 발행
+    Kafka->>Kafka: balance-changed 토픽
+    Kafka-->>-App: 이벤트 발행 완료
+    
+    App-->>-API: 충전 완료 응답
+    API-->>-Client: HTTP 200 + 충전 결과
 ```
 
 ## 2️⃣ 상품 조회 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Product as 상품
+    participant Client as 클라이언트
+    participant API as API Gateway
+    participant App as Application
+    participant Redis as Redis Cache
+    participant DB as Database
 
-    User->>+Product: 상품 목록 조회 요청
-    Product->>Product: 상품 정보 조회 (ID, 이름, 가격, 재고)
-    Product-->>-User: 상품 목록 반환
-```
-
-## 3️⃣ 보유 쿠폰 조회 API
-
-```mermaid
-sequenceDiagram
-    participant User as 회원
-    participant Coupon as 쿠폰
-
-    User->>+Coupon: 보유 쿠폰 조회 요청
-    Coupon->>Coupon: 해당 회원의 쿠폰 발급 내역 조회
-    Coupon->>Coupon: 사용 가능한 쿠폰 필터링
-    Coupon-->>-User: 보유 쿠폰 목록 반환
+    Client->>+API: GET /products
+    API->>+App: 상품 목록 조회 요청
+    
+    App->>+Redis: 상품 목록 캐시 조회
+    
+    alt 캐시 히트
+        Redis-->>App: 캐시된 상품 목록
+    else 캐시 미스
+        Redis-->>-App: 캐시 없음
+        App->>+DB: PRODUCT 테이블 조회
+        DB-->>-App: 상품 목록 반환
+        App->>Redis: 상품 목록 캐시 저장 (TTL: 1분)
+    end
+    
+    App-->>-API: 상품 목록 응답
+    API-->>-Client: HTTP 200 + 상품 목록
 ```
 
 ## 3️⃣ 선착순 쿠폰 발급 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Coupon as 쿠폰
-    participant UserCoupon as 사용자쿠폰
+    participant Client as Client
+    participant API as API_Gateway
+    participant App as Application
+    participant Redis as Redis_Lock
+    participant DB as Database
 
-    User->>+Coupon: 쿠폰 발급 요청
-    Coupon->>Coupon: 쿠폰 발급 가능 여부 확인 (total_quantity > issued_count)
-    Coupon->>+UserCoupon: 중복 발급 여부 확인 (USER_COUPON 테이블 조회)
-    UserCoupon-->>-Coupon: 발급 내역 조회 결과
+    Client->>API: POST /coupons/couponId/issue
+    API->>App: 쿠폰 발급 요청
 
-    alt 발급 불가 (소진 또는 중복)
-        Coupon-->>User: 발급 실패 (사유)
-    else 발급 가능
-        Coupon->>Coupon: 쿠폰 수량 차감 (COUPON.issued_count += 1)
-        Coupon->>+UserCoupon: 회원에게 쿠폰 발급 기록 (USER_COUPON 생성)
-        UserCoupon->>UserCoupon: user_id, coupon_id, issued_at, used=false 저장
-        UserCoupon-->>-Coupon: 발급 기록 완료
-        Coupon-->>-User: 발급된 쿠폰 정보 반환
+    App->>Redis: 분산락 획득 (필수)
+    Redis-->>App: 락 획득 성공
+
+    App->>DB: 쿠폰 발급 가능 여부 확인
+    DB-->>App: 발급 가능 여부 반환
+
+    alt 발급 가능
+        App->>DB: 트랜잭션 시작
+        DB->>DB: COUPON.issued_count 증가
+        DB->>DB: USER_COUPON 생성
+        DB-->>App: 트랜잭션 커밋
+
+        App->>Redis: 분산락 해제
+        App-->>API: 발급 성공 응답
+    else 발급 불가
+        App->>Redis: 분산락 해제
+        App-->>API: 발급 실패 응답
     end
+
+    API-->>Client: HTTP 응답
+
+    Note over Redis: 동시성 제어만 Redis 사용
 ```
 
 ## 4️⃣ 주문/결제 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Order as 주문
-    participant OrderItem as 주문항목
-    participant Product as 상품
-    participant Coupon as 쿠폰
-    participant UserCoupon as 사용자쿠폰
-    participant Balance as 잔액
-    participant BalanceTx as 잔액거래내역
-    participant DataPlatform as 데이터플랫폼
-    participant OrderEvent as 주문이벤트
+    participant Client as 클라이언트
+    participant API as API Gateway
+    participant App as Application
+    participant Redis as Redis Cache
+    participant DB as Database
+    participant External as 외부 데이터플랫폼
 
-    User->>+Order: 주문 요청 (상품목록, 쿠폰)
+    Client->>+API: POST /orders
+    API->>+App: 주문 요청
 
-    Note over Order, Balance: 재고 확인 및 차감
-    Order->>+Product: 재고 차감 요청 (상품목록)
-    Product->>Product: 각 상품별 재고 확인 (PRODUCT.stock)
+    Note over App, DB: 1. 재고 확인 및 예약
+    App->>+Redis: 상품별 분산 락 획득
+    Redis-->>-App: 락 획득 성공
+
+    App->>+DB: 재고 확인
+    DB-->>-App: 재고 정보 반환
 
     alt 재고 부족
-        Product-->>Order: 재고 부족 오류
-        Order-->>User: 주문 실패 (재고 부족)
+        App->>Redis: 분산 락 해제
+        App-->>API: 주문 실패 (재고 부족)
     else 재고 충분
-        Product->>Product: 재고 차감 처리 (PRODUCT.stock -= quantity)
-        Product-->>-Order: 재고 차감 완료
+        Note over App, DB: 2. 주문 생성 및 결제 처리
+        App->>+DB: 트랜잭션 시작
+        DB->>DB: ORDER 생성 (status=PROCESSING)
+        DB->>DB: ORDER_ITEM 생성
+        DB->>DB: PRODUCT.stock 차감
 
-        Note over Order, Balance: 주문 생성
-        Order->>+OrderItem: 주문 항목 생성 (ORDER_ITEM 테이블)
-        OrderItem->>OrderItem: 수량, 단가 스냅샷 저장
-        OrderItem-->>-Order: 주문 항목 생성 완료
-
-        Note over Order, Balance: 쿠폰 적용 (선택사항)
-        opt 쿠폰 사용하는 경우
-            Order->>+UserCoupon: 쿠폰 사용 요청
-            UserCoupon->>UserCoupon: 쿠폰 유효성 검증 (used=false 확인)
-            UserCoupon->>UserCoupon: 쿠폰 사용 처리 (used=true, used_at 업데이트)
-            UserCoupon-->>-Order: 할인 금액 반환
-            Order->>Order: 최종 결제 금액 계산 (ORDER.discounted_price 설정)
+        opt 쿠폰 사용
+            DB->>DB: USER_COUPON.status = USED
         end
 
-        Note over Order, Balance: 결제 처리
-        Order->>+Balance: 결제 요청 (최종금액)
-        Balance->>Balance: 잔액 확인 (USER.balance)
+        DB->>DB: USER.balance 차감
+        DB->>DB: USER_BALANCE_TX 생성
+        DB->>DB: ORDER.status = COMPLETED
+        DB-->>-App: 트랜잭션 커밋
 
-        alt 잔액 부족
-            Balance-->>Order: 결제 실패 (잔액 부족)
-            Order->>+Product: 재고 복원 요청
-            Product->>Product: 재고 복원 (PRODUCT.stock += quantity)
-            Product-->>-Order: 재고 복원 완료
-            opt 쿠폰 사용한 경우
-                Order->>+UserCoupon: 쿠폰 복원 요청
-                UserCoupon->>UserCoupon: 쿠폰 사용 취소 (used=false, used_at=null)
-                UserCoupon-->>-Order: 쿠폰 복원 완료
-            end
-            Order-->>User: 주문 실패 (잔액 부족)
-        else 잔액 충분
-            Balance->>Balance: 잔액 차감 (USER.balance -= amount)
-            Balance->>+BalanceTx: 결제 내역 기록 (USER_BALANCE_TX 생성)
-            BalanceTx->>BalanceTx: tx_type=PAYMENT, amount=-결제금액, related_order_id 설정
-            BalanceTx-->>-Balance: 거래내역 저장 완료
-            Balance-->>-Order: 결제 성공
+        App->>Redis: 분산 락 해제
 
-            Order->>Order: 주문 정보 저장 (ORDER 테이블에 최종 저장)
+        Note over App, External: 3. 동기적 데이터 전송
+        App->>External: 주문 통계 데이터 전송 (REST API)
 
-            Note over Order, DataPlatform: 비동기 데이터 전송
-            Order->>+OrderEvent: 주문 이벤트 기록 (ORDER_HISTORY_EVENT)
-            OrderEvent->>OrderEvent: payload에 주문 데이터 JSON 저장
-            OrderEvent-->>-Order: 이벤트 저장 완료
-            Order->>DataPlatform: 주문 통계 데이터 전송 (비동기)
-
-            Order-->>-User: 주문 완료
-        end
+        App-->>-API: 주문 성공 응답
     end
+
+    API-->>-Client: HTTP 응답
 ```
 
 ## 5️⃣ 인기 상품 조회 API
 
 ```mermaid
 sequenceDiagram
-    participant User as 회원
-    participant Product as 상품
-    participant DataPlatform as 데이터플랫폼
-
-    User->>+Product: 인기 상품 조회 요청
-    Product->>+DataPlatform: 최근 3일간 판매량 상위 상품 요청
-    DataPlatform->>DataPlatform: 주문 통계 데이터 분석
-    DataPlatform-->>-Product: 상위 5개 상품 ID 목록 반환
-    Product->>Product: 상위 상품들의 상세 정보 조회
-    Product-->>-User: 인기 상품 목록 반환 (상위 5개)
+    participant Client as 클라이언트
+    participant API as API Gateway
+    participant App as Application
+    participant DB as Database
+    
+    Client->>+API: GET /products/popular
+    API->>+App: 인기 상품 조회 요청
+    
+    App->>+DB: 최근 3일 판매량 기준 상위 5개 상품 조회
+    DB->>DB: SELECT * FROM PRODUCT_STAT
+    DB->>DB: WHERE date >= CURDATE() - INTERVAL 3 DAY
+    DB->>DB: ORDER BY quantity_sold DESC LIMIT 5
+    DB-->>-App: 인기 상품 목록 반환
+    
+    App-->>-API: 인기 상품 목록 응답
+    API-->>-Client: HTTP 200 + 인기 상품 목록
 ```
 
-## 📊 통계 데이터 수집 (배치)
+## 📊 실시간 통계 처리 (Kafka Consumer)
 
 ```mermaid
 sequenceDiagram
-    participant Scheduler as 스케줄러
-    participant Order as 주문
-    participant DataPlatform as 데이터플랫폼
-
-    Note over Scheduler, DataPlatform: 매일 새벽 실행
-    Scheduler->>+Order: 일일 판매량 집계 요청
-    Order->>Order: 전일 상품별 판매량 집계
-    Order->>+DataPlatform: 집계된 통계 데이터 전송
-    DataPlatform->>DataPlatform: 통계 데이터 저장 및 분석
-    DataPlatform-->>-Order: 저장 완료
-    Order-->>-Scheduler: 집계 작업 완료
+    participant Order as 주문 서비스
+    participant DB as Database
+    
+    Note over Order, DB: 주문 완료 시 즉시 통계 업데이트
+    Order->>Order: 주문 처리 완료
+    Order->>+DB: 통계 테이블 업데이트
+    DB->>DB: UPDATE PRODUCT_STAT SET quantity_sold = quantity_sold + ?
+    DB->>DB: WHERE product_id = ? AND date = CURDATE()
+    DB-->>-Order: 업데이트 완료
 ```
+
+
+## 🔹 기술적 계층 구성
+
+### **1. 프레젠테이션 계층**
+- **API Gateway**: 라우팅, 인증, 로드밸런싱
+- **Client**: 웹/모바일 클라이언트
+
+### **2. 애플리케이션 계층**
+- **Application Service**: 비즈니스 로직 처리
+- **분산 락 관리**: Redis 기반 동시성 제어
+
+### **3. 캐싱 계층**
+- **Redis Cache**:
+    - 잔액/상품 정보 캐시
+    - 실시간 통계 저장
+    - 분산 락 구현
+
+### **4. 메시징 계층**
+- **Kafka**:
+    - 이벤트 스트리밍
+    - 비동기 처리
+    - 시스템 간 디커플링
+
+### **5. 데이터 계층**
+- **Database**: 영구 데이터 저장
+- **외부 데이터플랫폼**: 분석 및 통계
