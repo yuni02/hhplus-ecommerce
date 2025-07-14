@@ -10,7 +10,7 @@
 ## PR 설명
 
 - 시퀀스 다이어그램 작성 : [b582e1f](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/sequence_diagram.md)
-- erd 작성: [8508aba](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/erd.md) 
+- erd 작성: [8508aba](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/erd.md)
 - 요구사항 작성:[e927f2a](https://github.com/yuni02/hhplus-ecommerce/commit/e927f2aea9e4cec60b7d270c431597d5453a8ff1)
 
 ## 리뷰 포인트
