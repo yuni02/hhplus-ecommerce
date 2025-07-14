@@ -1,4 +1,4 @@
-# 기술적 계층 기준 시퀀스 다이어그램 (Redis + Kafka)
+# 기술적 계층 기준 시퀀스 다이어그램 (Redis)
 
 ## 1️⃣ 잔액 조회 API
 
@@ -32,22 +32,22 @@ sequenceDiagram
 
     Client->>+API: POST /api/balance/charge
     API->>+App: 잔액 충전 요청
-    
+
     App->>+Redis: 분산 락 획득 (user:{userId}:lock)
     Redis-->>-App: 락 획득 성공
-    
+
     App->>+DB: 트랜잭션 시작
     DB->>DB: USER.balance 업데이트
     DB->>DB: USER_BALANCE_TX 생성
     DB-->>-App: 트랜잭션 커밋
-    
+
     App->>Redis: 잔액 캐시 업데이트
     App->>Redis: 분산 락 해제
-    
+
     App->>+Kafka: 잔액 변경 이벤트 발행
     Kafka->>Kafka: balance-changed 토픽
     Kafka-->>-App: 이벤트 발행 완료
-    
+
     App-->>-API: 충전 완료 응답
     API-->>-Client: HTTP 200 + 충전 결과
 ```
@@ -64,9 +64,9 @@ sequenceDiagram
 
     Client->>+API: GET /api/products
     API->>+App: 상품 목록 조회 요청
-    
+
     App->>+Redis: 상품 목록 캐시 조회
-    
+
     alt 캐시 히트
         Redis-->>App: 캐시된 상품 목록
     else 캐시 미스
@@ -75,7 +75,7 @@ sequenceDiagram
         DB-->>-App: 상품 목록 반환
         App->>Redis: 상품 목록 캐시 저장 (TTL: 1분)
     end
-    
+
     App-->>-API: 상품 목록 응답
     API-->>-Client: HTTP 200 + 상품 목록
 ```
@@ -176,16 +176,16 @@ sequenceDiagram
     participant API as API Gateway
     participant App as Application
     participant DB as Database
-    
+
     Client->>+API: GET /api/products/popular
     API->>+App: 인기 상품 조회 요청
-    
+
     App->>+DB: 최근 3일 판매량 기준 상위 5개 상품 조회
     DB->>DB: SELECT * FROM PRODUCT_STAT
     DB->>DB: WHERE date >= CURDATE() - INTERVAL 3 DAY
     DB->>DB: ORDER BY quantity_sold DESC LIMIT 5
     DB-->>-App: 인기 상품 목록 반환
-    
+
     App-->>-API: 인기 상품 목록 응답
     API-->>-Client: HTTP 200 + 인기 상품 목록
 ```
@@ -196,7 +196,7 @@ sequenceDiagram
 sequenceDiagram
     participant Order as 주문 서비스
     participant DB as Database
-    
+
     Note over Order, DB: 주문 완료 시 즉시 통계 업데이트
     Order->>Order: 주문 처리 완료
     Order->>+DB: 통계 테이블 업데이트
@@ -204,30 +204,3 @@ sequenceDiagram
     DB->>DB: WHERE product_id = ? AND date = CURDATE()
     DB-->>-Order: 업데이트 완료
 ```
-
-
-## 🔹 기술적 계층 구성
-
-### **1. 프레젠테이션 계층**
-- **API Gateway**: 라우팅, 인증, 로드밸런싱
-- **Client**: 웹/모바일 클라이언트
-
-### **2. 애플리케이션 계층**
-- **Application Service**: 비즈니스 로직 처리
-- **분산 락 관리**: Redis 기반 동시성 제어
-
-### **3. 캐싱 계층**
-- **Redis Cache**:
-    - 잔액/상품 정보 캐시
-    - 실시간 통계 저장
-    - 분산 락 구현
-
-### **4. 메시징 계층**
-- **Kafka**:
-    - 이벤트 스트리밍
-    - 비동기 처리
-    - 시스템 간 디커플링
-
-### **5. 데이터 계층**
-- **Database**: 영구 데이터 저장
-- **외부 데이터플랫폼**: 분석 및 통계
