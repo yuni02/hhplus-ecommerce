@@ -210,7 +210,7 @@ stateDiagram-v2
     CacheInvalidated --> CacheEmpty : 캐시 제거
     CacheLoadFailed --> CacheEmpty : 재시도 대기
 
-    note right of CacheHit : 상품 목록 TTL 5분; 인기 상품 TTL 1시간
+    note right of CacheHit : 상품 목록 TTL 5분
     note right of CacheInvalidated : 데이터 변경 시 즉시 무효화
 ```
 

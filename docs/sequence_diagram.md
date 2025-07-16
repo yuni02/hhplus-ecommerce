@@ -4,16 +4,16 @@ sequenceDiagram
     participant User as User Domain
     participant Balance as Balance Domain
     participant DB as Database
-    
+
         Note over C,DB: 1. 잔액 충전
         C->>User: 잔액 충전 요청 {userId, amount}
-    
+
         alt 유효하지 않은 요청
             User->>C: 입력값 검증 실패 {message: "유효하지 않은 요청"}
         else 유효한 요청
             User->>User: 사용자 검증 및 충전 요청 처리
             User->>Balance: 잔액 충전 요청(userId, amount)
-    
+
             alt 사용자 존재하지 않음
                 Balance->>DB: 사용자 조회
                 DB->>Balance: 사용자 없음
@@ -31,22 +31,24 @@ sequenceDiagram
             end
         end
 ```
+
 ---
+
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant User as User Domain
     participant Balance as Balance Domain
     participant DB as Database
-    
+
         Note over C,DB: 2. 잔액 조회
         C->>User: 잔액 조회 요청 {userId}
-    
+
         alt 유효하지 않은 사용자 ID
             User->>C: 입력값 검증 실패 {message: "유효하지 않은 사용자 ID"}
         else 유효한 요청
             User->>Balance: 잔액 조회 요청(userId)
-    
+
             alt 사용자 존재하지 않음
                 Balance->>DB: 사용자 잔액 조회
                 DB->>Balance: 사용자 없음
@@ -60,31 +62,33 @@ sequenceDiagram
             end
         end
 ```
+
 ---
+
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant Product as Product Domain
     participant Cache as Cache
     participant DB as Database
-    
+
         Note over C,DB: 3. 상품 조회
         C->>Product: 상품 목록 조회 요청
-    
+
         Product->>Cache: 활성 상품 목록 조회
         alt 캐시 히트
             Cache->>Product: 캐시된 상품 목록 반환
             Product->>C: 상품 조회 성공 {products: [id, name, price, stock, status]}
         else 캐시 미스
             Product->>DB: 활성 상품 조회
-    
+
             alt 데이터베이스 오류
                 DB->>Product: 데이터베이스 연결 실패
                 Product->>C: 시스템 오류 {message: "일시적인 오류가 발생했습니다"}
             else 조회 성공
                 DB->>Product: 상품 데이터 반환
                 Product->>Cache: 상품 목록 캐시 저장 (TTL 5분)
-    
+
                 alt 상품 없음
                     Product->>C: 상품 없음 {products: [], message: "등록된 상품이 없습니다"}
                 else 상품 존재
@@ -93,36 +97,38 @@ sequenceDiagram
             end
         end
 ```
+
 ---
+
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant Coupon as Coupon Domain
     participant Cache as Cache
     participant DB as Database
-    
+
         Note over C,DB: 4. 쿠폰 발급 (선착순 처리)
         C->>Coupon: 쿠폰 발급 요청 {userId, couponId}
-    
+
         alt 유효하지 않은 요청
             Coupon->>C: 입력값 검증 실패 {message: "유효하지 않은 요청"}
         else 유효한 요청
             Coupon->>Cache: 분산 락 획득 시도 (couponId)
-    
+
             alt 락 획득 실패
                 Cache->>Coupon: 락 획득 실패 (타임아웃)
                 Coupon->>C: 처리 중 오류 {message: "잠시 후 다시 시도해주세요"}
             else 락 획득 성공
                 Cache->>Coupon: 락 획득 성공
                 Coupon->>DB: 쿠폰 정보 조회 (FOR UPDATE)
-    
+
                 alt 쿠폰 존재하지 않음
                     DB->>Coupon: 쿠폰 없음
                     Coupon->>Cache: 분산 락 해제
                     Coupon->>C: 쿠폰 없음 오류 {message: "존재하지 않는 쿠폰입니다"}
                 else 쿠폰 존재
                     DB->>Coupon: 쿠폰 정보 반환
-    
+
                     alt 이미 발급받은 쿠폰
                         Coupon->>DB: 사용자 쿠폰 발급 이력 확인
                         DB->>Coupon: 이미 발급받음
@@ -135,7 +141,7 @@ sequenceDiagram
                         Coupon->>DB: 사용자 쿠폰 생성 (AVAILABLE 상태)
                         DB->>Coupon: 사용자 쿠폰 생성 완료
                         Coupon->>DB: 쿠폰 발급 수량 증가 및 상태 업데이트
-    
+
                         alt 데이터베이스 오류
                             DB->>Coupon: 업데이트 실패
                             Coupon->>Cache: 분산 락 해제
@@ -150,27 +156,29 @@ sequenceDiagram
             end
         end
 ```
+
 ---
+
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant Coupon as Coupon Domain
     participant DB as Database
-    
+
         Note over C,DB: 5. 쿠폰 조회
         C->>Coupon: 보유 쿠폰 조회 요청 {userId}
-    
+
         alt 유효하지 않은 사용자 ID
             Coupon->>C: 입력값 검증 실패 {message: "유효하지 않은 사용자 ID"}
         else 유효한 요청
             Coupon->>DB: 사용자 보유 쿠폰 조회 (AVAILABLE 상태)
-    
+
             alt 데이터베이스 오류
                 DB->>Coupon: 데이터베이스 연결 실패
                 Coupon->>C: 시스템 오류 {message: "일시적인 오류가 발생했습니다"}
             else 조회 성공
                 DB->>Coupon: 사용자 쿠폰 목록 반환
-    
+
                 alt 보유 쿠폰 없음
                     Coupon->>C: 쿠폰 없음 {userCoupons: [], message: "보유한 쿠폰이 없습니다"}
                 else 보유 쿠폰 존재
@@ -179,7 +187,9 @@ sequenceDiagram
             end
         end
 ```
+
 ---
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -188,153 +198,98 @@ sequenceDiagram
     participant Coupon as Coupon Domain
     participant Balance as Balance Domain
     participant Statistics as Statistics Domain
+    participant Event as ORDER_HISTORY_EVENT
     participant DB as Database
     participant DP as DataPlatform
-    
-        Note over C,DP: 6. 주문/결제 (핵심 트랜잭션)
-        C->>Order: 주문 생성 요청 {userId, orderItems, userCouponId}
-    
-        alt 유효하지 않은 요청
-            Order->>C: 입력값 검증 실패 {message: "유효하지 않은 주문 정보"}
-        else 유효한 요청
-            Order->>Order: @Transactional 시작
-            Order->>DB: 주문 생성 (PENDING 상태)
-    
-            alt 주문 생성 실패
-                DB->>Order: 주문 생성 실패
-                Order->>Order: @Transactional 롤백
-                Order->>C: 시스템 오류 {message: "주문 생성에 실패했습니다"}
-            else 주문 생성 성공
-                DB->>Order: 주문 생성 완료
-    
-                par 재고 검증 및 차감
-                    Order->>Product: 재고 검증 및 예약 요청(orderItems)
-                    Product->>DB: 상품 정보 조회 (FOR UPDATE)
-    
-                    alt 상품 존재하지 않음
-                        DB->>Product: 상품 없음
-                        Product->>Order: 상품 없음 예외
-                        Order->>DB: 주문 상태를 CANCELLED로 변경
-                        Order->>Order: @Transactional 롤백
-                        Order->>C: 상품 없음 오류 {message: "존재하지 않는 상품입니다"}
-                    else 재고 부족
-                        DB->>Product: 상품 정보 반환 (재고 부족)
-                        Product->>Order: 재고 부족 예외
-                        Order->>DB: 주문 상태를 CANCELLED로 변경
-                        Order->>Order: @Transactional 롤백
-                        Order->>C: 재고 부족 오류 {message: "재고가 부족합니다"}
-                    else 재고 충분
-                        DB->>Product: 상품 정보 반환
-                        Product->>DB: 상품 재고 차감 및 상태 업데이트
-                        DB->>Product: 재고 차감 완료
-                        Product->>Order: 재고 예약 성공
-                        Order->>DB: 주문 아이템 저장
-                        DB->>Order: 주문 아이템 저장 완료
-                    end
-                and 쿠폰 검증 및 할인 계산
-                    alt userCouponId 존재
-                        Order->>Coupon: 쿠폰 유효성 검증 및 할인 계산(userCouponId, userId)
-                        Coupon->>DB: 사용자 쿠폰 조회 (AVAILABLE 상태)
-    
-                        alt 쿠폰 없음 또는 이미 사용됨
-                            DB->>Coupon: 쿠폰 없음 또는 사용 완료
-                            Coupon->>Order: 쿠폰 사용 불가 예외
-                            Order->>DB: 주문 상태를 CANCELLED로 변경
-                            Order->>Order: @Transactional 롤백
-                            Order->>C: 쿠폰 사용 불가 오류 {message: "사용할 수 없는 쿠폰입니다"}
-                        else 쿠폰 사용 가능
-                            DB->>Coupon: 사용자 쿠폰 정보 반환
-                            Coupon->>Order: 할인 금액 반환
-                        end
-                    end
-                end
-    
-                Order->>DB: 주문 상태를 VALIDATING으로 변경
-                DB->>Order: 주문 상태 업데이트 완료
-    
-                Order->>Balance: 결제 처리 요청(userId, discountedPrice, orderId)
-                Balance->>DB: 사용자 잔액 조회 (FOR UPDATE)
-    
-                alt 사용자 존재하지 않음
-                    DB->>Balance: 사용자 없음
-                    Balance->>Order: 사용자 없음 예외
-                    Order->>DB: 주문 상태를 CANCELLED로 변경
-                    Order->>Order: @Transactional 롤백
-                    Order->>C: 사용자 없음 오류 {message: "사용자를 찾을 수 없습니다"}
-                else 잔액 부족
-                    DB->>Balance: 사용자 잔액 정보 반환 (잔액 부족)
-                    Balance->>DB: 실패 거래 기록 생성 (FAILED 상태)
-                    Balance->>Order: 잔액 부족 예외
-                    Order->>DB: 주문 상태를 CANCELLED로 변경
-                    Order->>Order: @Transactional 롤백
-                    Order->>C: 잔액 부족 오류 {message: "잔액이 부족합니다"}
-                else 결제 성공
-                    DB->>Balance: 사용자 잔액 정보 반환
-                    Balance->>DB: 성공 거래 기록 생성 (COMPLETED 상태)
-                    Balance->>DB: 사용자 잔액 차감
-                    DB->>Balance: 잔액 차감 완료
-                    Balance->>Order: 결제 완료
-    
-                    alt 쿠폰 사용 처리
-                        Order->>Coupon: 쿠폰 사용 처리(userCouponId)
-                        Coupon->>DB: 쿠폰 상태를 USED로 변경
-                        DB->>Coupon: 쿠폰 사용 처리 완료
-                        Coupon->>Order: 쿠폰 사용 완료
-                    end
-    
-                    Order->>DB: 주문 상태를 COMPLETED로 변경
-                    DB->>Order: 주문 완료
-                    Order->>Order: @Transactional 커밋
-    
-                    par 비동기 처리
-                        Order->>DB: 주문 이벤트 저장
-                        DB->>Order: 주문 이벤트 저장 완료
-                        Order->>DP: 주문 데이터 전송 (비동기)
-    
-                        alt 데이터 플랫폼 전송 실패
-                            DP->>Order: 전송 실패
-                            Note over Order: 재시도 큐에 추가 (별도 처리)
-                        else 데이터 플랫폼 전송 성공
-                            DP->>Order: 전송 완료
-                        end
-                    and
-                        Order->>Statistics: 판매 통계 업데이트 요청(orderItems)
-                        Statistics->>DB: 일별 판매 통계 업데이트
-    
-                        alt 통계 업데이트 실패
-                            DB->>Statistics: 통계 업데이트 실패
-                            Note over Statistics: 통계 복구 큐에 추가 (별도 처리)
-                        else 통계 업데이트 성공
-                            DB->>Statistics: 통계 업데이트 완료
-                            Statistics->>Order: 통계 업데이트 완료
-                        end
-                    end
-    
-                    Order->>C: 주문 성공 {orderId, totalPrice, discountedPrice, status}
-                end
-            end
-        end
+
+    Note over C,DP: 주문/결제 통합 API
+    C->>Order: 주문 생성 요청 {userId, orderItems, userCouponId}
+
+    Order->>Order: @Transactional 시작
+
+    par 핵심 주문 처리
+        Order->>Product: 재고 검증 및 차감
+        Product->>DB: FOR UPDATE + 재고 차감
+        DB-->>Product: 재고 차감 완료
+        Product-->>Order: 재고 예약 성공
+    and
+        Order->>Coupon: 쿠폰 검증 및 사용
+        Coupon->>DB: 쿠폰 상태 USED 변경
+        DB-->>Coupon: 쿠폰 사용 완료
+        Coupon-->>Order: 할인 적용 완료
+    and
+        Order->>Balance: 결제 처리
+        Balance->>DB: 잔액 차감 + 거래 기록
+        DB-->>Balance: 결제 완료
+        Balance-->>Order: 결제 성공
+    end
+
+    Order->>DB: 주문 상태 COMPLETED
+    Order->>Event: 이벤트 데이터 생성
+    Event->>DB: ORDER_HISTORY_EVENT 저장
+    DB-->>Event: 이벤트 저장 완료
+    Event-->>Order: 이벤트 생성 완료
+
+    Order->>Order: @Transactional 커밋
+
+    par 비동기 후처리
+        Order->>DP: 주문 데이터 전송 (비동기)
+        Note over DP: Mock API 또는 외부 시스템
+    and
+        Order->>Statistics: 통계 업데이트 (비동기)
+        Statistics->>DB: PRODUCT_STAT 업데이트
+    end
+
+    Order->>C: 주문 성공 응답
 ```
+
 ---
 
+## 주문완료 후 주문정보 데이터 플랫폼 전송
+
+sequenceDiagram
+participant Order as Order Domain
+participant DB as Database
+participant Event as ORDER_HISTORY_EVENT
+participant DP as DataPlatform
+
+    Note over Order, DP: 주문 완료 후 이벤트 처리
+    Order->>Order: 주문 트랜잭션 완료
+    Order->>+Event: 주문 이벤트 데이터 생성
+    Event->>Event: JSON payload 구성
+    Event->>+DB: ORDER_HISTORY_EVENT 저장
+    DB-->>-Event: 이벤트 저장 완료
+    Event-->>-Order: 이벤트 생성 완료
+
+    par 비동기 데이터 전송
+        Order->>+DP: 주문 데이터 전송 (비동기)
+        alt 전송 성공
+            DP-->>-Order: 전송 완료
+        else 전송 실패
+            DP-->>Order: 전송 실패
+            Note over Order: 재시도 큐에 추가
+        end
+    end
+
 ## 인기상품 조회
+
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant Statistics as Statistics Domain
     participant Cache as Cache
     participant DB as Database
-    
+
         Note over C,DB: 7. 인기 상품 조회
         C->>Statistics: 인기 상품 조회 요청
-    
+
         Statistics->>Cache: 인기 상품 캐시 조회
         alt 캐시 히트
             Cache->>Statistics: 캐시된 인기 상품 반환
             Statistics->>C: 인기 상품 조회 성공 {popularProducts: [productId, name, totalSales]}
         else 캐시 미스
             Statistics->>DB: 최근 3일간 상위 5개 상품 통계 조회
-    
+
             alt 데이터베이스 오류
                 DB->>Statistics: 데이터베이스 연결 실패
                 Statistics->>C: 시스템 오류 {message: "일시적인 오류가 발생했습니다"}
