@@ -242,35 +242,7 @@ sequenceDiagram
 
     Order->>C: 주문 성공 응답
 ```
-
 ---
-
-## 주문완료 후 주문정보 데이터 플랫폼 전송
-
-sequenceDiagram
-participant Order as Order Domain
-participant DB as Database
-participant Event as ORDER_HISTORY_EVENT
-participant DP as DataPlatform
-
-    Note over Order, DP: 주문 완료 후 이벤트 처리
-    Order->>Order: 주문 트랜잭션 완료
-    Order->>+Event: 주문 이벤트 데이터 생성
-    Event->>Event: JSON payload 구성
-    Event->>+DB: ORDER_HISTORY_EVENT 저장
-    DB-->>-Event: 이벤트 저장 완료
-    Event-->>-Order: 이벤트 생성 완료
-
-    par 비동기 데이터 전송
-        Order->>+DP: 주문 데이터 전송 (비동기)
-        alt 전송 성공
-            DP-->>-Order: 전송 완료
-        else 전송 실패
-            DP-->>Order: 전송 실패
-            Note over Order: 재시도 큐에 추가
-        end
-    end
-
 ## 인기상품 조회
 
 ```mermaid
