@@ -171,48 +171,6 @@ stateDiagram-v2
     note right of CreatingUserCoupon : 원자적 처리, 트랜잭션 보장
 ```
 
-## 8️⃣ 통계 업데이트 상태 다이어그램
-
-```mermaid
-stateDiagram-v2
-    [*] --> StatUpdateRequested : 통계 업데이트 요청
-
-    StatUpdateRequested --> UpdatingDailyStat : 일별 통계 업데이트
-
-    UpdatingDailyStat --> StatUpdateCompleted : 업데이트 성공
-    UpdatingDailyStat --> StatUpdateFailed : 업데이트 실패
-
-    StatUpdateFailed --> QueueForRetry : 재시도 큐에 추가
-    QueueForRetry --> UpdatingDailyStat : 재시도
-
-    StatUpdateCompleted --> UpdatingCache : 캐시 무효화
-    UpdatingCache --> [*]
-
-    note right of UpdatingDailyStat : UPSERT 방식, product_id + date 기준
-    note right of QueueForRetry : 비동기 재처리, 별도 배치 작업
-```
-
-## 9️⃣ 캐시 관리 상태 다이어그램
-
-```mermaid
-stateDiagram-v2
-    [*] --> CacheEmpty : 캐시 없음
-
-    CacheEmpty --> CacheLoading : 데이터 로딩 시작
-    CacheLoading --> CacheHit : 로딩 완료
-    CacheLoading --> CacheLoadFailed : 로딩 실패
-
-    CacheHit --> CacheExpired : TTL 만료
-    CacheHit --> CacheInvalidated : 수동 무효화
-
-    CacheExpired --> CacheEmpty : 캐시 제거
-    CacheInvalidated --> CacheEmpty : 캐시 제거
-    CacheLoadFailed --> CacheEmpty : 재시도 대기
-
-    note right of CacheHit : 상품 목록 TTL 5분
-    note right of CacheInvalidated : 데이터 변경 시 즉시 무효화
-```
-
 ## 상태 다이어그램 설명
 
 ### 주요 특징
