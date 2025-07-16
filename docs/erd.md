@@ -44,7 +44,7 @@ erDiagram
     ORDER {
         BIGINT id PK
         BIGINT _user_id_      "FK → User"
-        BIGINT _coupon_id_    "FK → UserCoupon (nullable)"
+        BIGINT _user_coupon_id_    "FK → UserCoupon (nullable)"
         INT total_price
         INT discounted_price
         ENUM status "PENDING/VALIDATING/PROCESSING/COMPLETED/CANCELLED"
@@ -61,11 +61,12 @@ erDiagram
         INT total_price
     }
 
+    %% 🔥 로그성 테이블: 주문 이력 이벤트 (INSERT ONLY, 이벤트 소싱)
     ORDER_HISTORY_EVENT {
-        BIGINT id PK
+        BIGINT id PK "로그 고유 ID (불변)"
         BIGINT _order_id_ "FK → Order"
-        JSON payload "Event data structure"
-        DATETIME sent_at
+        JSON payload "Event data structure (이벤트 소싱)"
+        DATETIME sent_at "로그 생성 시점 (INSERT ONLY)"
     }
 
 
@@ -105,25 +106,17 @@ erDiagram
         INT discountAmount "Discount amount applied"
     }
 
+    %% 🔥 로그성 테이블: 사용자 잔액 거래 내역 (INSERT ONLY, 감사 추적)
     USER_BALANCE_TX {
-        BIGINT id PK
+        BIGINT id PK "거래 로그 고유 ID (불변)"
         BIGINT _user_id_        "FK → User"
         ENUM  tx_type           "DEPOSIT/PAYMENT/REFUND"
-        INT   amount            "양수=증가, 음수=감소"
+        INT   amount            "양수=증가, 음수=감소 (로그성 기록)"
         BIGINT related_order_id "nullable, FK → Order"
         ENUM status "PENDING/PROCESSING/COMPLETED/FAILED"
-        VARCHAR memo            "optional"
-        DATETIME created_at
-        DATETIME updated_at
-    }
-
-    CART_ITEM {
-        BIGINT id PK
-        BIGINT _user_id_    "FK → User"
-        BIGINT _product_id_ "FK → Product"
-        INT quantity
-        INT price_snapshot
-        DATETIME added_at
+        VARCHAR memo            "optional (거래 메모)"
+        DATETIME created_at     "거래 로그 생성 시점 (INSERT ONLY)"
+        DATETIME updated_at     "상태 변경 시점"
     }
 
     PRODUCT_STAT {
@@ -145,8 +138,6 @@ erDiagram
     "ORDER" ||--o{ USER_BALANCE_TX   : "creates payment tx"
 
     %% Optional relations
-    USER ||--o{ CART_ITEM : "has cart"
-    PRODUCT ||--o{ CART_ITEM : "in cart"
     PRODUCT ||--o{ PRODUCT_STAT : "aggregates"
 
     %% JSON 스키마 관계 (논리적 관계)
@@ -154,4 +145,19 @@ erDiagram
     ORDER_EVENT_PAYLOAD_SCHEMA ||--|| ORDER_DETAILS_SCHEMA : "orderDetails object"
     ORDER_EVENT_PAYLOAD_SCHEMA ||--|| COUPON_INFO_SCHEMA : "couponInfo object"
     ORDER_DETAILS_SCHEMA ||--o{ ORDER_ITEM_SCHEMA : "items array"
+
+    %% ==========================================
+    %% 🔥 로그성 테이블 특성 설명
+    %% ==========================================
+    %% ORDER_HISTORY_EVENT:
+    %%   - INSERT ONLY (수정/삭제 금지)
+    %%   - 이벤트 소싱 패턴 적용
+    %%   - 외부 데이터 플랫폼 전송용
+    %%   - 주문 상태 변화 완전 추적
+    %%
+    %% USER_BALANCE_TX:
+    %%   - INSERT ONLY (수정/삭제 금지)
+    %%   - 모든 잔액 변동 기록
+    %%   - 감사 추적 및 무결성 보장
+    %%   - 잔액 계산 검증용
 ```

@@ -1,3 +1,5 @@
+## 잔액 충전
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -15,7 +17,7 @@ sequenceDiagram
             User->>Balance: 잔액 충전 요청(userId, amount)
 
             alt 사용자 존재하지 않음
-                Balance->>DB: 사용자 조회
+                Balance->>DB: 사용자의 잔액 조회
                 DB->>Balance: 사용자 없음
                 Balance->>User: 사용자 존재하지 않음 예외
                 User->>C: 사용자 없음 오류 {message: "사용자를 찾을 수 없습니다"}
@@ -30,9 +32,12 @@ sequenceDiagram
                 User->>C: 충전 성공 {userId, newBalance, transactionId}
             end
         end
+
 ```
 
 ---
+
+## 잔액 조회
 
 ```mermaid
 sequenceDiagram
@@ -64,6 +69,8 @@ sequenceDiagram
 ```
 
 ---
+
+## 상품 조회
 
 ```mermaid
 sequenceDiagram
@@ -99,6 +106,8 @@ sequenceDiagram
 ```
 
 ---
+
+## 선착순 쿠폰 발급
 
 ```mermaid
 sequenceDiagram
@@ -159,6 +168,8 @@ sequenceDiagram
 
 ---
 
+## 쿠폰 조회
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -189,6 +200,8 @@ sequenceDiagram
 ```
 
 ---
+
+## 주문/ 결제
 
 ```mermaid
 sequenceDiagram
@@ -225,14 +238,14 @@ sequenceDiagram
     end
 
     Order->>DB: 주문 상태 COMPLETED
-    Order->>Event: 이벤트 데이터 생성
-    Event->>DB: ORDER_HISTORY_EVENT 저장
-    DB-->>Event: 이벤트 저장 완료
-    Event-->>Order: 이벤트 생성 완료
 
     Order->>Order: @Transactional 커밋
 
     par 비동기 후처리
+        Order->>Event: 로그성 데이터 생성 (비동기)
+        Event->>DB: ORDER_HISTORY_EVENT 저장
+        Note over Event: 로그 실패해도 주문은 성공
+    and
         Order->>DP: 주문 데이터 전송 (비동기)
         Note over DP: Mock API 또는 외부 시스템
     and
@@ -242,7 +255,9 @@ sequenceDiagram
 
     Order->>C: 주문 성공 응답
 ```
+
 ---
+
 ## 인기상품 조회
 
 ```mermaid
