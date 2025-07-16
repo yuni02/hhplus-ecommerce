@@ -88,18 +88,17 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING : 거래 요청 생성
-
     PENDING --> PROCESSING : 거래 처리 시작
-
+    
     PROCESSING --> COMPLETED : 거래 성공
     PROCESSING --> FAILED : 거래 실패
-
+    
     COMPLETED --> [*]
     FAILED --> [*]
-
+    
     note right of PENDING : 거래 대기 상태, 초기 생성 시점
     note right of PROCESSING : 거래 처리 중, 잔액 업데이트 진행
-    note right of COMPLETED : 거래 완료 - DEPOSIT: 잔액 증가, PAYMENT: 잔액 차감
+    note right of COMPLETED : 거래 완료 - DEPOSIT 잔액 증가, PAYMENT 잔액 차감
     note right of FAILED : 거래 실패, 잔액 부족 등의 이유
 ```
 
