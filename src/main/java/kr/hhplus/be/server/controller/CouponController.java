@@ -21,29 +21,6 @@ public class CouponController {
     }
 
     /**
-     * 발급 가능한 쿠폰 조회 API
-     */
-    @GetMapping
-    public ResponseEntity<?> getAvailableCoupons() {
-        try {
-            List<CouponResponse> coupons = dummyDataService.getAvailableCoupons();
-
-            if (coupons.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "현재 발급 가능한 쿠폰이 없습니다.",
-                        "coupons", coupons));
-            }
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "발급 가능한 쿠폰 조회 성공",
-                    "coupons", coupons));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "쿠폰 조회 중 오류가 발생했습니다."));
-        }
-    }
-
-    /**
      * 쿠폰 발급 API (선착순)
      */
     @PostMapping("/{id}/issue")
@@ -121,37 +98,6 @@ public class CouponController {
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "보유 쿠폰 조회 중 오류가 발생했습니다."));
-        }
-    }
-
-    /**
-     * 쿠폰 생성 API (관리자)
-     */
-    @PostMapping
-    public ResponseEntity<?> createCoupon(@RequestBody CouponRequest request) {
-        try {
-            // 입력값 검증
-            if (request.getName() == null || request.getName().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "쿠폰명은 필수입니다."));
-            }
-            if (request.getDiscountAmount() == null || request.getDiscountAmount() <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "할인 금액은 양수여야 합니다."));
-            }
-            if (request.getTotalQuantity() == null || request.getTotalQuantity() <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "총 발급 수량은 양수여야 합니다."));
-            }
-
-            CouponResponse coupon = dummyDataService.createCoupon(
-                    request.getName(),
-                    request.getDiscountAmount(),
-                    request.getTotalQuantity());
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "쿠폰이 성공적으로 생성되었습니다.",
-                    "coupon", coupon));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "쿠폰 생성 중 오류가 발생했습니다."));
         }
     }
 

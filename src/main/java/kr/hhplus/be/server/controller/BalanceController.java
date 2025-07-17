@@ -73,34 +73,4 @@ public class BalanceController {
         }
     }
 
-    /**
-     * 잔액 거래 내역 조회 API
-     */
-    @GetMapping("/balance/history")
-    public ResponseEntity<?> getBalanceHistory(@RequestParam Long userId) {
-        try {
-            // 입력값 검증
-            if (userId == null || userId <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자 ID입니다."));
-            }
-
-            // 사용자 존재 확인
-            if (dummyDataService.getUser(userId) == null) {
-                return ResponseEntity.badRequest().body(Map.of("message", "사용자를 찾을 수 없습니다."));
-            }
-
-            BalanceHistoryResponse response = dummyDataService.getBalanceHistory(userId);
-
-            if (response.getTransactions().isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "거래 내역이 없습니다.",
-                        "history", response));
-            }
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "거래 내역 조회 중 오류가 발생했습니다."));
-        }
-    }
 }
