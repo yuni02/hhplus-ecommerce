@@ -1,16 +1,22 @@
 package kr.hhplus.be.server.controller;
 
 import kr.hhplus.be.server.dto.request.BalanceChargeRequest;
-import kr.hhplus.be.server.dto.response.BalanceHistoryResponse;
+// import kr.hhplus.be.server.dto.response.BalanceHistoryResponse; 
 import kr.hhplus.be.server.dto.response.BalanceResponse;
 import kr.hhplus.be.server.service.DummyDataService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Balance", description = "사용자 잔액 관리 API")
 public class BalanceController {
 
     private final DummyDataService dummyDataService;
@@ -23,7 +29,15 @@ public class BalanceController {
      * 잔액 조회 API
      */
     @GetMapping("/balance")
-    public ResponseEntity<?> getBalance(@RequestParam Long userId) {
+    @Operation(summary = "잔액 조회", description = "사용자의 현재 잔액을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    public ResponseEntity<?> getBalance(
+            @Parameter(description = "사용자 ID", required = true, example = "1")
+            @RequestParam Long userId) {
         try {
             // 입력값 검증
             if (userId == null || userId <= 0) {
@@ -46,6 +60,12 @@ public class BalanceController {
      * 잔액 충전 API
      */
     @PostMapping("/balance/charge")
+    @Operation(summary = "잔액 충전", description = "사용자의 잔액을 충전합니다. (최대 1,000,000원)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "충전 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     public ResponseEntity<?> chargeBalance(@RequestBody BalanceChargeRequest request) {
         try {
             // 입력값 검증
