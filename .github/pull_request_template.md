@@ -1,62 +1,37 @@
-# [STEP-3] 이커머스 시스템 설계 - 요구사항 정의 및 시스템 아키텍처 설계
+## **커밋 링크**
+- 7개의 api에 대한 mock api 작성 : [e6f34](https://github.com/yuni02/hhplus-ecommerce/commit/e6f34c9d45a6d2d6e764850ccea9663be6f53eb1)
+- 스웨거주석 추가로 api 테스트 화면 나오게 함  : [d49e9](https://github.com/yuni02/hhplus-ecommerce/commit/e6f34c9d45a6d2d6e764850ccea9663be6f53eb1)
 
 ## 참고 자료
-
-- [이커머스 과제 요구사항](https://github.com/hhplus-backend/ecommerce)
+- [이커머스 과제 요구사항](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/%EC%9A%94%EA%B5%AC%EC%82%AC%ED%95%AD.md)
 - [시퀀스 다이어그램 참고 문서](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/sequence_diagram.md)
 - [ERD 설계 가이드](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/erd.md)
 
 ## PR 설명
+### 작업 내용
+- 이커머스 7개 주요 API에 대한 Mock API 구현
+- Swagger 문서 작성으로 API 스펙 정의
+- Spring Boot 3.4 + springdoc-openapi를 활용한 API 문서화
 
-- 시퀀스 다이어그램 작성 : [b582e1f](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/sequence_diagram.md)
-- erd 작성: [8508aba](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/erd.md)
-- 요구사항 작성:[e927f2a](https://github.com/yuni02/hhplus-ecommerce/blob/step3/docs/요구사항.md)
+### 구현된 API 목록
+- 상품 목록 조회 API
+- 보유 쿠폰 목록 조회 API
+- 선착순 쿠폰 발급 API
+- 주문 및 결재 생성 API
+- 상위 상품 조회 API
+- 잔액 충전 API
+- 잔액 조회 API
 
+### 주요 변경사항
+- Mock 데이터 구조 정의
+- 공통 응답 형태 표준화
+- 에러 코드 정의
+- API 문서 자동화 설정
+-
 ## 리뷰 포인트
-
-1. **기능적 요구사항의 완성도**: 실제 이커머스 시스템에 필요한 핵심 기능들이 모두 포함되었는지 검토해주세요
-2. **시퀀스 다이어그램의 적절성**: 기술적 계층 분리가 적절하고, Redis 사용 기준이 합리적인지 검토해주세요
-3. **동시성 제어 전략**: 선착순 쿠폰 발급과 재고 관리에서의 분산락 사용 전략이 적절한지 의견 부탁드립니다
-4. **ERD 설계**: 상태 컬럼 추가와 테이블 관계 설계가 비즈니스 로직을 잘 반영하는지 확인해주세요
+- API 설명(description)이 개발자가 바로 이해할 수 있을 정도로 상세한지
+- ERD 및 Sequence Diagram과 API 스펙이 일치하는지 확인
 
 ## Definition of Done (DoD)
-
-### 요구사항 정의
-
-- [x] 기능적 요구사항 정의 완료 (사용자, 상품, 쿠폰, 주문, 통계 도메인)
-- [x] 비기능적 요구사항 정의 완료 (성능, 확장성, 일관성 요구사항)
-- [x] 기술적 제약사항 명시 완료 (동시성 제어, 캐싱, 비동기 처리)
-- [x] API 명세 목록 정의 완료 (총 18개 API)
-
-### 시스템 설계
-
-- [x] 기술적 계층 기준 시퀀스 다이어그램 작성 완료
-  - 잔액 조회/충전 API (2개)
-  - 상품 조회 API (1개)
-  - 선착순 쿠폰 발급 API (1개)
-  - 주문/결제 API (1개)
-  - 인기 상품 조회 API (1개)
-- [x] 상태 다이어그램 작성 완료 (주문, 상품, 쿠폰, 거래, 동시성 제어)
-- [x] ERD 설계 완료 (상태 컬럼 포함, 8개 테이블)
-
-### 아키텍처 검증
-
-- [x] Redis 분산락을 통한 동시성 제어 방안 설계
-- [x] 캐싱 전략 수립 (상품 정보, 인기 상품 목록)
-- [x] 비동기 처리 범위 정의 (외부 시스템 연동, 통계 업데이트)
-- [x] 복잡성 최소화 원칙 적용 (Kafka 제거, 단순한 구조 채택)
-
-### 기술 스택 결정
-
-- [x] 데이터베이스: MySQL (트랜잭션 보장)
-- [x] 캐시: Redis (분산락, 캐싱)
-- [x] 프레임워크: Spring Boot (예정)
-- [ ] TODO - 메시징: 대용량 처리 필요 시 Kafka 도입 검토 (현재는 단순 비동기 처리로 충분)
-
-### 문서화
-
-- [x] 요구사항 정의서 작성 완료
-- [x] 시퀀스 다이어그램 문서화 완료 (Mermaid 형식)
-- [x] 상태 다이어그램 문서화 완료
-- [x] ERD 문서화 완료 (상태 컬럼 포함)
-- [ ] TODO - API 명세서 상세 작성 (구현 단계에서 Swagger로 작성 예정)
+    - [x] 7개의 API에 대한 MOCK API 작성
+    - [x] 7개의 API에 대한 스웨거 문서 작성 (코드 주석으로 완성)
