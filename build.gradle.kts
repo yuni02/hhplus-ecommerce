@@ -47,7 +47,13 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:mysql")
+	testImplementation("org.mockito:mockito-core")
+	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<JavaCompile> {
+	options.compilerArgs.add("-parameters")
 }
 
 tasks.withType<Test> {
