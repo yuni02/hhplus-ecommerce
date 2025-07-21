@@ -2,7 +2,6 @@ package kr.hhplus.be.server.coupon.domain;
 
 import kr.hhplus.be.server.shared.domain.BaseEntity;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class UserCoupon extends BaseEntity {

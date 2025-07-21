@@ -1,18 +1,17 @@
 package kr.hhplus.be.server.order.application;
 
-import kr.hhplus.be.server.balance.application.ChargeBalanceUseCase;
-import kr.hhplus.be.server.balance.domain.Balance;
-import kr.hhplus.be.server.coupon.application.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.domain.UserCoupon;
+import kr.hhplus.be.server.balance.domain.BalanceService;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderDomainService;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.OrderRepository;
+import kr.hhplus.be.server.order.domain.OrderService;
+import kr.hhplus.be.server.order.domain.OrderValidationResult;
 import kr.hhplus.be.server.product.domain.Product;
-import kr.hhplus.be.server.product.domain.ProductDomainService;
-import kr.hhplus.be.server.product.domain.ProductRepository;
-import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.domain.UserRepository;
+import kr.hhplus.be.server.product.domain.ProductService;
+import kr.hhplus.be.server.product.domain.ProductValidationResult;
+import kr.hhplus.be.server.product.domain.StockDeductResult;
+import kr.hhplus.be.server.balance.domain.BalanceDeductResult;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,26 +29,26 @@ import java.util.Optional;
 public class CreateOrderUseCase {
 
     private final OrderRepository orderRepository;
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
-    private final ChargeBalanceUseCase chargeBalanceUseCase;
+    private final OrderService orderService;
+    private final ProductService productService;
+    private final BalanceService balanceService;
 
     public CreateOrderUseCase(OrderRepository orderRepository,
-                             ProductRepository productRepository,
-                             UserRepository userRepository,
-                             ChargeBalanceUseCase chargeBalanceUseCase) {
+                             OrderService orderService,
+                             ProductService productService,
+                             BalanceService balanceService) {
         this.orderRepository = orderRepository;
-        this.productRepository = productRepository;
-        this.userRepository = userRepository;
-        this.chargeBalanceUseCase = chargeBalanceUseCase;
+        this.orderService = orderService;
+        this.productService = productService;
+        this.balanceService = balanceService;
     }
 
     @Transactional
     public Output execute(Input input) {
-        // 1. 사용자 검증
-        Optional<User> userOpt = userRepository.findById(input.userId);
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+        // 1. 주문 생성 검증
+        OrderValidationResult validationResult = orderService.validateOrderCreation(input.userId, null);
+        if (!validationResult.isValid()) {
+            throw new IllegalArgumentException(validationResult.getErrorMessage());
         }
 
         // 2. 상품 검증 및 주문 아이템 생성
@@ -57,22 +56,13 @@ public class CreateOrderUseCase {
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (OrderItemInput itemInput : input.orderItems) {
-            Optional<Product> productOpt = productRepository.findById(itemInput.productId);
-            if (productOpt.isEmpty()) {
-                throw new IllegalArgumentException("존재하지 않는 상품입니다: " + itemInput.productId);
+            // 상품 검증
+            ProductValidationResult productValidation = productService.validateProduct(itemInput.productId, itemInput.quantity);
+            if (!productValidation.isValid()) {
+                throw new IllegalArgumentException(productValidation.getErrorMessage());
             }
 
-            Product product = productOpt.get();
-            
-            // 상품 유효성 검증
-            if (!ProductDomainService.isValidProduct(product)) {
-                throw new IllegalArgumentException("유효하지 않은 상품입니다: " + product.getName());
-            }
-
-            // 재고 검증
-            if (!ProductDomainService.hasSufficientStock(product, itemInput.quantity)) {
-                throw new IllegalArgumentException("재고가 부족합니다: " + product.getName());
-            }
+            Product product = productValidation.getProduct();
 
             // 주문 아이템 생성
             OrderItem orderItem = OrderDomainService.createOrderItem(
@@ -87,19 +77,24 @@ public class CreateOrderUseCase {
             totalAmount = totalAmount.add(orderItem.getTotalPrice());
 
             // 재고 차감
-            ProductDomainService.decreaseStock(product, itemInput.quantity);
-            productRepository.save(product);
+            StockDeductResult stockResult = productService.deductStock(itemInput.productId, itemInput.quantity);
+            if (!stockResult.isSuccess()) {
+                throw new IllegalArgumentException(stockResult.getErrorMessage());
+            }
         }
 
         // 3. 쿠폰 할인 적용 (실제로는 쿠폰 도메인과 연동 필요)
         BigDecimal discountedAmount = totalAmount;
         if (input.userCouponId != null) {
             // 쿠폰 할인 로직은 별도 구현 필요
-            // discountedAmount = OrderDomainService.applyCouponDiscount(totalAmount, discountAmount);
+            // discountedAmount = orderService.applyCouponDiscount(totalAmount, discountAmount);
         }
 
         // 4. 잔액 차감
-        ChargeBalanceUseCase.Output balanceOutput = chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(input.userId, discountedAmount));
+        BalanceDeductResult balanceResult = balanceService.deductBalance(input.userId, discountedAmount);
+        if (!balanceResult.isSuccess()) {
+            throw new IllegalArgumentException(balanceResult.getErrorMessage());
+        }
 
         // 5. 주문 생성
         Order order = OrderDomainService.createOrder(input.userId, items, totalAmount, input.userCouponId);

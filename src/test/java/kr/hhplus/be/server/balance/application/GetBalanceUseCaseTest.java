@@ -2,6 +2,7 @@ package kr.hhplus.be.server.balance.application;
 
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceRepository;
+import kr.hhplus.be.server.balance.domain.BalanceService;
 import kr.hhplus.be.server.user.domain.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,11 +27,14 @@ class GetBalanceUseCaseTest {
     @Mock
     private UserRepository userRepository;
 
-    private GetBalanceUseCase getBalanceUseCase;
+    @Mock
+    private BalanceService balanceService;
+
+    private GetBalanceUseCase getBalanceUseCase;    
 
     @BeforeEach
     void setUp() {
-        getBalanceUseCase = new GetBalanceUseCase(balanceRepository, userRepository);
+        getBalanceUseCase = new GetBalanceUseCase(balanceService);   
     }
 
     @Test

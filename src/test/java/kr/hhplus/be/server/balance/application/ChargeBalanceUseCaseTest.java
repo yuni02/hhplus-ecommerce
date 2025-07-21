@@ -2,6 +2,7 @@ package kr.hhplus.be.server.balance.application;
 
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceRepository;
+import kr.hhplus.be.server.balance.domain.BalanceService;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
 import kr.hhplus.be.server.balance.domain.BalanceTransactionRepository;
 import kr.hhplus.be.server.user.domain.UserRepository;
@@ -34,12 +35,14 @@ class ChargeBalanceUseCaseTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private BalanceService balanceService;
+
     private ChargeBalanceUseCase chargeBalanceUseCase;
 
     @BeforeEach
     void setUp() {
-        chargeBalanceUseCase = new ChargeBalanceUseCase(
-                balanceRepository, transactionRepository, userRepository);
+        chargeBalanceUseCase = new ChargeBalanceUseCase(balanceService);        
     }
 
     @Test

@@ -2,6 +2,8 @@ package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.ProductRepository;
+import kr.hhplus.be.server.product.domain.ProductService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,11 +26,14 @@ class GetProductDetailUseCaseTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private ProductService productService;
+
     private GetProductDetailUseCase getProductDetailUseCase;
 
     @BeforeEach
     void setUp() {
-        getProductDetailUseCase = new GetProductDetailUseCase(productRepository);
+        getProductDetailUseCase = new GetProductDetailUseCase(productService);  
     }
 
     @Test
@@ -42,7 +47,7 @@ class GetProductDetailUseCaseTest {
         product.setCreatedAt(LocalDateTime.now().minusDays(1));
         product.setUpdatedAt(LocalDateTime.now());
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productService.findById(productId)).thenReturn(Optional.of(product));
 
         // when
         Optional<GetProductDetailUseCase.Output> result = getProductDetailUseCase.execute(

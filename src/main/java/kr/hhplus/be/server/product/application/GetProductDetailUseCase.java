@@ -1,7 +1,6 @@
 package kr.hhplus.be.server.product.application;
 
-import kr.hhplus.be.server.product.domain.Product;
-import kr.hhplus.be.server.product.domain.ProductRepository;
+import kr.hhplus.be.server.product.domain.ProductService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -14,24 +13,23 @@ import java.util.Optional;
 @Component
 public class GetProductDetailUseCase {
 
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
-    public GetProductDetailUseCase(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public GetProductDetailUseCase(ProductService productService) {
+        this.productService = productService;
     }
 
     public Optional<Output> execute(Input input) {
-        Optional<Product> productOpt = productRepository.findById(input.productId);
-        
-        return productOpt.map(product -> new Output(
-            product.getId(),
-            product.getName(),
-            product.getCurrentPrice().intValue(),
-            product.getStock(),
-            product.getStatus().name(),
-            product.getCreatedAt(),
-            product.getUpdatedAt()
-        ));
+        return productService.findById(input.productId)
+                .map(product -> new Output(
+                    product.getId(),
+                    product.getName(),
+                    product.getCurrentPrice().intValue(),
+                    product.getStock(),
+                    product.getStatus().name(),
+                    product.getCreatedAt(),
+                    product.getUpdatedAt()
+                ));
     }
 
     public static class Input {

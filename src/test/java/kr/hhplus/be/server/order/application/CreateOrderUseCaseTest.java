@@ -2,10 +2,14 @@ package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.balance.application.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.domain.Balance;
+import kr.hhplus.be.server.balance.domain.BalanceChargeResult;
+import kr.hhplus.be.server.balance.domain.BalanceService;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderRepository;
+import kr.hhplus.be.server.order.domain.OrderService;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.ProductRepository;
+import kr.hhplus.be.server.product.domain.ProductService;
 import kr.hhplus.be.server.user.domain.User;
 import kr.hhplus.be.server.user.domain.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,14 +44,19 @@ class CreateOrderUseCaseTest {
     private UserRepository userRepository;
 
     @Mock
-    private ChargeBalanceUseCase chargeBalanceUseCase;
+    private OrderService orderService;  
+
+    @Mock
+    private ProductService productService;
+
+    @Mock
+    private BalanceService balanceService;      
 
     private CreateOrderUseCase createOrderUseCase;
 
     @BeforeEach
     void setUp() {
-        createOrderUseCase = new CreateOrderUseCase(
-                orderRepository, productRepository, userRepository, chargeBalanceUseCase);
+        createOrderUseCase = new CreateOrderUseCase(orderRepository, orderService, productService, balanceService);      
     }
 
     @Test
@@ -79,7 +88,7 @@ class CreateOrderUseCaseTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenReturn(product);
-        when(chargeBalanceUseCase.execute(any(ChargeBalanceUseCase.Input.class))).thenReturn(new ChargeBalanceUseCase.Output(userId, balance.getAmount(), 1L));
+        when(balanceService.chargeBalance(userId, balance.getAmount())).thenReturn(BalanceChargeResult.success(userId, balance.getAmount(), 1L));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         // when
@@ -90,7 +99,7 @@ class CreateOrderUseCaseTest {
         verify(userRepository).findById(userId);
         verify(productRepository).findById(productId);
         verify(productRepository).save(any(Product.class));
-        verify(chargeBalanceUseCase).execute(any(ChargeBalanceUseCase.Input.class));
+        verify(balanceService).chargeBalance(userId, balance.getAmount());
         verify(orderRepository).save(any(Order.class));
     }
 
@@ -114,7 +123,7 @@ class CreateOrderUseCaseTest {
                 .hasMessage("사용자를 찾을 수 없습니다.");
 
         verify(userRepository).findById(userId);
-        verifyNoInteractions(productRepository, chargeBalanceUseCase, orderRepository);
+        verifyNoInteractions(productRepository, balanceService, orderRepository);
     }
 
     @Test
@@ -142,7 +151,7 @@ class CreateOrderUseCaseTest {
 
         verify(userRepository).findById(userId);
         verify(productRepository).findById(productId);
-        verifyNoInteractions(chargeBalanceUseCase, orderRepository);
+        verifyNoInteractions(balanceService, orderRepository);    
     }
 
     @Test
@@ -174,8 +183,8 @@ class CreateOrderUseCaseTest {
 
         verify(userRepository).findById(userId);
         verify(productRepository).findById(productId);
-        verifyNoInteractions(chargeBalanceUseCase, orderRepository);
-    }
+        verifyNoInteractions(balanceService, orderRepository);
+    }           
 
     @Test
     @DisplayName("비활성 상품으로 주문 시 예외 발생")
@@ -206,7 +215,7 @@ class CreateOrderUseCaseTest {
 
         verify(userRepository).findById(userId);
         verify(productRepository).findById(productId);
-        verifyNoInteractions(chargeBalanceUseCase, orderRepository);
+        verifyNoInteractions(balanceService, orderRepository);    
     }
 
     @Test
@@ -245,7 +254,7 @@ class CreateOrderUseCaseTest {
         when(productRepository.findById(productId1)).thenReturn(Optional.of(product1));
         when(productRepository.findById(productId2)).thenReturn(Optional.of(product2));
         when(productRepository.save(any(Product.class))).thenReturn(product1, product2);
-        when(chargeBalanceUseCase.execute(any(ChargeBalanceUseCase.Input.class))).thenReturn(new ChargeBalanceUseCase.Output(userId, balance.getAmount(), 1L));
+        when(balanceService.chargeBalance(userId, balance.getAmount())).thenReturn(BalanceChargeResult.success(userId, balance.getAmount(), 1L));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         // when
@@ -257,7 +266,7 @@ class CreateOrderUseCaseTest {
         verify(productRepository).findById(productId1);
         verify(productRepository).findById(productId2);
         verify(productRepository, times(2)).save(any(Product.class));
-        verify(chargeBalanceUseCase).execute(any(ChargeBalanceUseCase.Input.class));
+        verify(balanceService).chargeBalance(userId, balance.getAmount());
         verify(orderRepository).save(any(Order.class));
     }
 } 

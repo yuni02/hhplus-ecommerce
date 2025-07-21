@@ -1,11 +1,7 @@
 package kr.hhplus.be.server.balance.application;
 
-import kr.hhplus.be.server.balance.domain.Balance;
-import kr.hhplus.be.server.balance.domain.BalanceDomainService;
-import kr.hhplus.be.server.balance.domain.BalanceRepository;
-import kr.hhplus.be.server.balance.domain.BalanceTransaction;
-import kr.hhplus.be.server.balance.domain.BalanceTransactionRepository;
-import kr.hhplus.be.server.user.domain.UserRepository;
+import kr.hhplus.be.server.balance.domain.BalanceService;
+import kr.hhplus.be.server.balance.domain.BalanceChargeResult;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,54 +13,21 @@ import java.math.BigDecimal;
 @Component
 public class ChargeBalanceUseCase {
 
-    private final BalanceRepository balanceRepository;
-    private final BalanceTransactionRepository transactionRepository;
-    private final UserRepository userRepository;
+    private final BalanceService balanceService;
 
-    public ChargeBalanceUseCase(BalanceRepository balanceRepository,
-                               BalanceTransactionRepository transactionRepository,
-                               UserRepository userRepository) {
-        this.balanceRepository = balanceRepository;
-        this.transactionRepository = transactionRepository;
-        this.userRepository = userRepository;
+    public ChargeBalanceUseCase(BalanceService balanceService) {
+        this.balanceService = balanceService;
     }
 
     public Output execute(Input input) {
-        // 사용자 존재 확인
-        if (!userRepository.existsById(input.userId)) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+        // BalanceService를 통한 잔액 충전
+        BalanceChargeResult result = balanceService.chargeBalance(input.userId, input.amount);
+        
+        if (!result.isSuccess()) {
+            throw new IllegalArgumentException(result.getErrorMessage());
         }
-
-        // 잔액 조회 또는 생성
-        Balance balance = balanceRepository.findActiveBalanceByUserId(input.userId)
-                .orElseGet(() -> {
-                    Balance newBalance = new Balance(input.userId);
-                    return balanceRepository.save(newBalance);
-                });
-
-        // 도메인 서비스를 통한 잔액 충전
-        balance = BalanceDomainService.chargeBalance(balance, input.amount);
-
-        // 거래 기록 생성
-        BalanceTransaction transaction = BalanceDomainService.createTransaction(
-                input.userId, input.amount, BalanceTransaction.TransactionType.CHARGE, "잔액 충전");
-        transaction = transactionRepository.save(transaction);
-
-        try {
-            // 잔액 저장
-            balance = balanceRepository.save(balance);
-
-            // 거래 완료 처리
-            transaction = BalanceDomainService.completeTransaction(transaction);
-            transactionRepository.save(transaction);
-
-            return new Output(balance.getUserId(), balance.getAmount(), transaction.getId());
-        } catch (Exception e) {
-            // 실패 시 거래 실패 처리
-            transaction = BalanceDomainService.failTransaction(transaction);
-            transactionRepository.save(transaction);
-            throw e;
-        }
+        
+        return new Output(result.getUserId(), result.getNewBalance(), result.getTransactionId());
     }
 
     public static class Input {
