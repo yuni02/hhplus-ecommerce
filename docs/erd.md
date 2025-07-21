@@ -61,7 +61,7 @@ erDiagram
         INT total_price
     }
 
-    %% 🔥 로그성 테이블: 주문 이력 이벤트 (INSERT ONLY, 이벤트 소싱)
+%% 로그성 테이블: 주문 이력 이벤트 (INSERT ONLY, 이벤트 소싱)
     ORDER_HISTORY_EVENT {
         BIGINT id PK "로그 고유 ID (불변)"
         BIGINT _order_id_ "FK → Order"
@@ -70,7 +70,7 @@ erDiagram
     }
 
 
-    %% JSON 페이로드 구조 스키마 (문서화 목적)
+%% JSON 페이로드 구조 스키마 (문서화 목적)
     ORDER_EVENT_PAYLOAD_SCHEMA {
         STRING eventType "ORDER_COMPLETED/CANCELLED/REFUNDED"
         DATETIME timestamp "Event occurrence time"
@@ -82,7 +82,7 @@ erDiagram
         JSON refundInfo "For refunded orders only"
     }
 
-    %% orderDetails 객체 구조
+%% orderDetails 객체 구조
     ORDER_DETAILS_SCHEMA {
         INT totalAmount "Total order amount"
         INT discountAmount "Applied discount amount"
@@ -90,7 +90,7 @@ erDiagram
         JSON items "Array of order items"
     }
 
-    %% orderDetails.items 배열 구조
+%% orderDetails.items 배열 구조
     ORDER_ITEM_SCHEMA {
         BIGINT productId "Product ID"
         STRING productName "Product name"
@@ -99,14 +99,14 @@ erDiagram
         INT totalPrice "Total price for this item"
     }
 
-    %% couponInfo 객체 구조
+%% couponInfo 객체 구조
     COUPON_INFO_SCHEMA {
         BIGINT couponId "Coupon ID"
         STRING couponName "Coupon name"
         INT discountAmount "Discount amount applied"
     }
 
-    %% 🔥 로그성 테이블: 사용자 잔액 거래 내역 (INSERT ONLY, 감사 추적)
+%% 🔥 로그성 테이블: 사용자 잔액 거래 내역 (INSERT ONLY, 감사 추적)
     USER_BALANCE_TX {
         BIGINT id PK "거래 로그 고유 ID (불변)"
         BIGINT _user_id_        "FK → User"
@@ -126,7 +126,7 @@ erDiagram
         INT revenue
     }
 
-    %% 관계 정의
+%% 관계 정의
     USER ||--o{ USER_BALANCE_TX : "has tx"
     USER ||--o{ "ORDER"         : places
     USER ||--o{ USER_COUPON     : owns
@@ -137,27 +137,13 @@ erDiagram
     "ORDER" ||--o{ ORDER_HISTORY_EVENT : emits
     "ORDER" ||--o{ USER_BALANCE_TX   : "creates payment tx"
 
-    %% Optional relations
+%% Optional relations
     PRODUCT ||--o{ PRODUCT_STAT : "aggregates"
 
-    %% JSON 스키마 관계 (논리적 관계)
+%% JSON 스키마 관계 (논리적 관계)
     ORDER_HISTORY_EVENT ||--|| ORDER_EVENT_PAYLOAD_SCHEMA : "payload structure"
     ORDER_EVENT_PAYLOAD_SCHEMA ||--|| ORDER_DETAILS_SCHEMA : "orderDetails object"
     ORDER_EVENT_PAYLOAD_SCHEMA ||--|| COUPON_INFO_SCHEMA : "couponInfo object"
     ORDER_DETAILS_SCHEMA ||--o{ ORDER_ITEM_SCHEMA : "items array"
 
-    %% ==========================================
-    %% 🔥 로그성 테이블 특성 설명
-    %% ==========================================
-    %% ORDER_HISTORY_EVENT:
-    %%   - INSERT ONLY (수정/삭제 금지)
-    %%   - 이벤트 소싱 패턴 적용
-    %%   - 외부 데이터 플랫폼 전송용
-    %%   - 주문 상태 변화 완전 추적
-    %%
-    %% USER_BALANCE_TX:
-    %%   - INSERT ONLY (수정/삭제 금지)
-    %%   - 모든 잔액 변동 기록
-    %%   - 감사 추적 및 무결성 보장
-    %%   - 잔액 계산 검증용
 ```
