@@ -11,7 +11,7 @@ import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.ProductService;
 import kr.hhplus.be.server.product.domain.ProductValidationResult;
 import kr.hhplus.be.server.product.domain.StockDeductResult;
-import kr.hhplus.be.server.balance.domain.BalanceDeductResult;
+import kr.hhplus.be.server.balance.domain.BalanceDeductResult;         
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
