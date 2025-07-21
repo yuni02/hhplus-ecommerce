@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.product.application.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -80,4 +80,4 @@ public class ProductResponse {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-}
+} 

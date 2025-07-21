@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.product.application.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -126,4 +126,4 @@ public class PopularProductStatsResponse {
     public void setRank(Integer rank) {
         this.rank = rank;
     }
-}
+} 

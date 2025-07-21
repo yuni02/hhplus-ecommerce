@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.request;
+package kr.hhplus.be.server.coupon.application.dto.request;
 
 public class CouponRequest {
     private String name;
@@ -37,4 +37,4 @@ public class CouponRequest {
     public void setTotalQuantity(Integer totalQuantity) {
         this.totalQuantity = totalQuantity;
     }
-}
+} 

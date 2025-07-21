@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.order.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -173,4 +173,4 @@ public class OrderResponse {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}
+} 

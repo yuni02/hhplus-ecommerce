@@ -65,10 +65,10 @@ class ChargeBalanceUseCaseTest {
         when(transactionRepository.save(any(BalanceTransaction.class))).thenReturn(transaction);
 
         // when
-        Balance result = chargeBalanceUseCase.execute(userId, chargeAmount);
+        ChargeBalanceUseCase.Output result = chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(userId, chargeAmount));
 
         // then
-        assertThat(result.getAmount()).isEqualTo(BigDecimal.valueOf(15000));
+        assertThat(result.getBalance()).isEqualTo(BigDecimal.valueOf(15000));
         verify(userRepository).existsById(userId);
         verify(balanceRepository).findActiveBalanceByUserId(userId);
         verify(balanceRepository).save(any(Balance.class));
@@ -98,10 +98,10 @@ class ChargeBalanceUseCaseTest {
         when(transactionRepository.save(any(BalanceTransaction.class))).thenReturn(transaction);
 
         // when
-        Balance result = chargeBalanceUseCase.execute(userId, chargeAmount);
+        ChargeBalanceUseCase.Output result = chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(userId, chargeAmount));
 
         // then
-        assertThat(result.getAmount()).isEqualTo(chargeAmount);
+        assertThat(result.getBalance()).isEqualTo(chargeAmount);
         verify(userRepository).existsById(userId);
         verify(balanceRepository).findActiveBalanceByUserId(userId);
         verify(balanceRepository, times(2)).save(any(Balance.class));
@@ -118,7 +118,7 @@ class ChargeBalanceUseCaseTest {
         when(userRepository.existsById(userId)).thenReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> chargeBalanceUseCase.execute(userId, chargeAmount))
+        assertThatThrownBy(() -> chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(userId, chargeAmount)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
 
@@ -149,7 +149,7 @@ class ChargeBalanceUseCaseTest {
         when(transactionRepository.save(any(BalanceTransaction.class))).thenReturn(transaction);
 
         // when & then
-        assertThatThrownBy(() -> chargeBalanceUseCase.execute(userId, chargeAmount))
+        assertThatThrownBy(() -> chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(userId, chargeAmount)))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Database error");
 

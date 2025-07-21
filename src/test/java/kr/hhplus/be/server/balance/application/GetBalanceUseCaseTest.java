@@ -47,11 +47,11 @@ class GetBalanceUseCaseTest {
                 .thenReturn(Optional.of(balance));
 
         // when
-        Optional<Balance> result = getBalanceUseCase.execute(userId);
+        Optional<GetBalanceUseCase.Output> result = getBalanceUseCase.execute(new GetBalanceUseCase.Input(userId));
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getAmount()).isEqualTo(BigDecimal.valueOf(15000));
+        assertThat(result.get().getBalance()).isEqualTo(BigDecimal.valueOf(15000));
         verify(userRepository).existsById(userId);
         verify(balanceRepository).findActiveBalanceByUserId(userId);
     }
@@ -65,10 +65,11 @@ class GetBalanceUseCaseTest {
         when(userRepository.existsById(userId)).thenReturn(false);
 
         // when
-        Optional<Balance> result = getBalanceUseCase.execute(userId);
+        Optional<GetBalanceUseCase.Output> result = getBalanceUseCase.execute(new GetBalanceUseCase.Input(userId));
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(result).isPresent();     
+        assertThat(result.get().getBalance()).isEqualTo(BigDecimal.ZERO);
         verify(userRepository).existsById(userId);
         verifyNoInteractions(balanceRepository);
     }
@@ -84,7 +85,7 @@ class GetBalanceUseCaseTest {
                 .thenReturn(Optional.empty());
 
         // when
-        Optional<Balance> result = getBalanceUseCase.execute(userId);
+        Optional<GetBalanceUseCase.Output> result = getBalanceUseCase.execute(new GetBalanceUseCase.Input(userId));
 
         // then
         assertThat(result).isEmpty();

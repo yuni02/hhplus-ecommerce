@@ -72,25 +72,25 @@ class CreateOrderUseCaseTest {
         Order order = new Order(userId, Arrays.asList(), BigDecimal.valueOf(20000), userCouponId);
         order.setId(1L);
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId, quantity)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId, quantity)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenReturn(product);
-        when(chargeBalanceUseCase.execute(eq(userId), any(BigDecimal.class))).thenReturn(balance);
+        when(chargeBalanceUseCase.execute(any(ChargeBalanceUseCase.Input.class))).thenReturn(new ChargeBalanceUseCase.Output(userId, balance.getAmount(), 1L));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         // when
-        Order result = createOrderUseCase.execute(userId, orderItems, userCouponId);
+        CreateOrderUseCase.Output result = createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, userCouponId));
 
         // then
         assertThat(result).isNotNull();
         verify(userRepository).findById(userId);
         verify(productRepository).findById(productId);
         verify(productRepository).save(any(Product.class));
-        verify(chargeBalanceUseCase).execute(eq(userId), any(BigDecimal.class));
+        verify(chargeBalanceUseCase).execute(any(ChargeBalanceUseCase.Input.class));
         verify(orderRepository).save(any(Order.class));
     }
 
@@ -102,14 +102,14 @@ class CreateOrderUseCaseTest {
         Long productId = 1L;
         Integer quantity = 2;
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId, quantity)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId, quantity)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> createOrderUseCase.execute(userId, orderItems, null))
+        assertThatThrownBy(() -> createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
 
@@ -128,15 +128,15 @@ class CreateOrderUseCaseTest {
         User user = new User("사용자1", "user1@test.com");
         user.setId(userId);
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId, quantity)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId, quantity)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> createOrderUseCase.execute(userId, orderItems, null))
+        assertThatThrownBy(() -> createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("존재하지 않는 상품입니다: " + productId);
 
@@ -160,15 +160,15 @@ class CreateOrderUseCaseTest {
         product.setId(productId);
         product.setStatus(Product.ProductStatus.ACTIVE);
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId, quantity)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId, quantity)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
         // when & then
-        assertThatThrownBy(() -> createOrderUseCase.execute(userId, orderItems, null))
+        assertThatThrownBy(() -> createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("재고가 부족합니다: " + product.getName());
 
@@ -192,15 +192,15 @@ class CreateOrderUseCaseTest {
         product.setId(productId);
         product.setStatus(Product.ProductStatus.INACTIVE);
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId, quantity)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId, quantity)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
         // when & then
-        assertThatThrownBy(() -> createOrderUseCase.execute(userId, orderItems, null))
+        assertThatThrownBy(() -> createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 상품입니다: " + product.getName());
 
@@ -236,20 +236,20 @@ class CreateOrderUseCaseTest {
         Order order = new Order(userId, Arrays.asList(), BigDecimal.valueOf(40000), null);
         order.setId(1L);
 
-        List<CreateOrderUseCase.OrderItemRequest> orderItems = Arrays.asList(
-                new CreateOrderUseCase.OrderItemRequest(productId1, quantity1),
-                new CreateOrderUseCase.OrderItemRequest(productId2, quantity2)
+        List<CreateOrderUseCase.OrderItemInput> orderItems = Arrays.asList(
+                new CreateOrderUseCase.OrderItemInput(productId1, quantity1),
+                new CreateOrderUseCase.OrderItemInput(productId2, quantity2)
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId1)).thenReturn(Optional.of(product1));
         when(productRepository.findById(productId2)).thenReturn(Optional.of(product2));
         when(productRepository.save(any(Product.class))).thenReturn(product1, product2);
-        when(chargeBalanceUseCase.execute(eq(userId), any(BigDecimal.class))).thenReturn(balance);
+        when(chargeBalanceUseCase.execute(any(ChargeBalanceUseCase.Input.class))).thenReturn(new ChargeBalanceUseCase.Output(userId, balance.getAmount(), 1L));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         // when
-        Order result = createOrderUseCase.execute(userId, orderItems, null);
+        CreateOrderUseCase.Output result = createOrderUseCase.execute(new CreateOrderUseCase.Input(userId, orderItems, null));
 
         // then
         assertThat(result).isNotNull();
@@ -257,7 +257,7 @@ class CreateOrderUseCaseTest {
         verify(productRepository).findById(productId1);
         verify(productRepository).findById(productId2);
         verify(productRepository, times(2)).save(any(Product.class));
-        verify(chargeBalanceUseCase).execute(eq(userId), any(BigDecimal.class));
+        verify(chargeBalanceUseCase).execute(any(ChargeBalanceUseCase.Input.class));
         verify(orderRepository).save(any(Order.class));
     }
 } 

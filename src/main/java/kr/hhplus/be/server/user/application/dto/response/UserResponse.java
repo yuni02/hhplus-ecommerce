@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.user.application.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -59,4 +59,4 @@ public class UserResponse {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}
+} 

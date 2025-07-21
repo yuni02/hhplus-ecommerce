@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.request;
+package kr.hhplus.be.server.order.application.dto.request;
 
 import java.util.List;
 
@@ -68,4 +68,4 @@ public class OrderRequest {
     public void setUserCouponId(Long userCouponId) {
         this.userCouponId = userCouponId;
     }
-}
+} 

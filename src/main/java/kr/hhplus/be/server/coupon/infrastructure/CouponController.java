@@ -1,9 +1,7 @@
 package kr.hhplus.be.server.coupon.infrastructure;
 
-import kr.hhplus.be.server.dto.response.UserCouponResponse;
 import kr.hhplus.be.server.coupon.application.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.GetUserCouponsUseCase;
-import kr.hhplus.be.server.coupon.domain.UserCoupon;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,9 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/coupons")
@@ -23,11 +19,14 @@ public class CouponController {
 
     private final IssueCouponUseCase issueCouponUseCase;
     private final GetUserCouponsUseCase getUserCouponsUseCase;
+    private final CouponAdapter couponAdapter;
 
-    public CouponController(IssueCouponUseCase issueCouponUseCase, 
-                           GetUserCouponsUseCase getUserCouponsUseCase) {
+    public CouponController(IssueCouponUseCase issueCouponUseCase,
+            GetUserCouponsUseCase getUserCouponsUseCase,
+            CouponAdapter couponAdapter) {
         this.issueCouponUseCase = issueCouponUseCase;
         this.getUserCouponsUseCase = getUserCouponsUseCase;
+        this.couponAdapter = couponAdapter;
     }
 
     /**
@@ -42,33 +41,11 @@ public class CouponController {
     })
     public ResponseEntity<?> issueCoupon(
             @Parameter(description = "쿠폰 ID", required = true, example = "1") @PathVariable Long id,
-            @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam Long userId) {
+            @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam(required = true) Long userId) {
         try {
-            // 입력값 검증
-            if (id == null || id <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 쿠폰 ID입니다."));
-            }
-            if (userId == null || userId <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자 ID입니다."));
-            }
-
-            UserCoupon userCoupon = issueCouponUseCase.execute(userId, id);
-
-            // 임시로 간단한 응답 생성 (실제로는 쿠폰 정보도 필요)
-            UserCouponResponse response = new UserCouponResponse(
-                    userCoupon.getId(),
-                    userCoupon.getCouponId(),
-                    "쿠폰", // 실제로는 쿠폰 정보에서 가져와야 함
-                    1000, // 실제로는 쿠폰 정보에서 가져와야 함
-                    userCoupon.getStatus().name(),
-                    userCoupon.getIssuedAt(),
-                    userCoupon.getUsedAt()
-            );
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "쿠폰이 성공적으로 발급되었습니다.",
-                    "userCoupon", response));
-
+            IssueCouponUseCase.Input input = couponAdapter.adaptIssueRequest(id, userId);
+            IssueCouponUseCase.Output output = issueCouponUseCase.execute(input);
+            return ResponseEntity.ok(couponAdapter.adaptIssueResponse(output));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (IllegalStateException e) {
@@ -91,39 +68,13 @@ public class CouponController {
     public ResponseEntity<?> getUserCoupons(
             @Parameter(description = "사용자 ID", required = true, example = "1") @PathVariable Long userId) {
         try {
-            // 입력값 검증
-            if (userId == null || userId <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자 ID입니다."));
-            }
-
-            List<UserCoupon> userCoupons = getUserCouponsUseCase.execute(userId);
-
-            List<UserCouponResponse> responses = userCoupons.stream()
-                    .map(uc -> new UserCouponResponse(
-                            uc.getId(),
-                            uc.getCouponId(),
-                            "쿠폰", // 실제로는 쿠폰 정보에서 가져와야 함
-                            1000, // 실제로는 쿠폰 정보에서 가져와야 함
-                            uc.getStatus().name(),
-                            uc.getIssuedAt(),
-                            uc.getUsedAt()
-                    ))
-                    .collect(Collectors.toList());
-
-            if (responses.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "보유한 쿠폰이 없습니다.",
-                        "userCoupons", responses));
-            }
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "보유 쿠폰 조회 성공",
-                    "userCoupons", responses));
-
+            GetUserCouponsUseCase.Input input = couponAdapter.adaptGetUserCouponsRequest(userId);
+            GetUserCouponsUseCase.Output output = getUserCouponsUseCase.execute(input);
+            return ResponseEntity.ok(couponAdapter.adaptGetUserCouponsResponse(output));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "보유 쿠폰 조회 중 오류가 발생했습니다."));
         }
     }
-} 
+}

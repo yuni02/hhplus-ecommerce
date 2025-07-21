@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.request;
+package kr.hhplus.be.server.product.application.dto.request;
 
 public class ProductRequest {
     private String name;
@@ -37,4 +37,4 @@ public class ProductRequest {
     public void setStock(Integer stock) {
         this.stock = stock;
     }
-}
+} 

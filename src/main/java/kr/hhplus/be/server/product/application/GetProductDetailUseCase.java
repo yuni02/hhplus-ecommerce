@@ -5,58 +5,48 @@ import kr.hhplus.be.server.product.domain.ProductRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
- * 상품 목록 조회 UseCase
+ * 상품 상세 조회 UseCase
  * 외부 의존성 없이 도메인 서비스만 호출
  */
 @Component
-public class GetAllProductsUseCase {
+public class GetProductDetailUseCase {
 
     private final ProductRepository productRepository;
 
-    public GetAllProductsUseCase(ProductRepository productRepository) {
+    public GetProductDetailUseCase(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
-    public Output execute(Input input) {
-        List<Product> products = productRepository.findAllActive();
+    public Optional<Output> execute(Input input) {
+        Optional<Product> productOpt = productRepository.findById(input.productId);
         
-        List<ProductOutput> productOutputs = products.stream()
-                .map(product -> new ProductOutput(
-                    product.getId(),
-                    product.getName(),
-                    product.getCurrentPrice().intValue(),
-                    product.getStock(),
-                    product.getStatus().name(),
-                    product.getCreatedAt(),
-                    product.getUpdatedAt()
-                ))
-                .collect(Collectors.toList());
-        
-        return new Output(productOutputs);
+        return productOpt.map(product -> new Output(
+            product.getId(),
+            product.getName(),
+            product.getCurrentPrice().intValue(),
+            product.getStock(),
+            product.getStatus().name(),
+            product.getCreatedAt(),
+            product.getUpdatedAt()
+        ));
     }
 
     public static class Input {
-        // 현재는 파라미터가 없지만, 향후 필터링이나 페이징 등을 위해 유지
-        public Input() {}
+        private final Long productId;
+
+        public Input(Long productId) {
+            this.productId = productId;
+        }
+
+        public Long getProductId() {
+            return productId;
+        }
     }
 
     public static class Output {
-        private final List<ProductOutput> products;
-
-        public Output(List<ProductOutput> products) {
-            this.products = products;
-        }
-
-        public List<ProductOutput> getProducts() {
-            return products;
-        }
-    }
-
-    public static class ProductOutput {
         private final Long id;
         private final String name;
         private final Integer currentPrice;
@@ -65,8 +55,8 @@ public class GetAllProductsUseCase {
         private final LocalDateTime createdAt;
         private final LocalDateTime updatedAt;
 
-        public ProductOutput(Long id, String name, Integer currentPrice, Integer stock,
-                           String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        public Output(Long id, String name, Integer currentPrice, Integer stock,
+                     String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
             this.id = id;
             this.name = name;
             this.currentPrice = currentPrice;
@@ -104,4 +94,4 @@ public class GetAllProductsUseCase {
             return updatedAt;
         }
     }
-}
+} 

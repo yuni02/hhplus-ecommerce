@@ -1,10 +1,7 @@
 package kr.hhplus.be.server.balance.infrastructure;
 
-import kr.hhplus.be.server.dto.request.BalanceChargeRequest;
-import kr.hhplus.be.server.dto.response.BalanceResponse;
 import kr.hhplus.be.server.balance.application.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.GetBalanceUseCase;
-import kr.hhplus.be.server.balance.domain.Balance;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,17 +46,16 @@ public class BalanceController {
                 return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자 ID입니다."));
             }
 
-            var balanceOpt = getBalanceUseCase.execute(userId);
+            var balanceOpt = getBalanceUseCase.execute(new GetBalanceUseCase.Input(userId));
             if (balanceOpt.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "사용자를 찾을 수 없습니다."));
             }
 
-            Balance balance = balanceOpt.get();
-            BalanceResponse response = new BalanceResponse();
-            response.setUserId(balance.getUserId());
-            response.setBalance(balance.getAmount().intValue());
-
-            return ResponseEntity.ok(response);
+            GetBalanceUseCase.Output output = balanceOpt.get();
+            return ResponseEntity.ok(Map.of(
+                "userId", output.getUserId(),
+                "balance", output.getBalance()
+            ));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "잔액 조회 중 오류가 발생했습니다."));
@@ -76,28 +72,33 @@ public class BalanceController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    public ResponseEntity<?> chargeBalance(@RequestBody BalanceChargeRequest request) {
+    public ResponseEntity<?> chargeBalance(@RequestBody Map<String, Object> request) {
         try {
             // 입력값 검증
-            if (request.getUserId() == null || request.getUserId() <= 0) {
+            Long userId = Long.valueOf(request.get("userId").toString());
+            Integer amount = Integer.valueOf(request.get("amount").toString());
+            
+            if (userId == null || userId <= 0) {
                 return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자 ID입니다."));
             }
-            if (request.getAmount() == null || request.getAmount() <= 0) {
+            if (amount == null || amount <= 0) {
                 return ResponseEntity.badRequest().body(Map.of("message", "충전 금액은 양수여야 합니다."));
             }
-            if (request.getAmount() > 1000000) {
+            if (amount > 1000000) {
                 return ResponseEntity.badRequest().body(Map.of("message", "1회 최대 충전 금액은 1,000,000원입니다."));
             }
 
-            Balance balance = chargeBalanceUseCase.execute(request.getUserId(), BigDecimal.valueOf(request.getAmount()));
-            
-            BalanceResponse response = new BalanceResponse();
-            response.setUserId(balance.getUserId());
-            response.setBalance(balance.getAmount().intValue());
+            ChargeBalanceUseCase.Input input = new ChargeBalanceUseCase.Input(
+                userId, 
+                BigDecimal.valueOf(amount)
+            );
+            ChargeBalanceUseCase.Output output = chargeBalanceUseCase.execute(input);
 
             return ResponseEntity.ok(Map.of(
                     "message", "잔액 충전이 완료되었습니다.",
-                    "balance", response));
+                    "userId", output.getUserId(),
+                    "balance", output.getBalance(),
+                    "transactionId", output.getTransactionId()));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

@@ -5,6 +5,7 @@ import kr.hhplus.be.server.balance.domain.BalanceRepository;
 import kr.hhplus.be.server.user.domain.UserRepository;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 /**
@@ -22,12 +23,43 @@ public class GetBalanceUseCase {
         this.userRepository = userRepository;
     }
 
-    public Optional<Balance> execute(Long userId) {
+    public Optional<Output> execute(Input input) {
         // 사용자 존재 확인
-        if (!userRepository.existsById(userId)) {
+        if (!userRepository.existsById(input.userId)) {
             return Optional.empty();
         }
         
-        return balanceRepository.findActiveBalanceByUserId(userId);
+        return balanceRepository.findActiveBalanceByUserId(input.userId)
+                .map(balance -> new Output(balance.getUserId(), balance.getAmount()));
+    }
+
+    public static class Input {
+        private final Long userId;
+
+        public Input(Long userId) {
+            this.userId = userId;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+    }
+
+    public static class Output {
+        private final Long userId;
+        private final BigDecimal balance;
+
+        public Output(Long userId, BigDecimal balance) {
+            this.userId = userId;
+            this.balance = balance;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public BigDecimal getBalance() {
+            return balance;
+        }
     }
 } 

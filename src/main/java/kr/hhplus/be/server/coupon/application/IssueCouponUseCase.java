@@ -8,6 +8,8 @@ import kr.hhplus.be.server.coupon.domain.UserCouponRepository;
 import kr.hhplus.be.server.user.domain.UserRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 /**
  * 쿠폰 발급 UseCase
  * 외부 의존성 없이 도메인 서비스만 호출
@@ -27,19 +29,19 @@ public class IssueCouponUseCase {
         this.userRepository = userRepository;
     }
 
-    public UserCoupon execute(Long userId, Long couponId) {
+    public Output execute(Input input) {
         // 사용자 존재 확인
-        if (!userRepository.existsById(userId)) {
+        if (!userRepository.existsById(input.userId)) {
             throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
         }
 
         // 쿠폰 존재 확인
-        Coupon coupon = couponRepository.findById(couponId)
+        Coupon coupon = couponRepository.findById(input.couponId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰입니다."));
 
         // 중복 발급 확인
-        if (CouponDomainService.isAlreadyIssued(userId, couponId, 
-                userCouponRepository.existsByUserIdAndCouponId(userId, couponId))) {
+        if (CouponDomainService.isAlreadyIssued(input.userId, input.couponId, 
+                userCouponRepository.existsByUserIdAndCouponId(input.userId, input.couponId))) {
             throw new IllegalArgumentException("이미 발급받은 쿠폰입니다.");
         }
 
@@ -53,7 +55,85 @@ public class IssueCouponUseCase {
         couponRepository.save(coupon);
 
         // 사용자 쿠폰 생성
-        UserCoupon userCoupon = CouponDomainService.createUserCoupon(userId, couponId);
-        return userCouponRepository.save(userCoupon);
+        UserCoupon userCoupon = CouponDomainService.createUserCoupon(input.userId, input.couponId);
+        userCoupon = userCouponRepository.save(userCoupon);
+
+        return new Output(
+            userCoupon.getId(),
+            userCoupon.getCouponId(),
+            coupon.getName(),
+            coupon.getDiscountAmount().intValue(),
+            userCoupon.getStatus().name(),
+            userCoupon.getIssuedAt(),
+            userCoupon.getUsedAt()
+        );
+    }
+
+    public static class Input {
+        private final Long userId;
+        private final Long couponId;
+
+        public Input(Long userId, Long couponId) {
+            this.userId = userId;
+            this.couponId = couponId;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public Long getCouponId() {
+            return couponId;
+        }
+    }
+
+    public static class Output {
+        private final Long userCouponId;
+        private final Long couponId;
+        private final String couponName;
+        private final Integer discountAmount;
+        private final String status;
+        private final LocalDateTime issuedAt;
+        private final LocalDateTime usedAt;
+
+        public Output(Long userCouponId, Long couponId, String couponName,
+                     Integer discountAmount, String status,
+                     LocalDateTime issuedAt, LocalDateTime usedAt) {
+            this.userCouponId = userCouponId;
+            this.couponId = couponId;
+            this.couponName = couponName;
+            this.discountAmount = discountAmount;
+            this.status = status;
+            this.issuedAt = issuedAt;
+            this.usedAt = usedAt;
+        }
+
+        public Long getUserCouponId() {
+            return userCouponId;
+        }
+
+        public Long getCouponId() {
+            return couponId;
+        }
+
+        public String getCouponName() {
+            return couponName;
+        }
+
+        public Integer getDiscountAmount() {
+            return discountAmount;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public LocalDateTime getIssuedAt() {
+            return issuedAt;
+        }
+
+        public LocalDateTime getUsedAt() {
+            return usedAt;
+        }
     }
 } 

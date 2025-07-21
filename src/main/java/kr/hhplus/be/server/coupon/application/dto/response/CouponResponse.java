@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.coupon.application.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -80,4 +80,4 @@ public class CouponResponse {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}
+} 

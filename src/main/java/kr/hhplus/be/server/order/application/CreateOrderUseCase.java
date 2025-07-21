@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -44,9 +45,9 @@ public class CreateOrderUseCase {
     }
 
     @Transactional
-    public Order execute(Long userId, List<OrderItemRequest> orderItems, Long userCouponId) {
+    public Output execute(Input input) {
         // 1. 사용자 검증
-        Optional<User> userOpt = userRepository.findById(userId);
+        Optional<User> userOpt = userRepository.findById(input.userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
         }
@@ -55,10 +56,10 @@ public class CreateOrderUseCase {
         List<OrderItem> items = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        for (OrderItemRequest itemRequest : orderItems) {
-            Optional<Product> productOpt = productRepository.findById(itemRequest.getProductId());
+        for (OrderItemInput itemInput : input.orderItems) {
+            Optional<Product> productOpt = productRepository.findById(itemInput.productId);
             if (productOpt.isEmpty()) {
-                throw new IllegalArgumentException("존재하지 않는 상품입니다: " + itemRequest.getProductId());
+                throw new IllegalArgumentException("존재하지 않는 상품입니다: " + itemInput.productId);
             }
 
             Product product = productOpt.get();
@@ -69,7 +70,7 @@ public class CreateOrderUseCase {
             }
 
             // 재고 검증
-            if (!ProductDomainService.hasSufficientStock(product, itemRequest.getQuantity())) {
+            if (!ProductDomainService.hasSufficientStock(product, itemInput.quantity)) {
                 throw new IllegalArgumentException("재고가 부족합니다: " + product.getName());
             }
 
@@ -78,7 +79,7 @@ public class CreateOrderUseCase {
                     null, // orderId는 나중에 설정
                     product.getId(),
                     product.getName(),
-                    itemRequest.getQuantity(),
+                    itemInput.quantity,
                     product.getCurrentPrice()
             );
 
@@ -86,22 +87,22 @@ public class CreateOrderUseCase {
             totalAmount = totalAmount.add(orderItem.getTotalPrice());
 
             // 재고 차감
-            ProductDomainService.decreaseStock(product, itemRequest.getQuantity());
+            ProductDomainService.decreaseStock(product, itemInput.quantity);
             productRepository.save(product);
         }
 
         // 3. 쿠폰 할인 적용 (실제로는 쿠폰 도메인과 연동 필요)
         BigDecimal discountedAmount = totalAmount;
-        if (userCouponId != null) {
+        if (input.userCouponId != null) {
             // 쿠폰 할인 로직은 별도 구현 필요
             // discountedAmount = OrderDomainService.applyCouponDiscount(totalAmount, discountAmount);
         }
 
         // 4. 잔액 차감
-        Balance balance = chargeBalanceUseCase.execute(userId, discountedAmount);
+        ChargeBalanceUseCase.Output balanceOutput = chargeBalanceUseCase.execute(new ChargeBalanceUseCase.Input(input.userId, discountedAmount));
 
         // 5. 주문 생성
-        Order order = OrderDomainService.createOrder(userId, items, totalAmount, userCouponId);
+        Order order = OrderDomainService.createOrder(input.userId, items, totalAmount, input.userCouponId);
         order.setDiscountedAmount(discountedAmount);
 
         // 6. 주문 아이템에 orderId 설정
@@ -113,17 +114,62 @@ public class CreateOrderUseCase {
         OrderDomainService.completeOrder(order);
 
         // 8. 주문 저장
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+
+        // 9. Output 생성
+        List<OrderItemOutput> orderItemOutputs = new ArrayList<>();
+        for (OrderItem item : items) {
+            orderItemOutputs.add(new OrderItemOutput(
+                item.getId(),
+                item.getProductId(),
+                item.getProductName(),
+                item.getQuantity(),
+                item.getUnitPrice(),
+                item.getTotalPrice()
+            ));
+        }
+
+        return new Output(
+            order.getId(),
+            order.getUserId(),
+            order.getUserCouponId(),
+            order.getTotalAmount().intValue(),
+            order.getDiscountedAmount().intValue(),
+            order.getStatus().name(),
+            orderItemOutputs,
+            order.getCreatedAt()
+        );
     }
 
-    // 내부 DTO 클래스
-    public static class OrderItemRequest {
-        private Long productId;
-        private Integer quantity;
+    public static class Input {
+        private final Long userId;
+        private final List<OrderItemInput> orderItems;
+        private final Long userCouponId;
 
-        public OrderItemRequest() {}
+        public Input(Long userId, List<OrderItemInput> orderItems, Long userCouponId) {
+            this.userId = userId;
+            this.orderItems = orderItems;
+            this.userCouponId = userCouponId;
+        }
 
-        public OrderItemRequest(Long productId, Integer quantity) {
+        public Long getUserId() {
+            return userId;
+        }
+
+        public List<OrderItemInput> getOrderItems() {
+            return orderItems;
+        }
+
+        public Long getUserCouponId() {
+            return userCouponId;
+        }
+    }
+
+    public static class OrderItemInput {
+        private final Long productId;
+        private final Integer quantity;
+
+        public OrderItemInput(Long productId, Integer quantity) {
             this.productId = productId;
             this.quantity = quantity;
         }
@@ -132,16 +178,107 @@ public class CreateOrderUseCase {
             return productId;
         }
 
-        public void setProductId(Long productId) {
+        public Integer getQuantity() {
+            return quantity;
+        }
+    }
+
+    public static class Output {
+        private final Long id;
+        private final Long userId;
+        private final Long userCouponId;
+        private final Integer totalPrice;
+        private final Integer discountedPrice;
+        private final String status;
+        private final List<OrderItemOutput> orderItems;
+        private final LocalDateTime createdAt;
+
+        public Output(Long id, Long userId, Long userCouponId, Integer totalPrice, 
+                     Integer discountedPrice, String status, List<OrderItemOutput> orderItems, 
+                     LocalDateTime createdAt) {
+            this.id = id;
+            this.userId = userId;
+            this.userCouponId = userCouponId;
+            this.totalPrice = totalPrice;
+            this.discountedPrice = discountedPrice;
+            this.status = status;
+            this.orderItems = orderItems;
+            this.createdAt = createdAt;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public Long getUserCouponId() {
+            return userCouponId;
+        }
+
+        public Integer getTotalPrice() {
+            return totalPrice;
+        }
+
+        public Integer getDiscountedPrice() {
+            return discountedPrice;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public List<OrderItemOutput> getOrderItems() {
+            return orderItems;
+        }
+
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+    }
+
+    public static class OrderItemOutput {
+        private final Long id;
+        private final Long productId;
+        private final String productName;
+        private final Integer quantity;
+        private final BigDecimal unitPrice;
+        private final BigDecimal totalPrice;
+
+        public OrderItemOutput(Long id, Long productId, String productName, 
+                              Integer quantity, BigDecimal unitPrice, BigDecimal totalPrice) {
+            this.id = id;
             this.productId = productId;
+            this.productName = productName;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+            this.totalPrice = totalPrice;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public Long getProductId() {
+            return productId;
+        }
+
+        public String getProductName() {
+            return productName;
         }
 
         public Integer getQuantity() {
             return quantity;
         }
 
-        public void setQuantity(Integer quantity) {
-            this.quantity = quantity;
+        public BigDecimal getUnitPrice() {
+            return unitPrice;
+        }
+
+        public BigDecimal getTotalPrice() {
+            return totalPrice;
         }
     }
 } 

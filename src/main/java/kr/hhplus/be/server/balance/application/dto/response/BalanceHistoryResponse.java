@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.balance.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,4 +57,4 @@ public class BalanceHistoryResponse {
             return timestamp;
         }
     }
-}
+} 

@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.coupon.application.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -59,4 +59,4 @@ public class UserCouponResponse {
     public void setUsedAt(LocalDateTime usedAt) {
         this.usedAt = usedAt;
     }
-}
+} 

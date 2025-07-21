@@ -65,10 +65,10 @@ class IssueCouponUseCaseTest {
         when(userCouponRepository.save(any(UserCoupon.class))).thenReturn(userCoupon);
 
         // when
-        UserCoupon result = issueCouponUseCase.execute(userId, couponId);
+        IssueCouponUseCase.Output result = issueCouponUseCase.execute(new IssueCouponUseCase.Input(userId, couponId));
 
         // then
-        assertThat(result.getUserId()).isEqualTo(userId);
+        assertThat(result.getUserCouponId()).isNotNull();
         assertThat(result.getCouponId()).isEqualTo(couponId);
         verify(userRepository).existsById(userId);
         verify(couponRepository).findById(couponId);
@@ -87,7 +87,7 @@ class IssueCouponUseCaseTest {
         when(userRepository.existsById(userId)).thenReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> issueCouponUseCase.execute(userId, couponId))
+        assertThatThrownBy(() -> issueCouponUseCase.execute(new IssueCouponUseCase.Input(userId, couponId)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
 
@@ -106,7 +106,7 @@ class IssueCouponUseCaseTest {
         when(couponRepository.findById(couponId)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> issueCouponUseCase.execute(userId, couponId))
+        assertThatThrownBy(() -> issueCouponUseCase.execute(new IssueCouponUseCase.Input(userId, couponId)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("존재하지 않는 쿠폰입니다.");
 
@@ -132,7 +132,7 @@ class IssueCouponUseCaseTest {
         when(userCouponRepository.existsByUserIdAndCouponId(userId, couponId)).thenReturn(true);
 
         // when & then
-        assertThatThrownBy(() -> issueCouponUseCase.execute(userId, couponId))
+        assertThatThrownBy(() -> issueCouponUseCase.execute(new IssueCouponUseCase.Input(userId, couponId)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("이미 발급받은 쿠폰입니다.");
 
@@ -161,7 +161,7 @@ class IssueCouponUseCaseTest {
         when(userCouponRepository.existsByUserIdAndCouponId(userId, couponId)).thenReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> issueCouponUseCase.execute(userId, couponId))
+        assertThatThrownBy(() -> issueCouponUseCase.execute(new IssueCouponUseCase.Input(userId, couponId)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("쿠폰 발급이 마감되었습니다.");
 

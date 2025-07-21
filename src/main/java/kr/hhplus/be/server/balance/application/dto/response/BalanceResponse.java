@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.dto.response;
+package kr.hhplus.be.server.balance.application.dto.response;
 
 public class BalanceResponse {
     private Long userId;
@@ -42,4 +42,4 @@ public class BalanceResponse {
     public void setTransactionId(Long transactionId) {
         this.transactionId = transactionId;
     }
-}
+} 
