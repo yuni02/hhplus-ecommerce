@@ -1,22 +1,22 @@
 package kr.hhplus.be.server.balance.application.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
+
+@Schema(description = "잔액 조회 응답")
 public class BalanceResponse {
+
+    @Schema(description = "사용자 ID", example = "1")
     private Long userId;
-    private Integer balance;
-    private Long transactionId;
 
-    public BalanceResponse() {
-    }
+    @Schema(description = "현재 잔액", example = "50000")
+    private BigDecimal balance;
 
-    public BalanceResponse(Long userId, Integer balance) {
+    public BalanceResponse() {}
+
+    public BalanceResponse(Long userId, BigDecimal balance) {
         this.userId = userId;
         this.balance = balance;
-    }
-
-    public BalanceResponse(Long userId, Integer balance, Long transactionId) {
-        this.userId = userId;
-        this.balance = balance;
-        this.transactionId = transactionId;
     }
 
     public Long getUserId() {
@@ -27,19 +27,11 @@ public class BalanceResponse {
         this.userId = userId;
     }
 
-    public Integer getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 
-    public void setBalance(Integer balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
-    }
-
-    public Long getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(Long transactionId) {
-        this.transactionId = transactionId;
     }
 } 

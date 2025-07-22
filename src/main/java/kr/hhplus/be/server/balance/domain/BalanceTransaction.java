@@ -1,17 +1,23 @@
 package kr.hhplus.be.server.balance.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-public class BalanceTransaction extends BaseEntity {
+/**
+ * 잔액 거래 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class BalanceTransaction {
 
+    private Long id;
     private Long userId;
     private BigDecimal amount;
     private TransactionType type;
     private TransactionStatus status = TransactionStatus.PENDING;
     private String description;
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public BalanceTransaction() {}
 
@@ -20,6 +26,15 @@ public class BalanceTransaction extends BaseEntity {
         this.amount = amount;
         this.type = type;
         this.description = description;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getUserId() {
@@ -68,6 +83,22 @@ public class BalanceTransaction extends BaseEntity {
 
     public void setReferenceId(Long referenceId) {
         this.referenceId = referenceId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public enum TransactionType {

@@ -1,11 +1,14 @@
 package kr.hhplus.be.server.balance.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
 
-public class Balance extends BaseEntity {
+/**
+ * 잔액 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class Balance {
 
+    private Long id;
     private Long userId;
     private BigDecimal amount = BigDecimal.ZERO;
     private BalanceStatus status = BalanceStatus.ACTIVE;
@@ -14,6 +17,21 @@ public class Balance extends BaseEntity {
 
     public Balance(Long userId) {
         this.userId = userId;
+    }
+
+    public Balance(Long id, Long userId, BigDecimal amount, BalanceStatus status) {
+        this.id = id;
+        this.userId = userId;
+        this.amount = amount;
+        this.status = status;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getUserId() {
