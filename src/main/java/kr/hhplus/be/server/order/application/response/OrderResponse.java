@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.application.dto.response;
+package kr.hhplus.be.server.order.application.response;
 
 import java.time.LocalDateTime;
 import java.util.List;

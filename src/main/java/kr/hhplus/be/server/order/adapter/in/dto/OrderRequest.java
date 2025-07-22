@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.application.dto.request;
+package kr.hhplus.be.server.order.adapter.in.dto;
 
 import java.util.List;
 

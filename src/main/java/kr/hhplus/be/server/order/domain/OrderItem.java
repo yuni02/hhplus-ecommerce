@@ -1,11 +1,14 @@
 package kr.hhplus.be.server.order.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
 
-public class OrderItem extends BaseEntity {
+/**
+ * 주문 아이템 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class OrderItem {
 
+    private Long id;
     private Long orderId;
     private Long productId;
     private String productName;
@@ -22,6 +25,14 @@ public class OrderItem extends BaseEntity {
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getOrderId() {

@@ -1,14 +1,17 @@
 package kr.hhplus.be.server.order.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Order extends BaseEntity {
+/**
+ * 주문 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class Order {
 
+    private Long id;
     private Long userId;
     private List<OrderItem> orderItems = new ArrayList<>();
     private BigDecimal totalAmount;
@@ -25,6 +28,14 @@ public class Order extends BaseEntity {
         this.totalAmount = totalAmount;
         this.userCouponId = userCouponId;
         this.orderedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getUserId() {
