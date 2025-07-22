@@ -1,29 +1,43 @@
-package kr.hhplus.be.server.user.domain;
+package kr.hhplus.be.server.user.application.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
-/**
- * 사용자 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
- */
-public class User {
+@Schema(description = "사용자 응답")
+public class UserResponse {
 
+    @Schema(description = "사용자 ID", example = "1")
     private Long id;
+
+    @Schema(description = "사용자명", example = "홍길동")
     private String name;
+
+    @Schema(description = "이메일", example = "hong@example.com")
     private String email;
+
+    @Schema(description = "전화번호", example = "010-1234-5678")
     private String phoneNumber;
-    private UserStatus status = UserStatus.ACTIVE;
+
+    @Schema(description = "상태", example = "ACTIVE")
+    private String status;
+
+    @Schema(description = "생성일시")
     private LocalDateTime createdAt;
+
+    @Schema(description = "수정일시")
     private LocalDateTime updatedAt;
 
-    public User() {}
+    public UserResponse() {}
 
-    public User(String name, String email, String phoneNumber) {
+    public UserResponse(Long id, String name, String email, String phoneNumber, 
+                       String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {
@@ -58,11 +72,11 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public UserStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(UserStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -80,23 +94,5 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public boolean isActive() {
-        return status == UserStatus.ACTIVE;
-    }
-
-    public void activate() {
-        this.status = UserStatus.ACTIVE;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void deactivate() {
-        this.status = UserStatus.INACTIVE;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public enum UserStatus {
-        ACTIVE, INACTIVE, SUSPENDED
     }
 } 
