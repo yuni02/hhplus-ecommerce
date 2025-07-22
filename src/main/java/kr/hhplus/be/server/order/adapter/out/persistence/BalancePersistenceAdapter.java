@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 잔액 영속성 Adapter (Outgoing)
  */
-@Component
+@Component("orderBalancePersistenceAdapter")
 public class BalancePersistenceAdapter implements DeductBalancePort {
 
     private final Map<Long, BalanceData> balances = new ConcurrentHashMap<>();

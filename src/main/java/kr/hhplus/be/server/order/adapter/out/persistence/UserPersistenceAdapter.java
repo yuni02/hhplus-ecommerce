@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 사용자 영속성 Adapter (Outgoing)
  */
-@Component
+@Component("orderUserPersistenceAdapter")
 public class UserPersistenceAdapter implements LoadUserPort {
 
     private final Map<Long, Object> users = new ConcurrentHashMap<>();

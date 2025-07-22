@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.coupon.application.dto.request;
+package kr.hhplus.be.server.coupon.adapter.in.dto;
 
 public class CouponRequest {
     private String name;

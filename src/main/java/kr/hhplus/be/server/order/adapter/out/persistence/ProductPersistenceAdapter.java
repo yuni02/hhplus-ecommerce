@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 상품 영속성 Adapter (Outgoing)
  */
-@Component
+@Component("orderProductPersistenceAdapter")
 public class ProductPersistenceAdapter implements LoadProductPort, UpdateProductStockPort {
 
     private final Map<Long, ProductData> products = new ConcurrentHashMap<>();

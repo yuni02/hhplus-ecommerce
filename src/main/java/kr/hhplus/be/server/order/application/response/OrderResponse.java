@@ -1,105 +1,86 @@
 package kr.hhplus.be.server.order.application.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 주문 응답 DTO
- * 
- * 이 주문 데이터는 ORDER_HISTORY_EVENT 로그성 테이블에 이벤트로 기록됩니다.
- * - 주문 상태 변경 시마다 이벤트 로그 생성
- * - JSON payload로 주문 상세 정보 저장
- * - 외부 데이터 플랫폼 전송을 위한 이벤트 소싱
- */
+@Schema(description = "주문 응답")
 public class OrderResponse {
+    
+    @Schema(description = "주문 ID", example = "1")
     private Long id;
+    
+    @Schema(description = "사용자 ID", example = "1")
     private Long userId;
+    
+    @Schema(description = "사용자 쿠폰 ID", example = "1")
     private Long userCouponId;
+    
+    @Schema(description = "총 주문 금액", example = "50000")
     private Integer totalPrice;
+    
+    @Schema(description = "할인 후 금액", example = "45000")
     private Integer discountedPrice;
+    
+    @Schema(description = "주문 상태", example = "COMPLETED")
     private String status;
+    
+    @Schema(description = "주문 아이템 목록")
     private List<OrderItemResponse> orderItems;
+    
+    @Schema(description = "주문 생성일시")
     private LocalDateTime createdAt;
 
-    /**
-     * 주문 아이템 정보
-     * ORDER_HISTORY_EVENT의 JSON payload에 포함되는 데이터
-     */
     public static class OrderItemResponse {
+        @Schema(description = "주문 아이템 ID", example = "1")
         private Long id;
+        
+        @Schema(description = "상품 ID", example = "1")
         private Long productId;
+        
+        @Schema(description = "상품명", example = "상품명")
         private String productName;
+        
+        @Schema(description = "수량", example = "2")
         private Integer quantity;
-        private Integer unitPriceSnapshot; // 주문 시점의 가격 스냅샷 (로그성 데이터)
+        
+        @Schema(description = "단가", example = "10000")
+        private Integer unitPrice;
+        
+        @Schema(description = "총 가격", example = "20000")
         private Integer totalPrice;
 
-        public OrderItemResponse() {
-        }
+        public OrderItemResponse() {}
 
         public OrderItemResponse(Long id, Long productId, String productName, Integer quantity,
-                Integer unitPriceSnapshot, Integer totalPrice) {
+                               Integer unitPrice, Integer totalPrice) {
             this.id = id;
             this.productId = productId;
             this.productName = productName;
             this.quantity = quantity;
-            this.unitPriceSnapshot = unitPriceSnapshot;
+            this.unitPrice = unitPrice;
             this.totalPrice = totalPrice;
         }
 
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public Long getProductId() {
-            return productId;
-        }
-
-        public void setProductId(Long productId) {
-            this.productId = productId;
-        }
-
-        public String getProductName() {
-            return productName;
-        }
-
-        public void setProductName(String productName) {
-            this.productName = productName;
-        }
-
-        public Integer getQuantity() {
-            return quantity;
-        }
-
-        public void setQuantity(Integer quantity) {
-            this.quantity = quantity;
-        }
-
-        public Integer getUnitPriceSnapshot() {
-            return unitPriceSnapshot;
-        }
-
-        public void setUnitPriceSnapshot(Integer unitPriceSnapshot) {
-            this.unitPriceSnapshot = unitPriceSnapshot;
-        }
-
-        public Integer getTotalPrice() {
-            return totalPrice;
-        }
-
-        public void setTotalPrice(Integer totalPrice) {
-            this.totalPrice = totalPrice;
-        }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
+        public String getProductName() { return productName; }
+        public void setProductName(String productName) { this.productName = productName; }
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
+        public Integer getUnitPrice() { return unitPrice; }
+        public void setUnitPrice(Integer unitPrice) { this.unitPrice = unitPrice; }
+        public Integer getTotalPrice() { return totalPrice; }
+        public void setTotalPrice(Integer totalPrice) { this.totalPrice = totalPrice; }
     }
 
-    public OrderResponse() {
-    }
+    public OrderResponse() {}
 
-    public OrderResponse(Long id, Long userId, Long userCouponId, Integer totalPrice, Integer discountedPrice,
-            String status, List<OrderItemResponse> orderItems, LocalDateTime createdAt) {
+    public OrderResponse(Long id, Long userId, Long userCouponId, Integer totalPrice, 
+                        Integer discountedPrice, String status, List<OrderItemResponse> orderItems, 
+                        LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.userCouponId = userCouponId;
@@ -110,67 +91,20 @@ public class OrderResponse {
         this.createdAt = createdAt;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public Long getUserCouponId() {
-        return userCouponId;
-    }
-
-    public void setUserCouponId(Long userCouponId) {
-        this.userCouponId = userCouponId;
-    }
-
-    public Integer getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(Integer totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public Integer getDiscountedPrice() {
-        return discountedPrice;
-    }
-
-    public void setDiscountedPrice(Integer discountedPrice) {
-        this.discountedPrice = discountedPrice;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public List<OrderItemResponse> getOrderItems() {
-        return orderItems;
-    }
-
-    public void setOrderItems(List<OrderItemResponse> orderItems) {
-        this.orderItems = orderItems;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getUserCouponId() { return userCouponId; }
+    public void setUserCouponId(Long userCouponId) { this.userCouponId = userCouponId; }
+    public Integer getTotalPrice() { return totalPrice; }
+    public void setTotalPrice(Integer totalPrice) { this.totalPrice = totalPrice; }
+    public Integer getDiscountedPrice() { return discountedPrice; }
+    public void setDiscountedPrice(Integer discountedPrice) { this.discountedPrice = discountedPrice; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public List<OrderItemResponse> getOrderItems() { return orderItems; }
+    public void setOrderItems(List<OrderItemResponse> orderItems) { this.orderItems = orderItems; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 } 

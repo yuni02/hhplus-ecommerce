@@ -1,11 +1,11 @@
 package kr.hhplus.be.server.balance.adapter.in.web;
 
 import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceRequest;
-import kr.hhplus.be.server.balance.application.dto.response.BalanceResponse;
-import kr.hhplus.be.server.balance.application.dto.response.ChargeBalanceResponse;
-import kr.hhplus.be.server.balance.application.dto.response.ErrorResponse;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
+import kr.hhplus.be.server.balance.application.response.BalanceResponse;
+import kr.hhplus.be.server.balance.application.response.ChargeBalanceResponse;
+import kr.hhplus.be.server.balance.application.response.ErrorResponse;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -54,7 +54,7 @@ public class BalanceController {
             }
 
             GetBalanceUseCase.GetBalanceResult result = balanceOpt.get();
-            BalanceResponse response = new BalanceResponse(result.getUserId(), result.getBalance());
+            BalanceResponse response = new BalanceResponse(result.getUserId(), result.getBalance().intValue());
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
@@ -85,10 +85,9 @@ public class BalanceController {
             }
             
             ChargeBalanceResponse response = new ChargeBalanceResponse(
-                    "잔액 충전이 완료되었습니다.",
                     result.getUserId(),
-                    result.getNewBalance(),
-                    result.getTransactionId());
+                    request.getAmount(),        
+                    result.getNewBalance().intValue());
             
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

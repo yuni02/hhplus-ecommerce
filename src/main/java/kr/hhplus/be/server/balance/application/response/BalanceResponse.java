@@ -1,7 +1,6 @@
-package kr.hhplus.be.server.balance.application.dto.response;
+package kr.hhplus.be.server.balance.application.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
 
 @Schema(description = "잔액 조회 응답")
 public class BalanceResponse {
@@ -10,11 +9,11 @@ public class BalanceResponse {
     private Long userId;
 
     @Schema(description = "현재 잔액", example = "50000")
-    private BigDecimal balance;
+    private Integer balance;
 
     public BalanceResponse() {}
 
-    public BalanceResponse(Long userId, BigDecimal balance) {
+    public BalanceResponse(Long userId, Integer balance) {
         this.userId = userId;
         this.balance = balance;
     }
@@ -27,11 +26,11 @@ public class BalanceResponse {
         this.userId = userId;
     }
 
-    public BigDecimal getBalance() {
+    public Integer getBalance() {
         return balance;
     }
 
-    public void setBalance(BigDecimal balance) {
+    public void setBalance(Integer balance) {
         this.balance = balance;
     }
 } 

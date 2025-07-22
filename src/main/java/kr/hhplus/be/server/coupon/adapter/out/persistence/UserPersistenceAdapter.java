@@ -1,17 +1,16 @@
-package kr.hhplus.be.server.user.adapter.out.persistence;
+package kr.hhplus.be.server.coupon.adapter.out.persistence;
 
-import kr.hhplus.be.server.user.application.port.out.LoadUserPort;
+import kr.hhplus.be.server.coupon.application.port.out.LoadUserPort;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 사용자 영속성 Adapter (Outgoing)
+ * 사용자 영속성 Adapter (Outgoing) - Coupon 도메인용
  */
-@Component("userUserPersistenceAdapter")
+@Component("couponUserPersistenceAdapter")
 public class UserPersistenceAdapter implements LoadUserPort {
 
     private final Map<Long, UserData> users = new ConcurrentHashMap<>();
@@ -34,22 +33,6 @@ public class UserPersistenceAdapter implements LoadUserPort {
             );
             users.put(userId, user);
         }
-    }
-
-    @Override
-    public Optional<LoadUserPort.UserInfo> loadUserById(Long userId) {
-        UserData user = users.get(userId);
-        if (user == null) {
-            return Optional.empty();
-        }
-        
-        return Optional.of(new LoadUserPort.UserInfo(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhoneNumber(),
-                user.getStatus()
-        ));
     }
 
     @Override
