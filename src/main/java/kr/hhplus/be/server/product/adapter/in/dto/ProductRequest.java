@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.application.dto.request;
+package kr.hhplus.be.server.product.adapter.in.dto;
 
 public class ProductRequest {
     private String name;

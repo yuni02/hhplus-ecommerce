@@ -1,12 +1,15 @@
 package kr.hhplus.be.server.product.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class ProductStats extends BaseEntity {
+/**
+ * 상품 통계 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class ProductStats {
 
+    private Long id;
     private Long productId;
     private String productName;
     private Integer recentSalesCount; // 최근 3일간 판매량
@@ -17,6 +20,8 @@ public class ProductStats extends BaseEntity {
     private BigDecimal conversionRate; // 전환율
     private LocalDateTime lastOrderDate; // 마지막 주문일
     private LocalDateTime aggregationDate; // 집계일
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public ProductStats() {}
 
@@ -27,8 +32,17 @@ public class ProductStats extends BaseEntity {
         this.recentSalesAmount = BigDecimal.ZERO;
         this.totalSalesCount = 0;
         this.totalSalesAmount = BigDecimal.ZERO;
-        this.rank = 0;
         this.conversionRate = BigDecimal.ZERO;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getProductId() {
@@ -111,19 +125,36 @@ public class ProductStats extends BaseEntity {
         this.aggregationDate = aggregationDate;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public void addSale(Integer quantity, BigDecimal amount) {
-        this.recentSalesCount += quantity;
-        this.recentSalesAmount = this.recentSalesAmount.add(amount);
         this.totalSalesCount += quantity;
         this.totalSalesAmount = this.totalSalesAmount.add(amount);
+        this.recentSalesCount += quantity;
+        this.recentSalesAmount = this.recentSalesAmount.add(amount);
         this.lastOrderDate = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void calculateConversionRate(Integer totalViews) {
         if (totalViews > 0) {
-            this.conversionRate = BigDecimal.valueOf(totalSalesCount)
-                    .divide(BigDecimal.valueOf(totalViews), 4, BigDecimal.ROUND_HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
+            this.conversionRate = BigDecimal.valueOf(this.totalSalesCount)
+                    .divide(BigDecimal.valueOf(totalViews), 4, BigDecimal.ROUND_HALF_UP);
         }
+        this.updatedAt = LocalDateTime.now();
     }
 }

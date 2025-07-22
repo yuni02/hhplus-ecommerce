@@ -1,17 +1,23 @@
 package kr.hhplus.be.server.product.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-public class Product extends BaseEntity {
+/**
+ * 상품 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class Product {
 
+    private Long id;
     private String name;
     private String description;
     private BigDecimal currentPrice;
     private Integer stock;
     private ProductStatus status = ProductStatus.ACTIVE;
     private String category;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public Product() {}
 
@@ -21,6 +27,16 @@ public class Product extends BaseEntity {
         this.currentPrice = currentPrice;
         this.stock = stock;
         this.category = category;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -71,6 +87,22 @@ public class Product extends BaseEntity {
         this.category = category;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public boolean isActive() {
         return status == ProductStatus.ACTIVE;
     }
@@ -84,10 +116,12 @@ public class Product extends BaseEntity {
             throw new InsufficientStockException("재고가 부족합니다.");
         }
         this.stock -= quantity;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void increaseStock(Integer quantity) {
         this.stock += quantity;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public enum ProductStatus {
