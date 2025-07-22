@@ -1,17 +1,22 @@
 package kr.hhplus.be.server.coupon.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.time.LocalDateTime;
 
-public class UserCoupon extends BaseEntity {
+/**
+ * 사용자 쿠폰 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class UserCoupon {
 
+    private Long id;
     private Long userId;
     private Long couponId;
     private UserCouponStatus status = UserCouponStatus.AVAILABLE;
     private LocalDateTime issuedAt;
     private LocalDateTime usedAt;
     private Long orderId; // 사용된 주문 ID
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public UserCoupon() {}
 
@@ -19,6 +24,16 @@ public class UserCoupon extends BaseEntity {
         this.userId = userId;
         this.couponId = couponId;
         this.issuedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getUserId() {
@@ -69,17 +84,31 @@ public class UserCoupon extends BaseEntity {
         this.orderId = orderId;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public boolean isAvailable() {
         return status == UserCouponStatus.AVAILABLE;
     }
 
     public void use(Long orderId) {
-        if (!isAvailable()) {
-            throw new IllegalStateException("사용할 수 없는 쿠폰입니다.");
-        }
         this.status = UserCouponStatus.USED;
-        this.usedAt = LocalDateTime.now();
         this.orderId = orderId;
+        this.usedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public enum UserCouponStatus {

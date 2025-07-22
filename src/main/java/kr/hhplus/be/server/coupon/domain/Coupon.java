@@ -1,12 +1,15 @@
 package kr.hhplus.be.server.coupon.domain;
 
-import kr.hhplus.be.server.shared.domain.BaseEntity;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class Coupon extends BaseEntity {
+/**
+ * 쿠폰 도메인 엔티티
+ * 순수한 비즈니스 로직만 포함
+ */
+public class Coupon {
 
+    private Long id;
     private String name;
     private String description;
     private BigDecimal discountAmount;
@@ -15,6 +18,8 @@ public class Coupon extends BaseEntity {
     private CouponStatus status = CouponStatus.ACTIVE;
     private LocalDateTime validFrom;
     private LocalDateTime validTo;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public Coupon() {}
 
@@ -26,6 +31,16 @@ public class Coupon extends BaseEntity {
         this.maxIssuanceCount = maxIssuanceCount;
         this.validFrom = validFrom;
         this.validTo = validTo;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -92,15 +107,32 @@ public class Coupon extends BaseEntity {
         this.validTo = validTo;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public boolean canIssue() {
         return status == CouponStatus.ACTIVE && 
-               issuedCount < maxIssuanceCount &&
-               LocalDateTime.now().isAfter(validFrom) &&
+               issuedCount < maxIssuanceCount && 
+               LocalDateTime.now().isAfter(validFrom) && 
                LocalDateTime.now().isBefore(validTo);
     }
 
     public void incrementIssuedCount() {
         this.issuedCount++;
+        this.updatedAt = LocalDateTime.now();
         if (this.issuedCount >= this.maxIssuanceCount) {
             this.status = CouponStatus.SOLD_OUT;
         }
