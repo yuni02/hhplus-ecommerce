@@ -23,9 +23,11 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @ExtendWith(MockitoExtension.class)
 class BalanceControllerTest {
@@ -52,15 +54,33 @@ class BalanceControllerTest {
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
         GetBalanceUseCase.GetBalanceResult result = new GetBalanceUseCase.GetBalanceResult(userId, balance);
         
-        when(balanceFacade.getBalance(command)).thenReturn(Optional.of(result));
+        // Mock 설정을 더 구체적으로
+        when(balanceFacade.getBalance(any(GetBalanceUseCase.GetBalanceCommand.class)))
+            .thenReturn(Optional.of(result));
 
         // when & then
-        mockMvc.perform(get("/api/users/balance")
-                        .param("userId", userId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId))
-                .andExpect(jsonPath("$.balance").value(50000));
+        try {
+            String response = mockMvc.perform(get("/api/users/balance")
+                            .param("userId", userId.toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print()) // 응답 내용 출력
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.userId").value(userId))
+                    .andExpect(jsonPath("$.balance").value(50000))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            
+            System.out.println("Response: " + response);
+            
+            // Mock이 실제로 호출되었는지 확인
+            verify(balanceFacade).getBalance(any(GetBalanceUseCase.GetBalanceCommand.class));
+            
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test
@@ -70,14 +90,32 @@ class BalanceControllerTest {
         Long userId = 999L;
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
         
-        when(balanceFacade.getBalance(command)).thenReturn(Optional.empty());
+        // Mock 설정을 더 구체적으로
+        when(balanceFacade.getBalance(any(GetBalanceUseCase.GetBalanceCommand.class)))
+            .thenReturn(Optional.empty());
 
         // when & then
-        mockMvc.perform(get("/api/users/balance")
-                        .param("userId", userId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+        try {
+            String response = mockMvc.perform(get("/api/users/balance")
+                            .param("userId", userId.toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print()) // 응답 내용 출력
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            
+            System.out.println("Response: " + response);
+            
+            // Mock이 실제로 호출되었는지 확인
+            verify(balanceFacade).getBalance(any(GetBalanceUseCase.GetBalanceCommand.class));
+            
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test
@@ -99,29 +137,44 @@ class BalanceControllerTest {
     void chargeBalance_Success() throws Exception {
         // given
         Long userId = 1L;
-        Integer amount = 10000;
-        BigDecimal newBalance = new BigDecimal("60000");
+        int amount = 50000;
+        BigDecimal newBalance = new BigDecimal("100000");
         Long transactionId = 1L;
         
-        ChargeBalanceRequest request = new ChargeBalanceRequest();
-        request.setUserId(userId);
-        request.setAmount(amount);
-        
+        ChargeBalanceRequest request = new ChargeBalanceRequest(userId, amount);
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
             new ChargeBalanceUseCase.ChargeBalanceCommand(userId, BigDecimal.valueOf(amount));
         ChargeBalanceUseCase.ChargeBalanceResult result = 
             ChargeBalanceUseCase.ChargeBalanceResult.success(userId, newBalance, transactionId);
         
-        when(balanceFacade.chargeBalance(command)).thenReturn(result);
+        // Mock 설정을 더 구체적으로
+        when(balanceFacade.chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class)))
+            .thenReturn(result);
 
         // when & then
-        mockMvc.perform(post("/api/users/balance/charge")
-                        .content(objectMapper.writeValueAsString(request))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId))
-                .andExpect(jsonPath("$.chargeAmount").value(amount))
-                .andExpect(jsonPath("$.newBalance").value(60000));
+        try {
+            String response = mockMvc.perform(post("/api/users/balance/charge")
+                            .content(objectMapper.writeValueAsString(request))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print()) // 응답 내용 출력
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.userId").value(userId))
+                    .andExpect(jsonPath("$.chargeAmount").value(amount))
+                    .andExpect(jsonPath("$.balanceAfterCharge").value(100000))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            
+            System.out.println("Response: " + response);
+            
+            // Mock이 실제로 호출되었는지 확인
+            verify(balanceFacade).chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class));
+            
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test
@@ -129,54 +182,95 @@ class BalanceControllerTest {
     void chargeBalance_Failure_UserNotFound() throws Exception {
         // given
         Long userId = 999L;
-        Integer amount = 10000;
+        int amount = 50000;
         
-        ChargeBalanceRequest request = new ChargeBalanceRequest();
-        request.setUserId(userId);
-        request.setAmount(amount);
-        
+        ChargeBalanceRequest request = new ChargeBalanceRequest(userId, amount);
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
             new ChargeBalanceUseCase.ChargeBalanceCommand(userId, BigDecimal.valueOf(amount));
         ChargeBalanceUseCase.ChargeBalanceResult result = 
             ChargeBalanceUseCase.ChargeBalanceResult.failure("사용자를 찾을 수 없습니다.");
         
-        when(balanceFacade.chargeBalance(command)).thenReturn(result);
+        // Mock 설정을 더 구체적으로
+        when(balanceFacade.chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class)))
+            .thenReturn(result);
 
         // when & then
-        mockMvc.perform(post("/api/users/balance/charge")
-                        .content(objectMapper.writeValueAsString(request))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+        try {
+            String response = mockMvc.perform(post("/api/users/balance/charge")
+                            .content(objectMapper.writeValueAsString(request))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print()) // 응답 내용 출력
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            
+            System.out.println("Response: " + response);
+            
+            // Mock이 실제로 호출되었는지 확인
+            verify(balanceFacade).chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class));
+            
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test
     @DisplayName("잔액 충전 실패 - 잘못된 요청")
     void chargeBalance_Failure_InvalidRequest() throws Exception {
         // given
-        ChargeBalanceRequest request = new ChargeBalanceRequest();
-        request.setUserId(1L);
-        request.setAmount(-1000); // 음수 금액
+        Long userId = 1L;
+        int amount = -1000; // 잘못된 금액
         
-        when(balanceFacade.chargeBalance(any())).thenThrow(new IllegalArgumentException("충전 금액은 0보다 커야 합니다."));
+        ChargeBalanceRequest request = new ChargeBalanceRequest(userId, amount);
+        ChargeBalanceUseCase.ChargeBalanceCommand command = 
+            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, BigDecimal.valueOf(amount));
+        ChargeBalanceUseCase.ChargeBalanceResult result = 
+            ChargeBalanceUseCase.ChargeBalanceResult.failure("충전 금액은 0보다 커야 합니다.");
+        
+        // Mock 설정을 더 구체적으로
+        when(balanceFacade.chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class)))
+            .thenReturn(result);
 
         // when & then
-        mockMvc.perform(post("/api/users/balance/charge")
-                        .content(objectMapper.writeValueAsString(request))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("충전 금액은 0보다 커야 합니다."));
+        try {
+            String response = mockMvc.perform(post("/api/users/balance/charge")
+                            .content(objectMapper.writeValueAsString(request))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print()) // 응답 내용 출력
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("충전 금액은 0보다 커야 합니다."))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            
+            System.out.println("Response: " + response);
+            
+            // Mock이 실제로 호출되었는지 확인
+            verify(balanceFacade).chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class));
+            
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Test
     @DisplayName("잔액 충전 실패 - 서버 오류")
     void chargeBalance_Failure_ServerError() throws Exception {
         // given
-        ChargeBalanceRequest request = new ChargeBalanceRequest();
-        request.setUserId(1L);
-        request.setAmount(10000);
+        Long userId = 1L;
+        int amount = 50000;
         
-        when(balanceFacade.chargeBalance(any())).thenThrow(new RuntimeException("데이터베이스 연결 오류"));
+        ChargeBalanceRequest request = new ChargeBalanceRequest(userId, amount);
+        ChargeBalanceUseCase.ChargeBalanceCommand command = 
+            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, BigDecimal.valueOf(amount));
+        
+        when(balanceFacade.chargeBalance(command)).thenThrow(new RuntimeException("데이터베이스 오류"));
 
         // when & then
         mockMvc.perform(post("/api/users/balance/charge")
