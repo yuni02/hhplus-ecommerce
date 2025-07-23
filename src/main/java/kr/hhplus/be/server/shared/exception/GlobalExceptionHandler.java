@@ -3,6 +3,7 @@ package kr.hhplus.be.server.shared.exception;
 import kr.hhplus.be.server.shared.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -18,6 +19,15 @@ public class GlobalExceptionHandler {
         String message = String.format("잘못된 파라미터 형식입니다: %s", e.getName());
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(message));
+    }
+
+    /**
+     * JSON 파싱 오류 처리
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("잘못된 JSON 형식입니다."));
     }
 
     /**

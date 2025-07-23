@@ -2,7 +2,6 @@ package kr.hhplus.be.server.order.adapter.in.web;
 
 import kr.hhplus.be.server.order.application.facade.OrderFacade;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.application.response.ErrorResponse;
 import kr.hhplus.be.server.order.application.response.OrderResponse;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
 
@@ -39,48 +38,42 @@ public class OrderController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> createOrder(@Valid @RequestBody OrderRequest request) {
-        try {
-            // OrderRequest를 CreateOrderCommand로 변환
-            List<CreateOrderUseCase.OrderItemCommand> orderItemCommands = request.getOrderItems().stream()
-                    .map(item -> new CreateOrderUseCase.OrderItemCommand(item.getProductId(), item.getQuantity()))
-                    .collect(Collectors.toList());
+        
+        // OrderRequest를 CreateOrderCommand로 변환
+        List<CreateOrderUseCase.OrderItemCommand> orderItemCommands = request.getOrderItems().stream()
+                .map(item -> new CreateOrderUseCase.OrderItemCommand(item.getProductId(), item.getQuantity()))
+                .collect(Collectors.toList());
 
-            CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                    request.getUserId(), orderItemCommands, request.getUserCouponId());
+        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
+                request.getUserId(), orderItemCommands, request.getUserCouponId());
 
-            CreateOrderUseCase.CreateOrderResult result = orderFacade.createOrder(command);
+        CreateOrderUseCase.CreateOrderResult result = orderFacade.createOrder(command);
 
-            if (!result.isSuccess()) {
-                return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
-            }
-
-            // CreateOrderResult를 OrderResponse로 변환
-            List<OrderResponse.OrderItemResponse> orderItemResponses = result.getOrderItems().stream()
-                    .map(item -> new OrderResponse.OrderItemResponse(
-                            item.getId(),
-                            item.getProductId(),
-                            item.getProductName(),
-                            item.getQuantity(),
-                            item.getUnitPrice().intValue(),
-                            item.getTotalPrice().intValue()))
-                    .collect(Collectors.toList());
-
-            OrderResponse response = new OrderResponse(
-                    result.getOrderId(),
-                    result.getUserId(),
-                    result.getUserCouponId(),
-                    result.getTotalAmount().intValue(),
-                    result.getDiscountedAmount().intValue(),
-                    result.getStatus(),
-                    orderItemResponses,
-                    result.getCreatedAt());
-
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("주문 생성 중 오류가 발생했습니다: " + e.getMessage()));
+        if (!result.isSuccess()) {
+            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
         }
+
+        // CreateOrderResult를 OrderResponse로 변환
+        List<OrderResponse.OrderItemResponse> orderItemResponses = result.getOrderItems().stream()
+                .map(item -> new OrderResponse.OrderItemResponse(
+                        item.getId(),
+                        item.getProductId(),
+                        item.getProductName(),
+                        item.getQuantity(),
+                        item.getUnitPrice().intValue(),
+                        item.getTotalPrice().intValue()))
+                .collect(Collectors.toList());
+
+        OrderResponse response = new OrderResponse(
+                result.getOrderId(),
+                result.getUserId(),
+                result.getUserCouponId(),
+                result.getTotalAmount().intValue(),
+                result.getDiscountedAmount().intValue(),
+                result.getStatus(),
+                orderItemResponses,
+                result.getCreatedAt());
+
+        return ResponseEntity.ok(response);
     }
 } 

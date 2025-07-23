@@ -5,7 +5,6 @@ import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.response.PopularProductStatsResponse;
 import kr.hhplus.be.server.product.application.response.ProductResponse;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
-import kr.hhplus.be.server.product.application.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,35 +37,29 @@ public class ProductController {
     })
     public ResponseEntity<?> getProductDetail(
             @Parameter(description = "상품 ID", required = true, example = "1") 
-            @PathVariable Long productId) {
-        try {
-            GetProductDetailUseCase.GetProductDetailCommand command = 
-                    new GetProductDetailUseCase.GetProductDetailCommand(productId);
-            
-            var productOpt = productFacade.getProductDetail(command);
-            
-            if (productOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            GetProductDetailUseCase.GetProductDetailResult result = productOpt.get();
-            ProductResponse response = new ProductResponse(
-                    result.getId(),
-                    result.getName(),
-                    result.getCurrentPrice(),
-                    result.getStock(),
-                    result.getStatus(),
-                    result.getCreatedAt(),
-                    result.getUpdatedAt()
-            );
-            
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("상품 조회 중 오류가 발생했습니다: " + e.getMessage()));
+            @PathVariable(name = "productId") Long productId) {
+        
+        GetProductDetailUseCase.GetProductDetailCommand command = 
+                new GetProductDetailUseCase.GetProductDetailCommand(productId);
+        
+        var productOpt = productFacade.getProductDetail(command);
+        
+        if (productOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+        
+        GetProductDetailUseCase.GetProductDetailResult result = productOpt.get();
+        ProductResponse response = new ProductResponse(
+                result.getId(),
+                result.getName(),
+                result.getCurrentPrice(),
+                result.getStock(),
+                result.getStatus(),
+                result.getCreatedAt(),
+                result.getUpdatedAt()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/popular")
@@ -76,33 +69,29 @@ public class ProductController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> getPopularProducts() {
-        try {
-            GetPopularProductsUseCase.GetPopularProductsCommand command = 
-                    new GetPopularProductsUseCase.GetPopularProductsCommand(5);
-            
-            GetPopularProductsUseCase.GetPopularProductsResult result = 
-                    productFacade.getPopularProducts(command);
-            
-            List<PopularProductStatsResponse> responses = result.getPopularProducts().stream()
-                    .map(product -> new PopularProductStatsResponse(
-                            product.getProductId(),
-                            product.getProductName(),
-                            product.getCurrentPrice(),
-                            product.getStock(),
-                            product.getTotalSalesCount(),
-                            product.getTotalSalesAmount(),
-                            product.getRecentSalesCount(),
-                            product.getRecentSalesAmount(),
-                            product.getConversionRate(),
-                            product.getLastOrderDate(),
-                            product.getRank()
-                    ))
-                    .collect(Collectors.toList());
-            
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("인기 상품 조회 중 오류가 발생했습니다: " + e.getMessage()));
-        }
+        
+        GetPopularProductsUseCase.GetPopularProductsCommand command = 
+                new GetPopularProductsUseCase.GetPopularProductsCommand(5);
+        
+        GetPopularProductsUseCase.GetPopularProductsResult result = 
+                productFacade.getPopularProducts(command);
+        
+        List<PopularProductStatsResponse> responses = result.getPopularProducts().stream()
+                .map(product -> new PopularProductStatsResponse(
+                        product.getProductId(),
+                        product.getProductName(),
+                        product.getCurrentPrice(),
+                        product.getStock(),
+                        product.getTotalSalesCount(),
+                        product.getTotalSalesAmount(),
+                        product.getRecentSalesCount(),
+                        product.getRecentSalesAmount(),
+                        product.getConversionRate(),
+                        product.getLastOrderDate(),
+                        product.getRank()
+                ))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
     }
 } 

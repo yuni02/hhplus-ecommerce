@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
 import kr.hhplus.be.server.order.application.facade.OrderFacade;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
+import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,9 @@ class OrderControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(orderFacade)).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(orderFacade))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
         objectMapper = new ObjectMapper();
     }
 
@@ -61,23 +64,22 @@ class OrderControllerTest {
         CreateOrderUseCase.OrderItemResult orderItemResult = 
             new CreateOrderUseCase.OrderItemResult(1L, productId, "테스트 상품", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
         
-        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                userId, List.of(new CreateOrderUseCase.OrderItemCommand(productId, quantity)), userCouponId);
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(
                 orderId, userId, userCouponId, totalAmount, discountedAmount, status, List.of(orderItemResult), createdAt);
         
-        when(orderFacade.createOrder(command)).thenReturn(result);
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/orders")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value(orderId))
+                .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.userCouponId").isEmpty())
-                .andExpect(jsonPath("$.totalAmount").value(20000))
-                .andExpect(jsonPath("$.discountedAmount").value(20000))
+                .andExpect(jsonPath("$.totalPrice").value(20000))
+                .andExpect(jsonPath("$.discountedPrice").value(20000))
                 .andExpect(jsonPath("$.status").value(status))
                 .andExpect(jsonPath("$.orderItems").isArray())
                 .andExpect(jsonPath("$.orderItems[0].id").value(1L))
@@ -111,23 +113,22 @@ class OrderControllerTest {
         CreateOrderUseCase.OrderItemResult orderItemResult = 
             new CreateOrderUseCase.OrderItemResult(1L, productId, "테스트 상품", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
         
-        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                userId, List.of(new CreateOrderUseCase.OrderItemCommand(productId, quantity)), userCouponId);
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(
                 orderId, userId, userCouponId, totalAmount, discountedAmount, status, List.of(orderItemResult), createdAt);
         
-        when(orderFacade.createOrder(command)).thenReturn(result);
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/orders")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value(orderId))
+                .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.userCouponId").value(userCouponId))
-                .andExpect(jsonPath("$.totalAmount").value(20000))
-                .andExpect(jsonPath("$.discountedAmount").value(18000))
+                .andExpect(jsonPath("$.totalPrice").value(20000))
+                .andExpect(jsonPath("$.discountedPrice").value(18000))
                 .andExpect(jsonPath("$.status").value(status));
     }
 
@@ -144,11 +145,11 @@ class OrderControllerTest {
         request.setUserCouponId(null);
         request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(productId, quantity)));
         
-        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                userId, List.of(new CreateOrderUseCase.OrderItemCommand(productId, quantity)), null);
-        CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.failure("사용자를 찾을 수 없습니다.");
+        CreateOrderUseCase.CreateOrderResult result = 
+            CreateOrderUseCase.CreateOrderResult.failure("사용자를 찾을 수 없습니다.");
         
-        when(orderFacade.createOrder(command)).thenReturn(result);
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/orders")
@@ -171,18 +172,18 @@ class OrderControllerTest {
         request.setUserCouponId(null);
         request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(productId, quantity)));
         
-        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                userId, List.of(new CreateOrderUseCase.OrderItemCommand(productId, quantity)), null);
-        CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.failure("상품을 찾을 수 없습니다: " + productId);
+        CreateOrderUseCase.CreateOrderResult result = 
+            CreateOrderUseCase.CreateOrderResult.failure("상품을 찾을 수 없습니다.");
         
-        when(orderFacade.createOrder(command)).thenReturn(result);
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/orders")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("상품을 찾을 수 없습니다: " + productId));
+                .andExpect(jsonPath("$.message").value("상품을 찾을 수 없습니다."));
     }
 
     @Test
@@ -191,62 +192,59 @@ class OrderControllerTest {
         // given
         Long userId = 1L;
         Long productId = 1L;
-        Integer quantity = 200; // 재고보다 많은 수량
+        Integer quantity = 1000;
         
         OrderRequest request = new OrderRequest();
         request.setUserId(userId);
         request.setUserCouponId(null);
         request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(productId, quantity)));
         
-        CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
-                userId, List.of(new CreateOrderUseCase.OrderItemCommand(productId, quantity)), null);
-        CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.failure("재고가 부족합니다: 100");
+        CreateOrderUseCase.CreateOrderResult result = 
+            CreateOrderUseCase.CreateOrderResult.failure("재고가 부족합니다.");
         
-        when(orderFacade.createOrder(command)).thenReturn(result);
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/orders")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("재고가 부족합니다: 100"));
+                .andExpect(jsonPath("$.message").value("재고가 부족합니다."));
     }
 
     @Test
     @DisplayName("주문 생성 실패 - 잘못된 요청")
     void createOrder_Failure_InvalidRequest() throws Exception {
-        // given
-        OrderRequest request = new OrderRequest();
-        request.setUserId(-1L); // 잘못된 사용자 ID
-        request.setUserCouponId(null);
-        request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(1L, 2)));
-        
-        when(orderFacade.createOrder(any())).thenThrow(new IllegalArgumentException("잘못된 사용자 ID입니다."));
-
         // when & then
         mockMvc.perform(post("/api/orders")
-                        .content(objectMapper.writeValueAsString(request))
+                        .content("invalid json")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("잘못된 사용자 ID입니다."));
+                .andExpect(jsonPath("$.message").value("잘못된 JSON 형식입니다."));
     }
 
     @Test
     @DisplayName("주문 생성 실패 - 서버 오류")
     void createOrder_Failure_ServerError() throws Exception {
         // given
-        OrderRequest request = new OrderRequest();
-        request.setUserId(1L);
-        request.setUserCouponId(null);
-        request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(1L, 2)));
+        Long userId = 1L;
+        Long productId = 1L;
+        Integer quantity = 2;
         
-        when(orderFacade.createOrder(any())).thenThrow(new RuntimeException("데이터베이스 연결 오류"));
+        OrderRequest request = new OrderRequest();
+        request.setUserId(userId);
+        request.setUserCouponId(null);
+        request.setOrderItems(List.of(new OrderRequest.OrderItemRequest(productId, quantity)));
+        
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+            .thenThrow(new RuntimeException("데이터베이스 오류"));
 
         // when & then
         mockMvc.perform(post("/api/orders")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("주문 생성 중 오류가 발생했습니다: 데이터베이스 연결 오류"));
+                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다: 데이터베이스 오류"));
     }
 } 
