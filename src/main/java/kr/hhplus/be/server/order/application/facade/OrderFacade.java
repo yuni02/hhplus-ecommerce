@@ -94,6 +94,16 @@ public class OrderFacade {
      * 주문 검증
      */
     private OrderValidationResult validateOrder(CreateOrderUseCase.CreateOrderCommand command) {
+        // 1. 입력값 검증
+        if (command.getUserId() == null || command.getUserId() <= 0) {
+            return OrderValidationResult.failure("잘못된 사용자 ID입니다.");
+        }
+        
+        if (command.getOrderItems() == null || command.getOrderItems().isEmpty()) {
+            return OrderValidationResult.failure("주문 상품이 없습니다.");
+        }
+        
+        // 2. 사용자 존재 확인
         if (!loadUserPort.existsById(command.getUserId())) {
             return OrderValidationResult.failure("사용자를 찾을 수 없습니다.");
         }

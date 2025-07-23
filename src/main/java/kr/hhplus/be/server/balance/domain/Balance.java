@@ -59,10 +59,16 @@ public class Balance {
     }
 
     public void charge(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+        }
         this.amount = this.amount.add(amount);
     }
 
     public void deduct(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
+        }
         if (this.amount.compareTo(amount) < 0) {
             throw new InsufficientBalanceException("잔액이 부족합니다.");
         }

@@ -68,7 +68,12 @@ public class BalanceFacade {
     @Transactional
     public ChargeBalanceUseCase.ChargeBalanceResult chargeBalance(ChargeBalanceUseCase.ChargeBalanceCommand command) {
         try {
-            // 1. 사용자 존재 확인
+            // 1. 입력값 검증
+            if (command.getAmount() == null || command.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                return ChargeBalanceUseCase.ChargeBalanceResult.failure("충전 금액은 0보다 커야 합니다.");
+            }
+            
+            // 2. 사용자 존재 확인
             if (!loadUserPort.existsById(command.getUserId())) {
                 return ChargeBalanceUseCase.ChargeBalanceResult.failure("사용자를 찾을 수 없습니다.");
             }

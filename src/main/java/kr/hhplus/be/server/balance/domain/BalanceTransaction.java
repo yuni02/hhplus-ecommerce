@@ -13,7 +13,7 @@ public class BalanceTransaction {
     private Long userId;
     private BigDecimal amount;
     private TransactionType type;
-    private TransactionStatus status = TransactionStatus.PENDING;
+    private TransactionStatus status = TransactionStatus.COMPLETED;
     private String description;
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
     private LocalDateTime createdAt;

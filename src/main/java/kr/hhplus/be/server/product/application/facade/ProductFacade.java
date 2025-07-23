@@ -31,7 +31,12 @@ public class ProductFacade {
      */
     public Optional<GetProductDetailUseCase.GetProductDetailResult> getProductDetail(GetProductDetailUseCase.GetProductDetailCommand command) {
         try {
-            // 1. 상품 조회
+            // 1. 입력값 검증
+            if (command.getProductId() == null || command.getProductId() <= 0) {
+                throw new IllegalArgumentException("잘못된 상품 ID입니다.");
+            }
+            
+            // 2. 상품 조회
             Optional<LoadProductPort.ProductInfo> productInfoOpt = loadProductPort.loadProductById(command.getProductId());
             
             if (productInfoOpt.isEmpty()) {
@@ -40,11 +45,11 @@ public class ProductFacade {
 
             LoadProductPort.ProductInfo productInfo = productInfoOpt.get();
 
-            // 2. 상품 통계 조회
+            // 3. 상품 통계 조회
             Optional<LoadProductStatsPort.ProductStatsInfo> statsInfoOpt = 
                 loadProductStatsPort.loadProductStatsByProductId(command.getProductId());
 
-            // 3. 결과 생성
+            // 4. 결과 생성
             GetProductDetailUseCase.GetProductDetailResult result = new GetProductDetailUseCase.GetProductDetailResult(
                     productInfo.getId(),
                     productInfo.getName(),

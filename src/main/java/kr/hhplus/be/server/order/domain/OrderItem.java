@@ -65,6 +65,7 @@ public class OrderItem {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+        calculateTotalPrice();
     }
 
     public BigDecimal getUnitPrice() {
@@ -73,9 +74,11 @@ public class OrderItem {
 
     public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
+        calculateTotalPrice();
     }
 
     public BigDecimal getTotalPrice() {
+        calculateTotalPrice();
         return totalPrice;
     }
 
@@ -84,6 +87,10 @@ public class OrderItem {
     }
 
     public void calculateTotalPrice() {
-        this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+        if (this.unitPrice != null && this.quantity != null) {
+            this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+        } else {
+            this.totalPrice = BigDecimal.ZERO;
+        }
     }
 } 

@@ -54,7 +54,12 @@ public class CouponFacade {
     @Transactional
     public IssueCouponUseCase.IssueCouponResult issueCoupon(IssueCouponUseCase.IssueCouponCommand command) {
         try {
-            // 1. 사용자 존재 확인
+            // 1. 입력값 검증
+            if (command.getUserId() == null || command.getUserId() <= 0) {
+                return IssueCouponUseCase.IssueCouponResult.failure("잘못된 사용자 ID입니다.");
+            }
+            
+            // 2. 사용자 존재 확인
             if (!loadUserPort.existsById(command.getUserId())) {
                 return IssueCouponUseCase.IssueCouponResult.failure("사용자를 찾을 수 없습니다.");
             }
@@ -112,15 +117,20 @@ public class CouponFacade {
      */
     public GetUserCouponsUseCase.GetUserCouponsResult getUserCoupons(GetUserCouponsUseCase.GetUserCouponsCommand command) {
         try {
-            // 1. 사용자 존재 확인
+            // 1. 입력값 검증
+            if (command.getUserId() == null || command.getUserId() <= 0) {
+                throw new IllegalArgumentException("잘못된 사용자 ID입니다.");
+            }
+            
+            // 2. 사용자 존재 확인
             if (!loadUserPort.existsById(command.getUserId())) {
                 return new GetUserCouponsUseCase.GetUserCouponsResult(List.of());
             }
 
-            // 2. 사용자 쿠폰 목록 조회
+            // 3. 사용자 쿠폰 목록 조회
             List<LoadUserCouponPort.UserCouponInfo> userCouponInfos = loadUserCouponPort.loadUserCouponsByUserId(command.getUserId());
 
-            // 3. 쿠폰 상세 정보 조회 및 결과 생성
+            // 4. 쿠폰 상세 정보 조회 및 결과 생성
             List<GetUserCouponsUseCase.UserCouponInfo> result = userCouponInfos.stream()
                     .map(this::enrichUserCouponInfo)
                     .collect(Collectors.toList());

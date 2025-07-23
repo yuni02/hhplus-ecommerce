@@ -13,18 +13,21 @@ public class Order {
 
     private Long id;
     private Long userId;
-    private List<OrderItem> orderItems = new ArrayList<>();
+    private List<OrderItem> orderItems;
     private BigDecimal totalAmount;
     private BigDecimal discountedAmount;
     private Long userCouponId;
     private OrderStatus status = OrderStatus.PENDING;
     private LocalDateTime orderedAt;
 
-    public Order() {}
+    public Order() {
+        this.orderItems = new ArrayList<>();
+        this.status = OrderStatus.PENDING;
+    }
 
     public Order(Long userId, List<OrderItem> orderItems, BigDecimal totalAmount, Long userCouponId) {
         this.userId = userId;
-        this.orderItems = orderItems;
+        this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
         this.totalAmount = totalAmount;
         this.userCouponId = userCouponId;
         this.orderedAt = LocalDateTime.now();
@@ -51,7 +54,7 @@ public class Order {
     }
 
     public void setOrderItems(List<OrderItem> orderItems) {
-        this.orderItems = orderItems;
+        this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
     }
 
     public BigDecimal getTotalAmount() {
