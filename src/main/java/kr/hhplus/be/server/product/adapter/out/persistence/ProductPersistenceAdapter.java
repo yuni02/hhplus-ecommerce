@@ -3,8 +3,7 @@ package kr.hhplus.be.server.product.adapter.out.persistence;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
 import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
+        
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -106,6 +105,43 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Optional<LoadProductStatsPort.ProductStatsInfo> loadProductStatsByProductId(Long productId) {
+        ProductStatsData stats = productStats.get(productId);
+        if (stats == null) {
+            return Optional.empty();
+        }
+        
+        return Optional.of(new LoadProductStatsPort.ProductStatsInfo(
+                stats.getProductId(),
+                stats.getProductName(),
+                stats.getRecentSalesCount(),
+                stats.getRecentSalesAmount(),
+                stats.getTotalSalesCount(),
+                stats.getTotalSalesAmount(),
+                stats.getRank(),
+                stats.getConversionRate()
+        ));
+    }
+
+    @Override
+    public List<LoadProductStatsPort.ProductStatsInfo> loadTopProductsBySales(int limit) {
+        return productStats.values().stream()
+                .sorted(java.util.Comparator.comparing(ProductStatsData::getTotalSalesAmount).reversed())
+                .limit(limit)
+                .map(stats -> new LoadProductStatsPort.ProductStatsInfo(
+                        stats.getProductId(),
+                        stats.getProductName(),
+                        stats.getRecentSalesCount(),    
+                        stats.getRecentSalesAmount(),
+                        stats.getTotalSalesCount(),
+                        stats.getTotalSalesAmount(),
+                        stats.getRank(),
+                        stats.getConversionRate()
+                ))
+                .collect(Collectors.toList());
+    }
+
     /**
      * 상품 데이터 내부 클래스
      */
@@ -177,10 +213,10 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
         public void setProductName(String productName) { this.productName = productName; }
         public Integer getRecentSalesCount() { return recentSalesCount; }
         public void setRecentSalesCount(Integer recentSalesCount) { this.recentSalesCount = recentSalesCount; }
-        public Long getRecentSalesAmount() { return recentSalesAmount; }
-        public void setRecentSalesAmount(Long recentSalesAmount) { this.recentSalesAmount = recentSalesAmount; }
         public Integer getTotalSalesCount() { return totalSalesCount; }
         public void setTotalSalesCount(Integer totalSalesCount) { this.totalSalesCount = totalSalesCount; }
+        public Long getRecentSalesAmount() { return recentSalesAmount; }
+        public void setRecentSalesAmount(Long recentSalesAmount) { this.recentSalesAmount = recentSalesAmount; }
         public Long getTotalSalesAmount() { return totalSalesAmount; }
         public void setTotalSalesAmount(Long totalSalesAmount) { this.totalSalesAmount = totalSalesAmount; }
         public Integer getRank() { return rank; }

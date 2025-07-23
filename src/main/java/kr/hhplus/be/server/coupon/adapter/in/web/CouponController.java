@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.coupon.adapter.in.web;
 
+import kr.hhplus.be.server.coupon.application.facade.CouponFacade;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.response.ErrorResponse;
@@ -21,12 +22,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Coupon", description = "쿠폰 관리 API")
 public class CouponController {
 
-    private final IssueCouponUseCase issueCouponUseCase;
-    private final GetUserCouponsUseCase getUserCouponsUseCase;
+    private final CouponFacade couponFacade;
 
-    public CouponController(IssueCouponUseCase issueCouponUseCase, GetUserCouponsUseCase getUserCouponsUseCase) {
-        this.issueCouponUseCase = issueCouponUseCase;
-        this.getUserCouponsUseCase = getUserCouponsUseCase;
+    public CouponController(CouponFacade couponFacade) {
+        this.couponFacade = couponFacade;
     }
 
     @PostMapping("/{id}/issue")
@@ -41,7 +40,7 @@ public class CouponController {
             @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam(required = true) Long userId) {
         try {
             IssueCouponUseCase.IssueCouponCommand command = new IssueCouponUseCase.IssueCouponCommand(userId, id);
-            IssueCouponUseCase.IssueCouponResult result = issueCouponUseCase.issueCoupon(command);
+            IssueCouponUseCase.IssueCouponResult result = couponFacade.issueCoupon(command);
 
             if (!result.isSuccess()) {
                 return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
@@ -76,7 +75,7 @@ public class CouponController {
             @Parameter(description = "사용자 ID", required = true, example = "1") @PathVariable Long userId) {
         try {
             GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
-            GetUserCouponsUseCase.GetUserCouponsResult result = getUserCouponsUseCase.getUserCoupons(command);
+            GetUserCouponsUseCase.GetUserCouponsResult result = couponFacade.getUserCoupons(command);
 
             List<UserCouponResponse> responses = result.getUserCoupons().stream()
                     .map(userCoupon -> new UserCouponResponse(

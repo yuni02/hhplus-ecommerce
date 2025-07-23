@@ -11,6 +11,7 @@ public class UserCoupon {
     private Long id;
     private Long userId;
     private Long couponId;
+    private Integer discountAmount; // 할인 금액
     private UserCouponStatus status = UserCouponStatus.AVAILABLE;
     private LocalDateTime issuedAt;
     private LocalDateTime usedAt;
@@ -20,9 +21,10 @@ public class UserCoupon {
 
     public UserCoupon() {}
 
-    public UserCoupon(Long userId, Long couponId) {
+    public UserCoupon(Long userId, Long couponId, Integer discountAmount) {
         this.userId = userId;
         this.couponId = couponId;
+        this.discountAmount = discountAmount;
         this.issuedAt = LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
@@ -50,6 +52,14 @@ public class UserCoupon {
 
     public void setCouponId(Long couponId) {
         this.couponId = couponId;
+    }
+
+    public Integer getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(Integer discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     public UserCouponStatus getStatus() {
@@ -108,6 +118,12 @@ public class UserCoupon {
         this.status = UserCouponStatus.USED;
         this.orderId = orderId;
         this.usedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void use(LocalDateTime usedAt) {
+        this.status = UserCouponStatus.USED;
+        this.usedAt = usedAt;
         this.updatedAt = LocalDateTime.now();
     }
 

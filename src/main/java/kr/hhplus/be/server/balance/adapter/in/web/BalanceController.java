@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.balance.adapter.in.web;
 
 import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceRequest;
+import kr.hhplus.be.server.balance.application.facade.BalanceFacade;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
 import kr.hhplus.be.server.balance.application.response.BalanceResponse;
@@ -23,13 +24,10 @@ import java.math.BigDecimal;
 @Tag(name = "Balance", description = "사용자 잔액 관리 API")
 public class BalanceController {
 
-    private final GetBalanceUseCase getBalanceUseCase;
-    private final ChargeBalanceUseCase chargeBalanceUseCase;
+    private final BalanceFacade balanceFacade;
 
-    public BalanceController(GetBalanceUseCase getBalanceUseCase, 
-                           ChargeBalanceUseCase chargeBalanceUseCase) {
-        this.getBalanceUseCase = getBalanceUseCase;
-        this.chargeBalanceUseCase = chargeBalanceUseCase;
+    public BalanceController(BalanceFacade balanceFacade) {
+        this.balanceFacade = balanceFacade;
     }
 
     /**
@@ -47,7 +45,7 @@ public class BalanceController {
             @RequestParam("userId") Long userId) {
         try {
             GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
-            var balanceOpt = getBalanceUseCase.getBalance(command);
+            var balanceOpt = balanceFacade.getBalance(command);
             
             if (balanceOpt.isEmpty()) {
                 return ResponseEntity.badRequest().body(new ErrorResponse("사용자를 찾을 수 없습니다."));
@@ -78,7 +76,7 @@ public class BalanceController {
             ChargeBalanceUseCase.ChargeBalanceCommand command = 
                 new ChargeBalanceUseCase.ChargeBalanceCommand(request.getUserId(), BigDecimal.valueOf(request.getAmount()));
             
-            ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceUseCase.chargeBalance(command);
+            ChargeBalanceUseCase.ChargeBalanceResult result = balanceFacade.chargeBalance(command);
             
             if (!result.isSuccess()) {
                 return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));

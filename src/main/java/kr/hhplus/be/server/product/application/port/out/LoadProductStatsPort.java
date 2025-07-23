@@ -13,6 +13,16 @@ public interface LoadProductStatsPort {
     List<ProductStatsInfo> loadAllProductStats();
     
     /**
+     * 상품 ID로 통계 조회
+     */
+    java.util.Optional<ProductStatsInfo> loadProductStatsByProductId(Long productId);
+    
+    /**
+     * 판매량 기준 상위 상품 조회
+     */
+    List<ProductStatsInfo> loadTopProductsBySales(int limit);
+    
+    /**
      * 상품 통계 정보
      */
     class ProductStatsInfo {

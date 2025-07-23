@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.product.adapter.in.web;
 
+import kr.hhplus.be.server.product.application.facade.ProductFacade;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.response.PopularProductStatsResponse;
 import kr.hhplus.be.server.product.application.response.ProductResponse;
@@ -21,13 +22,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Product", description = "상품 관리 API")
 public class ProductController {
 
-    private final GetProductDetailUseCase getProductDetailUseCase;
-    private final GetPopularProductsUseCase getPopularProductsUseCase;
+    private final ProductFacade productFacade;
 
-    public ProductController(GetProductDetailUseCase getProductDetailUseCase,
-                           GetPopularProductsUseCase getPopularProductsUseCase) {
-        this.getProductDetailUseCase = getProductDetailUseCase;
-        this.getPopularProductsUseCase = getPopularProductsUseCase;
+    public ProductController(ProductFacade productFacade) {
+        this.productFacade = productFacade;
     }
 
     @GetMapping("/{productId}")
@@ -45,7 +43,7 @@ public class ProductController {
             GetProductDetailUseCase.GetProductDetailCommand command = 
                     new GetProductDetailUseCase.GetProductDetailCommand(productId);
             
-            var productOpt = getProductDetailUseCase.getProductDetail(command);
+            var productOpt = productFacade.getProductDetail(command);
             
             if (productOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
@@ -83,7 +81,7 @@ public class ProductController {
                     new GetPopularProductsUseCase.GetPopularProductsCommand(5);
             
             GetPopularProductsUseCase.GetPopularProductsResult result = 
-                    getPopularProductsUseCase.getPopularProducts(command);
+                    productFacade.getPopularProducts(command);
             
             List<PopularProductStatsResponse> responses = result.getPopularProducts().stream()
                     .map(product -> new PopularProductStatsResponse(
