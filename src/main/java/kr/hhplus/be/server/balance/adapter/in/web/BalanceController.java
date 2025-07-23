@@ -6,7 +6,6 @@ import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
 import kr.hhplus.be.server.balance.application.response.BalanceResponse;
 import kr.hhplus.be.server.balance.application.response.ChargeBalanceResponse;
-import kr.hhplus.be.server.balance.application.response.ErrorResponse;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,22 +42,17 @@ public class BalanceController {
     public ResponseEntity<?> getBalance(
             @Parameter(description = "사용자 ID", required = true, example = "1")
             @RequestParam("userId") Long userId) {
-        try {
-            GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
-            var balanceOpt = balanceFacade.getBalance(command);
-            
-            if (balanceOpt.isEmpty()) {
-                return ResponseEntity.badRequest().body(new ErrorResponse("사용자를 찾을 수 없습니다."));
-            }
-
-            GetBalanceUseCase.GetBalanceResult result = balanceOpt.get();
-            BalanceResponse response = new BalanceResponse(result.getUserId(), result.getBalance().intValue());
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new ErrorResponse("잔액 조회 중 오류가 발생했습니다."));
+        
+        GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
+        var balanceOpt = balanceFacade.getBalance(command);
+        
+        if (balanceOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse("사용자를 찾을 수 없습니다."));
         }
+
+        GetBalanceUseCase.GetBalanceResult result = balanceOpt.get();
+        BalanceResponse response = new BalanceResponse(result.getUserId(), result.getBalance().intValue());
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -72,26 +66,21 @@ public class BalanceController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> chargeBalance(@Valid @RequestBody ChargeBalanceRequest request) {
-        try {
-            ChargeBalanceUseCase.ChargeBalanceCommand command = 
-                new ChargeBalanceUseCase.ChargeBalanceCommand(request.getUserId(), BigDecimal.valueOf(request.getAmount()));
-            
-            ChargeBalanceUseCase.ChargeBalanceResult result = balanceFacade.chargeBalance(command);
-            
-            if (!result.isSuccess()) {
-                return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
-            }
-            
-            ChargeBalanceResponse response = new ChargeBalanceResponse(
-                    result.getUserId(),
-                    request.getAmount(),        
-                    result.getNewBalance().intValue());
-            
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new ErrorResponse("잔액 충전 중 오류가 발생했습니다."));
+        
+        ChargeBalanceUseCase.ChargeBalanceCommand command = 
+            new ChargeBalanceUseCase.ChargeBalanceCommand(request.getUserId(), BigDecimal.valueOf(request.getAmount()));
+        
+        ChargeBalanceUseCase.ChargeBalanceResult result = balanceFacade.chargeBalance(command);
+        
+        if (!result.isSuccess()) {
+            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
         }
+        
+        ChargeBalanceResponse response = new ChargeBalanceResponse(
+                result.getUserId(),
+                request.getAmount(),        
+                result.getNewBalance().intValue());
+        
+        return ResponseEntity.ok(response);
     }
 } 

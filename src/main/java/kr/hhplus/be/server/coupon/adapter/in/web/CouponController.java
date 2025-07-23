@@ -3,7 +3,6 @@ package kr.hhplus.be.server.coupon.adapter.in.web;
 import kr.hhplus.be.server.coupon.application.facade.CouponFacade;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
-import kr.hhplus.be.server.coupon.application.response.ErrorResponse;
 import kr.hhplus.be.server.coupon.application.response.CouponResponse;
 import kr.hhplus.be.server.coupon.application.response.UserCouponResponse;
 import org.springframework.http.ResponseEntity;
@@ -36,32 +35,26 @@ public class CouponController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> issueCoupon(
-            @Parameter(description = "쿠폰 ID", required = true, example = "1") @PathVariable Long id,
-            @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam(required = true) Long userId) {
-        try {
-            IssueCouponUseCase.IssueCouponCommand command = new IssueCouponUseCase.IssueCouponCommand(userId, id);
-            IssueCouponUseCase.IssueCouponResult result = couponFacade.issueCoupon(command);
+            @Parameter(description = "쿠폰 ID", required = true, example = "1") @PathVariable(name = "id") Long id,
+            @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam(name = "userId", required = true) Long userId) {
+        
+        IssueCouponUseCase.IssueCouponCommand command = new IssueCouponUseCase.IssueCouponCommand(userId, id);
+        IssueCouponUseCase.IssueCouponResult result = couponFacade.issueCoupon(command);
 
-            if (!result.isSuccess()) {
-                return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
-            }
-
-            CouponResponse response = new CouponResponse(
-                    result.getUserCouponId(),
-                    result.getCouponId(),
-                    result.getCouponName(),
-                    result.getDiscountAmount(),
-                    result.getStatus(),
-                    result.getIssuedAt()
-            );
-
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("쿠폰 발급 중 오류가 발생했습니다: " + e.getMessage()));
+        if (!result.isSuccess()) {
+            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
         }
+
+        CouponResponse response = new CouponResponse(
+                result.getUserCouponId(),
+                result.getCouponId(),
+                result.getCouponName(),
+                result.getDiscountAmount(),
+                result.getStatus(),
+                result.getIssuedAt()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/users/{userId}")
@@ -72,29 +65,23 @@ public class CouponController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> getUserCoupons(
-            @Parameter(description = "사용자 ID", required = true, example = "1") @PathVariable Long userId) {
-        try {
-            GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
-            GetUserCouponsUseCase.GetUserCouponsResult result = couponFacade.getUserCoupons(command);
+            @Parameter(description = "사용자 ID", required = true, example = "1") @PathVariable(name = "userId") Long userId) {
+        
+        GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
+        GetUserCouponsUseCase.GetUserCouponsResult result = couponFacade.getUserCoupons(command);
 
-            List<UserCouponResponse> responses = result.getUserCoupons().stream()
-                    .map(userCoupon -> new UserCouponResponse(
-                            userCoupon.getUserCouponId(),
-                            userCoupon.getCouponId(),
-                            userCoupon.getCouponName(),
-                            userCoupon.getDiscountAmount(),
-                            userCoupon.getStatus(),
-                            userCoupon.getIssuedAt(),
-                            userCoupon.getUsedAt()
-                    ))
-                    .collect(Collectors.toList());
+        List<UserCouponResponse> responses = result.getUserCoupons().stream()
+                .map(userCoupon -> new UserCouponResponse(
+                        userCoupon.getUserCouponId(),
+                        userCoupon.getCouponId(),
+                        userCoupon.getCouponName(),
+                        userCoupon.getDiscountAmount(),
+                        userCoupon.getStatus(),
+                        userCoupon.getIssuedAt(),
+                        userCoupon.getUsedAt()
+                ))
+                .collect(Collectors.toList());
 
-            return ResponseEntity.ok(responses);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("쿠폰 조회 중 오류가 발생했습니다: " + e.getMessage()));
-        }
+        return ResponseEntity.ok(responses);
     }
 } 
