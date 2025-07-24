@@ -64,6 +64,18 @@ public class ProductPersistenceAdapter implements LoadProductPort, UpdateProduct
         return true;
     }
 
+    @Override
+    public boolean restoreStock(Long productId, Integer quantity) {
+        ProductData product = products.get(productId);
+        if (product == null) {
+            return false;
+        }
+        
+        // 재고 복구 (차감된 수량만큼 다시 증가)
+        product.setStock(product.getStock() + quantity);
+        return true;
+    }
+
     /**
      * 상품 데이터 내부 클래스
      */

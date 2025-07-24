@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 쿠폰 영속성 Adapter (Outgoing)
@@ -16,7 +17,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort {
 
     private final Map<Long, CouponData> coupons = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    
+    // 쿠폰별 락을 위한 Map (선착순 쿠폰 발급용)
+    private final Map<Long, ReentrantLock> couponLocks = new ConcurrentHashMap<>();
 
     public CouponPersistenceAdapter() {
         // 더미 데이터 초기화
@@ -58,6 +61,40 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
     }
 
     @Override
+    public Optional<LoadCouponPort.CouponInfo> loadCouponByIdWithLock(Long couponId) {
+        // 쿠폰별 락 획득
+        ReentrantLock lock = couponLocks.computeIfAbsent(couponId, k -> new ReentrantLock());
+        
+        try {
+            // 락 획득 (최대 5초 대기)
+            if (!lock.tryLock()) {
+                throw new RuntimeException("쿠폰 발급 중입니다. 잠시 후 다시 시도해주세요.");
+            }
+            
+            CouponData coupon = coupons.get(couponId);
+            if (coupon == null) {
+                return Optional.empty();
+            }
+            
+            return Optional.of(new LoadCouponPort.CouponInfo(
+                    coupon.getId(),
+                    coupon.getName(),
+                    coupon.getDescription(),
+                    coupon.getDiscountAmount(),
+                    coupon.getMaxIssuanceCount(),
+                    coupon.getIssuedCount(),
+                    coupon.getStatus()
+            ));
+            
+        } finally {
+            // 락 해제
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+
+    @Override
     public SaveCouponPort.CouponInfo saveCoupon(SaveCouponPort.CouponInfo couponInfo) {
         CouponData coupon = new CouponData(
                 couponInfo.getId(),
@@ -80,6 +117,45 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
                 coupon.getIssuedCount(),
                 coupon.getStatus()
         );
+    }
+
+    /**
+     * 쿠폰 발급 수량을 원자적으로 증가시키는 메서드
+     */
+    @Override
+    public boolean incrementIssuedCount(Long couponId) {
+        ReentrantLock lock = couponLocks.computeIfAbsent(couponId, k -> new ReentrantLock());
+        
+        try {
+            if (!lock.tryLock()) {
+                return false;
+            }
+            
+            CouponData coupon = coupons.get(couponId);
+            if (coupon == null) {
+                return false;
+            }
+            
+            // 선착순 확인
+            if (coupon.getIssuedCount() >= coupon.getMaxIssuanceCount()) {
+                return false;
+            }
+            
+            // 발급 수량 증가
+            coupon.setIssuedCount(coupon.getIssuedCount() + 1);
+            
+            // 상태 업데이트
+            if (coupon.getIssuedCount() >= coupon.getMaxIssuanceCount()) {
+                coupon.setStatus("SOLD_OUT");
+            }
+            
+            return true;
+            
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     /**

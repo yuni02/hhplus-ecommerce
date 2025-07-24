@@ -13,6 +13,16 @@ public interface LoadCouponPort {
     Optional<CouponInfo> loadCouponById(Long couponId);
     
     /**
+     * 쿠폰 ID로 락을 사용하여 조회 (선착순 쿠폰 발급용)
+     */
+    Optional<CouponInfo> loadCouponByIdWithLock(Long couponId);
+    
+    /**
+     * 쿠폰 발급 수량을 원자적으로 증가 (선착순 처리용)
+     */
+    boolean incrementIssuedCount(Long couponId);
+    
+    /**
      * 쿠폰 정보
      */
     class CouponInfo {
