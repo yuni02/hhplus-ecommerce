@@ -220,40 +220,79 @@ sequenceDiagram
 
     Order->>Order: @Transactional 시작
 
-    par 핵심 주문 처리
-        Order->>Product: 재고 검증 및 차감
-        Product->>DB: FOR UPDATE + 재고 차감
-        DB-->>Product: 재고 차감 완료
-        Product-->>Order: 재고 예약 성공
-    and
-        Order->>Coupon: 쿠폰 검증 및 사용
+    Note over Order: 순차적 핵심 주문 처리
+
+    Order->>Product: 재고 검증 (차감 전 확인)
+    Product->>DB: 재고 조회 (FOR UPDATE)
+    alt 재고 부족
+        DB-->>Product: 재고 부족
+        Product-->>Order: 재고 부족 오류
+        Order->>Order: @Transactional 롤백
+        Order-->>C: 주문 실패 (재고 부족)
+    else 재고 충분
+        DB-->>Product: 재고 확인 완료
+        Product-->>Order: 재고 검증 성공
+    end
+
+    Order->>Coupon: 쿠폰 검증 및 할인 계산
+    alt 쿠폰 무효 또는 만료
+        Coupon-->>Order: 쿠폰 사용 실패
+        Order->>Order: @Transactional 롤백
+        Order-->>C: 주문 실패 (쿠폰 오류)
+    else 쿠폰 유효
         Coupon->>DB: 쿠폰 상태 USED 변경
-        DB-->>Coupon: 쿠폰 사용 완료
-        Coupon-->>Order: 할인 적용 완료
-    and
-        Order->>Balance: 결제 처리
+        DB-->>Coupon: 쿠폰 사용 처리 완료
+        Coupon-->>Order: 최종 결제 금액 반환
+    end
+
+    Order->>Balance: 결제 처리 (계산된 최종 금액)
+    alt 잔액 부족
+        Balance-->>Order: 결제 실패 (잔액 부족)
+        Order->>Order: @Transactional 롤백
+        Order-->>C: 주문 실패 (잔액 부족)
+    else 잔액 충분
         Balance->>DB: 잔액 차감 + 거래 기록
         DB-->>Balance: 결제 완료
         Balance-->>Order: 결제 성공
     end
 
-    Order->>DB: 주문 상태 COMPLETED
+    Note over Order,Product: 결제 성공 후 재고 차감
+    Order->>Product: 재고 차감 실행
+    Product->>DB: 실제 재고 차감
+    DB-->>Product: 재고 차감 완료
+    Product-->>Order: 재고 차감 성공
 
+    Order->>DB: 주문 상태 COMPLETED
     Order->>Order: @Transactional 커밋
 
-    par 비동기 후처리
+    Note over Order: 트랜잭션 완료 → 즉시 응답
+    Order-->>C: 주문 성공 응답
+
+    Note over Order,DP: 응답 후 비동기 후처리 시작
+    activate Order
+
+    par 우선순위 높은 후처리 (병렬)
         Order->>Event: 로그성 데이터 생성 (비동기)
+        activate Event
         Event->>DB: ORDER_HISTORY_EVENT 저장
-        Note over Event: 로그 실패해도 주문은 성공
-    and
-        Order->>DP: 주문 데이터 전송 (비동기)
-        Note over DP: Mock API 또는 외부 시스템
+        Note over Event: 실패 시 재시도 큐로 이동
+        deactivate Event
     and
         Order->>Statistics: 통계 업데이트 (비동기)
+        activate Statistics
         Statistics->>DB: PRODUCT_STAT 업데이트
+        Note over Statistics: 실시간 대시보드용
+        deactivate Statistics
     end
 
-    Order->>C: 주문 성공 응답
+    Note over Order,DP: 우선순위 낮은 후처리 (순차)
+    Order->>DP: 주문 데이터 전송 (비동기)
+    activate DP
+    Note over DP: 외부 API 호출, 네트워크 지연 가능
+    Note over DP: 실패 시 Dead Letter Queue 처리
+    deactivate DP
+
+    deactivate Order
 ```
 
 ---

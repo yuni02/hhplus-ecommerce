@@ -1,0 +1,306 @@
+package kr.hhplus.be.server.order.application.facade;
+
+import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
+import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
+import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
+import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
+import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
+import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
+import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * 주문 생성 Facade
+ * 복잡한 주문 생성 로직을 단순화하여 제공
+ */
+@Service
+public class OrderFacade {
+
+    private final LoadUserPort loadUserPort;
+    private final LoadProductPort loadProductPort;
+    private final UpdateProductStockPort updateProductStockPort;
+    private final DeductBalancePort deductBalancePort;
+    private final SaveOrderPort saveOrderPort;
+    private final UseCouponUseCase useCouponUseCase;
+    
+    private final AtomicLong orderItemIdGenerator = new AtomicLong(1);
+
+    public OrderFacade(LoadUserPort loadUserPort,
+                      LoadProductPort loadProductPort,
+                      UpdateProductStockPort updateProductStockPort,
+                      DeductBalancePort deductBalancePort,
+                      SaveOrderPort saveOrderPort,
+                      UseCouponUseCase useCouponUseCase) {
+        this.loadUserPort = loadUserPort;
+        this.loadProductPort = loadProductPort;
+        this.updateProductStockPort = updateProductStockPort;
+        this.deductBalancePort = deductBalancePort;
+        this.saveOrderPort = saveOrderPort;
+        this.useCouponUseCase = useCouponUseCase;
+    }
+
+    /**
+     * 주문 생성 (Facade 메서드)
+     */
+    @Transactional
+    public CreateOrderUseCase.CreateOrderResult createOrder(CreateOrderUseCase.CreateOrderCommand command) {
+        try {
+            // 1. 주문 검증
+            OrderValidationResult validationResult = validateOrder(command);
+            if (!validationResult.isValid()) {
+                return CreateOrderUseCase.CreateOrderResult.failure(validationResult.getErrorMessage());
+            }
+
+            // 2. 주문 아이템 생성 및 재고 차감
+            OrderItemsResult itemsResult = createOrderItems(command);
+            if (!itemsResult.isSuccess()) {
+                return CreateOrderUseCase.CreateOrderResult.failure(itemsResult.getErrorMessage());
+            }
+
+            // 3. 쿠폰 할인 적용
+            CouponDiscountResult discountResult = applyCouponDiscount(command, itemsResult.getTotalAmount());
+            if (!discountResult.isSuccess()) {
+                return CreateOrderUseCase.CreateOrderResult.failure(discountResult.getErrorMessage());
+            }
+
+            // 4. 잔액 차감
+            if (!deductBalancePort.deductBalance(command.getUserId(), discountResult.getDiscountedAmount())) {
+                return CreateOrderUseCase.CreateOrderResult.failure("잔액이 부족합니다.");
+            }
+
+            // 5. 주문 생성 및 저장
+            Order order = createAndSaveOrder(command, itemsResult.getOrderItems(), 
+                                           itemsResult.getTotalAmount(), discountResult.getDiscountedAmount());
+
+            // 6. 결과 반환
+            return createOrderResult(order, itemsResult.getOrderItems());
+
+        } catch (Exception e) {
+            return CreateOrderUseCase.CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 주문 검증
+     */
+    private OrderValidationResult validateOrder(CreateOrderUseCase.CreateOrderCommand command) {
+        // 1. 입력값 검증
+        if (command.getUserId() == null || command.getUserId() <= 0) {
+            return OrderValidationResult.failure("잘못된 사용자 ID입니다.");
+        }
+        
+        if (command.getOrderItems() == null || command.getOrderItems().isEmpty()) {
+            return OrderValidationResult.failure("주문 상품이 없습니다.");
+        }
+        
+        // 2. 사용자 존재 확인
+        if (!loadUserPort.existsById(command.getUserId())) {
+            return OrderValidationResult.failure("사용자를 찾을 수 없습니다.");
+        }
+        return OrderValidationResult.success();
+    }
+
+    /**
+     * 주문 아이템 생성 및 재고 차감
+     */
+    private OrderItemsResult createOrderItems(CreateOrderUseCase.CreateOrderCommand command) {
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (CreateOrderUseCase.OrderItemCommand itemCommand : command.getOrderItems()) {
+            // 상품 조회
+            LoadProductPort.ProductInfo productInfo = loadProductPort.loadProductById(itemCommand.getProductId())
+                    .orElse(null);
+            
+            if (productInfo == null) {
+                return OrderItemsResult.failure("상품을 찾을 수 없습니다: " + itemCommand.getProductId());
+            }
+
+            // 재고 확인
+            if (productInfo.getStock() < itemCommand.getQuantity()) {
+                return OrderItemsResult.failure("재고가 부족합니다: " + productInfo.getStock());
+            }
+
+            // 주문 아이템 생성
+            OrderItem orderItem = createOrderItem(
+                    productInfo.getId(),
+                    productInfo.getName(),
+                    itemCommand.getQuantity(),
+                    productInfo.getCurrentPrice()
+            );
+
+            orderItems.add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getTotalPrice());
+
+            // 재고 차감
+            if (!updateProductStockPort.deductStock(itemCommand.getProductId(), itemCommand.getQuantity())) {
+                return OrderItemsResult.failure("재고 차감에 실패했습니다: " + productInfo.getName());
+            }
+        }
+
+        return OrderItemsResult.success(orderItems, totalAmount);
+    }
+
+    /**
+     * 쿠폰 할인 적용
+     */
+    private CouponDiscountResult applyCouponDiscount(CreateOrderUseCase.CreateOrderCommand command, BigDecimal totalAmount) {
+        if (command.getUserCouponId() == null) {
+            return CouponDiscountResult.success(totalAmount, 0);
+        }
+
+        UseCouponUseCase.UseCouponCommand couponCommand = 
+            new UseCouponUseCase.UseCouponCommand(command.getUserId(), command.getUserCouponId(), totalAmount);
+        
+        UseCouponUseCase.UseCouponResult couponResult = useCouponUseCase.useCoupon(couponCommand);
+        
+        if (!couponResult.isSuccess()) {
+            return CouponDiscountResult.failure(couponResult.getErrorMessage());
+        }
+        
+        return CouponDiscountResult.success(couponResult.getDiscountedAmount(), couponResult.getDiscountAmount());
+    }
+
+    /**
+     * 주문 생성 및 저장
+     */
+    private Order createAndSaveOrder(CreateOrderUseCase.CreateOrderCommand command, 
+                                   List<OrderItem> orderItems, 
+                                   BigDecimal totalAmount, 
+                                   BigDecimal discountedAmount) {
+        Order order = new Order(command.getUserId(), orderItems, totalAmount, command.getUserCouponId());
+        order.setDiscountedAmount(discountedAmount);
+        order.setOrderedAt(LocalDateTime.now());
+        order.complete();
+
+        // 주문 아이템에 orderId 설정
+        for (OrderItem item : orderItems) {
+            item.setOrderId(order.getId());
+        }
+
+        return saveOrderPort.saveOrder(order);
+    }
+
+    /**
+     * 주문 결과 생성
+     */
+    private CreateOrderUseCase.CreateOrderResult createOrderResult(Order order, List<OrderItem> orderItems) {
+        List<CreateOrderUseCase.OrderItemResult> orderItemResults = new ArrayList<>();
+        for (OrderItem item : orderItems) {
+            orderItemResults.add(new CreateOrderUseCase.OrderItemResult(
+                item.getId(),
+                item.getProductId(),
+                item.getProductName(),
+                item.getQuantity(),
+                item.getUnitPrice(),
+                item.getTotalPrice()
+            ));
+        }
+
+        return CreateOrderUseCase.CreateOrderResult.success(
+            order.getId(),
+            order.getUserId(),
+            order.getUserCouponId(),
+            order.getTotalAmount(),
+            order.getDiscountedAmount(),
+            order.getStatus().name(),
+            orderItemResults,
+            order.getOrderedAt()
+        );
+    }
+
+    /**
+     * 주문 아이템 생성
+     */
+    private OrderItem createOrderItem(Long productId, String productName, Integer quantity, BigDecimal unitPrice) {
+        OrderItem orderItem = new OrderItem(null, productId, productName, quantity, unitPrice);
+        orderItem.setId(orderItemIdGenerator.getAndIncrement());
+        return orderItem;
+    }
+
+    // 내부 결과 클래스들
+    private static class OrderValidationResult {
+        private final boolean valid;
+        private final String errorMessage;
+
+        private OrderValidationResult(boolean valid, String errorMessage) {
+            this.valid = valid;
+            this.errorMessage = errorMessage;
+        }
+
+        public static OrderValidationResult success() {
+            return new OrderValidationResult(true, null);
+        }
+
+        public static OrderValidationResult failure(String errorMessage) {
+            return new OrderValidationResult(false, errorMessage);
+        }
+
+        public boolean isValid() { return valid; }
+        public String getErrorMessage() { return errorMessage; }
+    }
+
+    private static class OrderItemsResult {
+        private final boolean success;
+        private final List<OrderItem> orderItems;
+        private final BigDecimal totalAmount;
+        private final String errorMessage;
+
+        private OrderItemsResult(boolean success, List<OrderItem> orderItems, BigDecimal totalAmount, String errorMessage) {
+            this.success = success;
+            this.orderItems = orderItems;
+            this.totalAmount = totalAmount;
+            this.errorMessage = errorMessage;
+        }
+
+        public static OrderItemsResult success(List<OrderItem> orderItems, BigDecimal totalAmount) {
+            return new OrderItemsResult(true, orderItems, totalAmount, null);
+        }
+
+        public static OrderItemsResult failure(String errorMessage) {
+            return new OrderItemsResult(false, null, null, errorMessage);
+        }
+
+        public boolean isSuccess() { return success; }
+        public List<OrderItem> getOrderItems() { return orderItems; }
+        public BigDecimal getTotalAmount() { return totalAmount; }
+        public String getErrorMessage() { return errorMessage; }
+    }
+
+    private static class CouponDiscountResult {
+        private final boolean success;
+        private final BigDecimal discountedAmount;
+        private final Integer discountAmount;
+        private final String errorMessage;
+
+        private CouponDiscountResult(boolean success, BigDecimal discountedAmount, Integer discountAmount, String errorMessage) {
+            this.success = success;
+            this.discountedAmount = discountedAmount;
+            this.discountAmount = discountAmount;
+            this.errorMessage = errorMessage;
+        }
+
+        public static CouponDiscountResult success(BigDecimal discountedAmount, Integer discountAmount) {
+            return new CouponDiscountResult(true, discountedAmount, discountAmount, null);
+        }
+
+        public static CouponDiscountResult failure(String errorMessage) {
+            return new CouponDiscountResult(false, null, null, errorMessage);
+        }
+
+        public boolean isSuccess() { return success; }
+        public BigDecimal getDiscountedAmount() { return discountedAmount; }
+        public Integer getDiscountAmount() { return discountAmount; }
+        public String getErrorMessage() { return errorMessage; }
+    }
+} 
