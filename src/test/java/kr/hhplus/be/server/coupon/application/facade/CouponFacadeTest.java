@@ -116,7 +116,6 @@ class CouponFacadeTest {
                 .thenReturn(Optional.of(new LoadCouponPort.CouponInfo(
                         couponId, "테스트 쿠폰", "테스트 쿠폰 설명", 
                         1000, 10, 10, "ACTIVE"))); // 이미 최대 발급 수량에 도달
-        when(loadCouponPort.incrementIssuedCount(couponId)).thenReturn(false);
 
         // when
         var result = couponFacade.issueCoupon(
@@ -125,10 +124,10 @@ class CouponFacadeTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("쿠폰이 모두 소진되었습니다");
+        assertThat(result.getErrorMessage()).contains("발급할 수 없는 쿠폰입니다.");
         
         verify(loadCouponPort).loadCouponByIdWithLock(couponId);
-        verify(loadCouponPort).incrementIssuedCount(couponId);
+        verify(loadCouponPort, never()).incrementIssuedCount(couponId); // canIssueCoupon에서 실패하므로 호출되지 않음
         verify(saveUserCouponPort, never()).saveUserCoupon(any());
     }
 

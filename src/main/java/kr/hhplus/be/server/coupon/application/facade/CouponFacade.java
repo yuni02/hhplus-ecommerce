@@ -29,7 +29,7 @@ public class CouponFacade {
 
     private final LoadUserPort loadUserPort;
     private final LoadCouponPort loadCouponPort;
-    private final SaveCouponPort saveCouponPort;
+    private final SaveCouponPort saveCouponPort;        
     private final LoadUserCouponPort loadUserCouponPort;
     private final SaveUserCouponPort saveUserCouponPort;
     private final UpdateUserCouponPort updateUserCouponPort;
