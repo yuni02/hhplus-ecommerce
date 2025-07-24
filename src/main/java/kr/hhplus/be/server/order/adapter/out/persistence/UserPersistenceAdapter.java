@@ -6,7 +6,6 @@ import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 사용자 영속성 Adapter (Outgoing)
@@ -15,7 +14,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class UserPersistenceAdapter implements LoadUserPort {
 
     private final Map<Long, Object> users = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
 
     public UserPersistenceAdapter() {
         // 더미 데이터 초기화

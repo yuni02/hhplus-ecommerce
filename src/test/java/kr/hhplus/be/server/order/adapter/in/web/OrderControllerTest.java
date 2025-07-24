@@ -21,6 +21,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -246,5 +247,110 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다: 데이터베이스 오류"));
+    }
+
+    @Test
+    @DisplayName("결제 실패 시 재고 복구 - 잔액 부족")
+    void createOrder_PaymentFailure_InsufficientBalance_StockRestored() throws Exception {
+        // given
+        OrderRequest request = new OrderRequest();
+        request.setUserId(1L);
+        request.setOrderItems(List.of(
+                new OrderRequest.OrderItemRequest(1L, 2)
+        ));
+        request.setUserCouponId(null);
+        
+        CreateOrderUseCase.CreateOrderResult mockResult = CreateOrderUseCase.CreateOrderResult.failure("잔액이 부족합니다.");
+        
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+                .thenReturn(mockResult);
+
+        // when & then
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("잔액이 부족합니다."));
+        
+        verify(orderFacade).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+    }
+
+    @Test
+    @DisplayName("결제 실패 시 재고 복구 - 쿠폰 사용 실패")
+    void createOrder_PaymentFailure_CouponUseFailed_StockRestored() throws Exception {
+        // given
+        OrderRequest request = new OrderRequest();
+        request.setUserId(1L);
+        request.setOrderItems(List.of(
+                new OrderRequest.OrderItemRequest(1L, 2)
+        ));
+        request.setUserCouponId(1L); // 쿠폰 사용
+        
+        CreateOrderUseCase.CreateOrderResult mockResult = CreateOrderUseCase.CreateOrderResult.failure("쿠폰을 찾을 수 없습니다.");
+        
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+                .thenReturn(mockResult);
+
+        // when & then
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("쿠폰을 찾을 수 없습니다."));
+        
+        verify(orderFacade).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+    }
+
+    @Test
+    @DisplayName("결제 실패 시 재고 복구 - 주문 저장 실패")
+    void createOrder_PaymentFailure_OrderSaveFailed_StockRestored() throws Exception {
+        // given
+        OrderRequest request = new OrderRequest();
+        request.setUserId(1L);
+        request.setOrderItems(List.of(
+                new OrderRequest.OrderItemRequest(1L, 2)
+        ));
+        request.setUserCouponId(null);
+        
+        CreateOrderUseCase.CreateOrderResult mockResult = CreateOrderUseCase.CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: 데이터베이스 연결 오류");
+        
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+                .thenReturn(mockResult);
+
+        // when & then
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("주문 생성 중 오류가 발생했습니다: 데이터베이스 연결 오류"));
+        
+        verify(orderFacade).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+    }
+
+    @Test
+    @DisplayName("결제 실패 시 재고 복구 - 여러 상품 주문")
+    void createOrder_PaymentFailure_MultipleProducts_StockRestored() throws Exception {
+        // given
+        OrderRequest request = new OrderRequest();
+        request.setUserId(1L);
+        request.setOrderItems(List.of(
+                new OrderRequest.OrderItemRequest(1L, 2),
+                new OrderRequest.OrderItemRequest(2L, 3)
+        ));
+        request.setUserCouponId(null);
+        
+        CreateOrderUseCase.CreateOrderResult mockResult = CreateOrderUseCase.CreateOrderResult.failure("잔액이 부족합니다.");
+        
+        when(orderFacade.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+                .thenReturn(mockResult);
+
+        // when & then
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("잔액이 부족합니다."));
+        
+        verify(orderFacade).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 } 
