@@ -49,7 +49,7 @@ public class CouponFacade {
     }
 
     /**
-     * 쿠폰 발급 (Facade 메서드)
+     * 쿠폰 발급 (선착순 로직 적용)
      */
     @Transactional
     public IssueCouponUseCase.IssueCouponResult issueCoupon(IssueCouponUseCase.IssueCouponCommand command) {
@@ -64,33 +64,25 @@ public class CouponFacade {
                 return IssueCouponUseCase.IssueCouponResult.failure("사용자를 찾을 수 없습니다.");
             }
 
-            // 2. 쿠폰 조회
-            LoadCouponPort.CouponInfo couponInfo = loadCouponPort.loadCouponById(command.getCouponId())
+            // 3. 쿠폰 정보를 락과 함께 조회 (선착순 확인)
+            LoadCouponPort.CouponInfo couponInfo = loadCouponPort.loadCouponByIdWithLock(command.getCouponId())
                     .orElse(null);
             
             if (couponInfo == null) {
                 return IssueCouponUseCase.IssueCouponResult.failure("존재하지 않는 쿠폰입니다.");
             }
 
-            // 3. 쿠폰 발급 가능 여부 확인
+            // 4. 쿠폰 발급 가능 여부 확인
             if (!canIssueCoupon(couponInfo)) {
                 return IssueCouponUseCase.IssueCouponResult.failure("발급할 수 없는 쿠폰입니다.");
             }
 
-            // 4. 쿠폰 발급 수량 증가
-            SaveCouponPort.CouponInfo updatedCouponInfo = new SaveCouponPort.CouponInfo(
-                    couponInfo.getId(),
-                    couponInfo.getName(),
-                    couponInfo.getDescription(),
-                    couponInfo.getDiscountAmount(),
-                    couponInfo.getMaxIssuanceCount(),
-                    couponInfo.getIssuedCount() + 1,
-                    couponInfo.getIssuedCount() + 1 >= couponInfo.getMaxIssuanceCount() ? "SOLD_OUT" : couponInfo.getStatus()
-            );
-            
-            saveCouponPort.saveCoupon(updatedCouponInfo);
+            // 5. 쿠폰 발급 수량을 원자적으로 증가 (선착순 처리)
+            if (!loadCouponPort.incrementIssuedCount(command.getCouponId())) {
+                return IssueCouponUseCase.IssueCouponResult.failure("쿠폰이 모두 소진되었습니다. 선착순 발급에 실패했습니다.");
+            }
 
-            // 5. 사용자 쿠폰 생성
+            // 6. 사용자 쿠폰 생성
             UserCoupon userCoupon = new UserCoupon(
                     command.getUserId(),
                     command.getCouponId(),
