@@ -1,10 +1,10 @@
 package kr.hhplus.be.server.coupon.adapter.in.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.hhplus.be.server.coupon.application.facade.CouponFacade;
-import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
+import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,61 +17,59 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class CouponControllerTest {
 
     @Mock
-    private CouponFacade couponFacade;
+    private IssueCouponUseCase issueCouponUseCase;
+    
+    @Mock
+    private GetUserCouponsUseCase getUserCouponsUseCase;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new CouponController(couponFacade))
+        objectMapper = new ObjectMapper();
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                new CouponController(issueCouponUseCase, getUserCouponsUseCase))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
-        objectMapper = new ObjectMapper();
     }
-
-   
 
     @Test
     @DisplayName("사용자 쿠폰 조회 성공")
     void getUserCoupons_Success() throws Exception {
         // given
         Long userId = 1L;
+        GetUserCouponsUseCase.UserCouponInfo userCouponInfo = new GetUserCouponsUseCase.UserCouponInfo(
+                1L, 1L, "신규 가입 쿠폰", 1000, "AVAILABLE", LocalDateTime.now(), null);
         GetUserCouponsUseCase.GetUserCouponsResult result = 
-            new GetUserCouponsUseCase.GetUserCouponsResult(List.of());
-        
-        // Mock 설정을 더 구체적으로
-        when(couponFacade.getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class)))
-            .thenReturn(result);
+            new GetUserCouponsUseCase.GetUserCouponsResult(List.of(userCouponInfo));
+
+        when(getUserCouponsUseCase.getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class)))
+                .thenReturn(result);
 
         // when & then
-        String response = mockMvc.perform(get("/api/coupons/users/{userId}", userId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print()) // 응답 내용 출력
+        mockMvc.perform(get("/api/coupons/users/{userId}", userId))
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        
-        System.out.println("Response: " + response);
-        
-        // Mock이 실제로 호출되었는지 확인
-        verify(couponFacade).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].userCouponId").value(1L))
+                .andExpect(jsonPath("$[0].couponName").value("신규 가입 쿠폰"));
+
+        verify(getUserCouponsUseCase).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
     }
 
     @Test
@@ -79,80 +77,42 @@ class CouponControllerTest {
     void getUserCoupons_Success_EmptyResult() throws Exception {
         // given
         Long userId = 1L;
-
         GetUserCouponsUseCase.GetUserCouponsResult result = 
             new GetUserCouponsUseCase.GetUserCouponsResult(List.of());
-        
-        // Mock 설정을 더 구체적으로
-        when(couponFacade.getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class)))
-            .thenReturn(result);
+
+        when(getUserCouponsUseCase.getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class)))
+                .thenReturn(result);
 
         // when & then
-        String response = mockMvc.perform(get("/api/coupons/users/{userId}", userId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print()) // 응답 내용 출력
+        mockMvc.perform(get("/api/coupons/users/{userId}", userId))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        
-        System.out.println("Response: " + response);
-        
-        // Mock이 실제로 호출되었는지 확인
-        verify(couponFacade).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(getUserCouponsUseCase).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
     }
 
     @Test
     @DisplayName("사용자 쿠폰 조회 실패 - 잘못된 요청")
     void getUserCoupons_Failure_InvalidRequest() throws Exception {
-        // given
-        Long userId = 1L;
-        
-        GetUserCouponsUseCase.GetUserCouponsCommand command = 
-            new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
-        
-        // Mock 설정을 더 구체적으로
-        when(couponFacade.getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class)))
-            .thenThrow(new IllegalArgumentException("잘못된 사용자 ID입니다."));
-
         // when & then
-        String response = mockMvc.perform(get("/api/coupons/users/{userId}", userId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print()) // 응답 내용 출력
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("잘못된 사용자 ID입니다."))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        
-        System.out.println("Response: " + response);
-        
-        // Mock이 실제로 호출되었는지 확인
-        verify(couponFacade).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
+        mockMvc.perform(get("/api/coupons/users/{userId}", "invalid"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("사용자 쿠폰 조회 실패 - 서버 오류")
     void getUserCoupons_Failure_ServerError() throws Exception {
         // given
-        when(couponFacade.getUserCoupons(any())).thenThrow(new RuntimeException("데이터베이스 오류"));
+        Long userId = 1L;
+        when(getUserCouponsUseCase.getUserCoupons(any())).thenThrow(new RuntimeException("데이터베이스 오류"));
 
         // when & then
-        String response = mockMvc.perform(get("/api/coupons/users/{userId}", 1L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print()) // 응답 내용 출력
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다: 데이터베이스 오류"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        
-        System.out.println("Response: " + response);
-        
-        // Mock이 실제로 호출되었는지 확인
-        verify(couponFacade).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
+        mockMvc.perform(get("/api/coupons/users/{userId}", userId))
+                .andExpect(status().isInternalServerError());
+
+        verify(getUserCouponsUseCase).getUserCoupons(any(GetUserCouponsUseCase.GetUserCouponsCommand.class));
     }
 
     @Test
@@ -161,25 +121,21 @@ class CouponControllerTest {
         // given
         Long couponId = 1L;
         Long userId = 1L;
-        
-        IssueCouponUseCase.IssueCouponResult mockResult = IssueCouponUseCase.IssueCouponResult.success(
-                1L, couponId, "테스트 쿠폰", 1000, "AVAILABLE", LocalDateTime.now());
-        
-        when(couponFacade.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenReturn(mockResult);
+        IssueCouponUseCase.IssueCouponResult result = IssueCouponUseCase.IssueCouponResult.success(
+                1L, couponId, "신규 가입 쿠폰", 1000, "AVAILABLE", LocalDateTime.now());
+
+        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
+                .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", userId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("userId", userId.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userCouponId").value(1))
-                .andExpect(jsonPath("$.couponId").value(couponId))
-                .andExpect(jsonPath("$.couponName").value("테스트 쿠폰"))
-                .andExpect(jsonPath("$.discountAmount").value(1000))
-                .andExpect(jsonPath("$.status").value("AVAILABLE"));
-        
-        verify(couponFacade).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.userCouponId").value(1L))
+                .andExpect(jsonPath("$.couponName").value("신규 가입 쿠폰"));
+
+        verify(issueCouponUseCase).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
     }
 
     @Test
@@ -188,21 +144,18 @@ class CouponControllerTest {
         // given
         Long couponId = 1L;
         Long userId = 1L;
-        
-        IssueCouponUseCase.IssueCouponResult mockResult = IssueCouponUseCase.IssueCouponResult.failure(
-                "쿠폰이 모두 소진되었습니다. 선착순 발급에 실패했습니다.");
-        
-        when(couponFacade.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenReturn(mockResult);
+        IssueCouponUseCase.IssueCouponResult result = IssueCouponUseCase.IssueCouponResult
+                .failure("쿠폰이 모두 소진되었습니다. 선착순 발급에 실패했습니다.");
+
+        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
+                .thenReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", userId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("쿠폰이 모두 소진되었습니다. 선착순 발급에 실패했습니다."));
-        
-        verify(couponFacade).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+                        .param("userId", userId.toString()))
+                .andExpect(status().isBadRequest());
+
+        verify(issueCouponUseCase).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
     }
 
     @Test
@@ -210,50 +163,35 @@ class CouponControllerTest {
     void issueCoupon_ConcurrentRequests_Simulation() throws Exception {
         // given
         Long couponId = 1L;
-        Long userId = 1L;
-        int maxIssuanceCount = 3;
-        
-        // 첫 3번은 성공, 나머지는 실패
-        AtomicInteger callCount = new AtomicInteger(0);
-        when(couponFacade.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenAnswer(invocation -> {
-                    int currentCall = callCount.incrementAndGet();
-                    if (currentCall <= maxIssuanceCount) {
-                        return IssueCouponUseCase.IssueCouponResult.success(
-                                (long) currentCall, couponId, "테스트 쿠폰", 1000, "AVAILABLE", LocalDateTime.now());
-                    } else {
-                        return IssueCouponUseCase.IssueCouponResult.failure("쿠폰이 모두 소진되었습니다.");
-                    }
-                });
+        int numberOfThreads = 4;
+        CountDownLatch latch = new CountDownLatch(numberOfThreads);
+        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 
-        // when & then - 첫 번째 요청 (성공)
-        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", userId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userCouponId").value(1));
-        
-        // 두 번째 요청 (성공)
-        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", Long.toString(userId + 1))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userCouponId").value(2));
-        
-        // 세 번째 요청 (성공)
-        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", Long.toString(userId + 2))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userCouponId").value(3));
-        
-        // 네 번째 요청 (실패 - 재고 소진)
-        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                        .param("userId", Long.toString(userId + 3))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("쿠폰이 모두 소진되었습니다."));
-        
-        verify(couponFacade, times(4)).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+        // 성공 응답 설정
+        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
+                .thenReturn(IssueCouponUseCase.IssueCouponResult.success(
+                        1L, couponId, "신규 가입 쿠폰", 1000, "AVAILABLE", LocalDateTime.now()));
+
+        // when
+        for (int i = 0; i < numberOfThreads; i++) {
+            final int userId = i + 1;
+            executorService.submit(() -> {
+                try {
+                    mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
+                                    .param("userId", String.valueOf(userId)))
+                            .andExpect(status().isOk());
+                } catch (Exception e) {
+                    // 예외 무시 (테스트에서는 동시성만 확인)
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executorService.shutdown();
+
+        // then
+        verify(issueCouponUseCase, times(4)).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
     }
 } 

@@ -3,20 +3,39 @@ package kr.hhplus.be.server.balance.domain;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+
 /**
  * 잔액 거래 도메인 엔티티
  * 순수한 비즈니스 로직만 포함
  */
+@Entity
+@Table(name = "balance_transactions")
 public class BalanceTransaction {
-
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;    
+    @Column(name = "user_id")
     private Long userId;
+    @Column(name = "amount")
     private BigDecimal amount;
+    @Column(name = "type")
     private TransactionType type;
+    @Column(name = "status")
     private TransactionStatus status = TransactionStatus.COMPLETED;
+    @Column(name = "description")
     private String description;
+    @Column(name = "reference_id")
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public BalanceTransaction() {}

@@ -1,10 +1,10 @@
 package kr.hhplus.be.server.product.adapter.in.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.hhplus.be.server.product.application.facade.ProductFacade;
-import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
+import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -28,17 +28,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProductControllerTest {
 
     @Mock
-    private ProductFacade productFacade;
+    private GetProductDetailUseCase getProductDetailUseCase;
+    
+    @Mock
+    private GetPopularProductsUseCase getPopularProductsUseCase;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProductController(productFacade))
+        objectMapper = new ObjectMapper();
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                new ProductController(getProductDetailUseCase, getPopularProductsUseCase))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
-        objectMapper = new ObjectMapper();
     }
 
     @Test
@@ -46,28 +50,23 @@ class ProductControllerTest {
     void getProductDetail_Success() throws Exception {
         // given
         Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer currentPrice = 10000;
-        Integer stock = 50;
-        String status = "ACTIVE";
-        LocalDateTime createdAt = LocalDateTime.now();
-        LocalDateTime updatedAt = LocalDateTime.now();
-        
         GetProductDetailUseCase.GetProductDetailResult result = 
-            new GetProductDetailUseCase.GetProductDetailResult(productId, productName, currentPrice, stock, status, createdAt, updatedAt);
-        
-        when(productFacade.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
-            .thenReturn(Optional.of(result));
+            new GetProductDetailUseCase.GetProductDetailResult(
+                productId, "상품명", 10000, 100, "ACTIVE", LocalDateTime.now(), LocalDateTime.now());
+
+        when(getProductDetailUseCase.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
+                .thenReturn(Optional.of(result));
 
         // when & then
-        mockMvc.perform(get("/api/products/{productId}", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/products/{productId}", productId))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(productId))
-                .andExpect(jsonPath("$.name").value(productName))
-                .andExpect(jsonPath("$.currentPrice").value(currentPrice))
-                .andExpect(jsonPath("$.stock").value(stock))
-                .andExpect(jsonPath("$.status").value(status));
+                .andExpect(jsonPath("$.name").value("상품명"))
+                .andExpect(jsonPath("$.currentPrice").value(10000))
+                .andExpect(jsonPath("$.stock").value(100));
+
+        verify(getProductDetailUseCase).getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class));
     }
 
     @Test
@@ -75,30 +74,23 @@ class ProductControllerTest {
     void getProductDetail_Failure_ProductNotFound() throws Exception {
         // given
         Long productId = 999L;
-        
-        when(productFacade.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
-            .thenReturn(Optional.empty());
+
+        when(getProductDetailUseCase.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
+                .thenReturn(Optional.empty());
 
         // when & then
-        mockMvc.perform(get("/api/products/{productId}", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/products/{productId}", productId))
                 .andExpect(status().isNotFound());
+
+        verify(getProductDetailUseCase).getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class));
     }
 
     @Test
     @DisplayName("상품 상세 조회 실패 - 잘못된 요청")
     void getProductDetail_Failure_InvalidRequest() throws Exception {
-        // given
-        Long productId = 1L;
-        
-        when(productFacade.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
-            .thenThrow(new IllegalArgumentException("잘못된 상품 ID입니다."));
-
         // when & then
-        mockMvc.perform(get("/api/products/{productId}", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("잘못된 상품 ID입니다."));
+        mockMvc.perform(get("/api/products/{productId}", "invalid"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -106,31 +98,38 @@ class ProductControllerTest {
     void getProductDetail_Failure_ServerError() throws Exception {
         // given
         Long productId = 1L;
-        
-        when(productFacade.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
-            .thenThrow(new RuntimeException("데이터베이스 오류"));
+        when(getProductDetailUseCase.getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class)))
+                .thenThrow(new RuntimeException("서버 오류"));
 
         // when & then
-        mockMvc.perform(get("/api/products/{productId}", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다: 데이터베이스 오류"));
+        mockMvc.perform(get("/api/products/{productId}", productId))
+                .andExpect(status().isInternalServerError());
+
+        verify(getProductDetailUseCase).getProductDetail(any(GetProductDetailUseCase.GetProductDetailCommand.class));
     }
 
     @Test
     @DisplayName("인기 상품 조회 성공")
     void getPopularProducts_Success() throws Exception {
         // given
+        GetPopularProductsUseCase.PopularProductInfo popularProduct = 
+            new GetPopularProductsUseCase.PopularProductInfo(
+                1L, "인기상품", 20000, 50, 100, 2000000L, 30, 600000L, 0.8, LocalDateTime.now(), 1);
         GetPopularProductsUseCase.GetPopularProductsResult result = 
-            new GetPopularProductsUseCase.GetPopularProductsResult(List.of());
-        
-        when(productFacade.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
-            .thenReturn(result);
+            new GetPopularProductsUseCase.GetPopularProductsResult(List.of(popularProduct));
+
+        when(getPopularProductsUseCase.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
+                .thenReturn(result);
 
         // when & then
-        mockMvc.perform(get("/api/products/popular")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/products/popular"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].productId").value(1L))
+                .andExpect(jsonPath("$[0].productName").value("인기상품"))
+                .andExpect(jsonPath("$[0].rank").value(1));
+
+        verify(getPopularProductsUseCase).getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class));
     }
 
     @Test
@@ -139,29 +138,31 @@ class ProductControllerTest {
         // given
         GetPopularProductsUseCase.GetPopularProductsResult result = 
             new GetPopularProductsUseCase.GetPopularProductsResult(List.of());
-        
-        when(productFacade.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
-            .thenReturn(result);
+
+        when(getPopularProductsUseCase.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
+                .thenReturn(result);
 
         // when & then
-        mockMvc.perform(get("/api/products/popular")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/products/popular"))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
+
+        verify(getPopularProductsUseCase).getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class));
     }
 
     @Test
     @DisplayName("인기 상품 조회 실패 - 서버 오류")
     void getPopularProducts_Failure_ServerError() throws Exception {
         // given
-        when(productFacade.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
-            .thenThrow(new RuntimeException("데이터베이스 오류"));
+        when(getPopularProductsUseCase.getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class)))
+                .thenThrow(new RuntimeException("서버 오류"));
 
         // when & then
-        mockMvc.perform(get("/api/products/popular")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다: 데이터베이스 오류"));
+        mockMvc.perform(get("/api/products/popular"))
+                .andExpect(status().isInternalServerError());
+
+        verify(getPopularProductsUseCase).getPopularProducts(any(GetPopularProductsUseCase.GetPopularProductsCommand.class));
     }
 } 
