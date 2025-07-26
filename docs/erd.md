@@ -65,46 +65,17 @@ erDiagram
     ORDER_HISTORY_EVENT {
         BIGINT id PK "로그 고유 ID (불변)"
         BIGINT _order_id_ "FK → Order"
-        JSON payload "Event data structure (이벤트 소싱)"
-        DATETIME sent_at "로그 생성 시점 (INSERT ONLY)"
+        STRING event_type "ORDER_COMPLETED / CANCELLED / REFUNDED"
+        DATETIME occurred_at "이벤트 발생 시각"
+        VARCHAR cancel_reason "주문 취소 사유 (nullable)"
+        INT refund_amount "환불 금액 (nullable)"
+        STRING payment_method "결제 수단 (nullable)"
+        INT total_amount "주문 총액"
+        INT discount_amount "할인 금액"
+        INT final_amount "최종 결제 금액"
+        DATETIME created_at "로그 생성 시각"
     }
 
-
-%% JSON 페이로드 구조 스키마 (문서화 목적)
-    ORDER_EVENT_PAYLOAD_SCHEMA {
-        STRING eventType "ORDER_COMPLETED/CANCELLED/REFUNDED"
-        DATETIME timestamp "Event occurrence time"
-        BIGINT orderId "Reference to order"
-        BIGINT userId "Reference to user"
-        JSON orderDetails "Order details object"
-        JSON couponInfo "Coupon information object"
-        STRING cancelReason "For cancelled orders only"
-        JSON refundInfo "For refunded orders only"
-    }
-
-%% orderDetails 객체 구조
-    ORDER_DETAILS_SCHEMA {
-        INT totalAmount "Total order amount"
-        INT discountAmount "Applied discount amount"
-        STRING paymentMethod "BALANCE/CARD/etc"
-        JSON items "Array of order items"
-    }
-
-%% orderDetails.items 배열 구조
-    ORDER_ITEM_SCHEMA {
-        BIGINT productId "Product ID"
-        STRING productName "Product name"
-        INT quantity "Ordered quantity"
-        INT unitPrice "Unit price at time of order"
-        INT totalPrice "Total price for this item"
-    }
-
-%% couponInfo 객체 구조
-    COUPON_INFO_SCHEMA {
-        BIGINT couponId "Coupon ID"
-        STRING couponName "Coupon name"
-        INT discountAmount "Discount amount applied"
-    }
 
 %% 🔥 로그성 테이블: 사용자 잔액 거래 내역 (INSERT ONLY, 감사 추적)
     USER_BALANCE_TX {
@@ -139,11 +110,5 @@ erDiagram
 
 %% Optional relations
     PRODUCT ||--o{ PRODUCT_STAT : "aggregates"
-
-%% JSON 스키마 관계 (논리적 관계)
-    ORDER_HISTORY_EVENT ||--|| ORDER_EVENT_PAYLOAD_SCHEMA : "payload structure"
-    ORDER_EVENT_PAYLOAD_SCHEMA ||--|| ORDER_DETAILS_SCHEMA : "orderDetails object"
-    ORDER_EVENT_PAYLOAD_SCHEMA ||--|| COUPON_INFO_SCHEMA : "couponInfo object"
-    ORDER_DETAILS_SCHEMA ||--o{ ORDER_ITEM_SCHEMA : "items array"
 
 ```

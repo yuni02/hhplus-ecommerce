@@ -1,7 +1,12 @@
 package kr.hhplus.be.server.balance.application;
 
-import kr.hhplus.be.server.balance.application.facade.BalanceFacade;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
+import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
+import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
+import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
+import kr.hhplus.be.server.balance.domain.Balance;
+import kr.hhplus.be.server.balance.domain.BalanceTransaction;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,21 +15,29 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ChargeBalanceServiceTest {
 
     @Mock
-    private BalanceFacade balanceFacade;
+    private LoadUserPort loadUserPort;
+    
+    @Mock
+    private LoadBalancePort loadBalancePort;
+    
+    @Mock
+    private SaveBalanceTransactionPort saveBalanceTransactionPort;
 
     private ChargeBalanceService chargeBalanceService;
 
     @BeforeEach
     void setUp() {
-        chargeBalanceService = new ChargeBalanceService(balanceFacade);
+        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort);
     }
 
     @Test
@@ -32,17 +45,27 @@ class ChargeBalanceServiceTest {
     void chargeBalance_Success() {
         // given
         Long userId = 1L;
-        BigDecimal chargeAmount = new BigDecimal("10000");
-        BigDecimal newBalance = new BigDecimal("60000");
-        Long transactionId = 1L;
-        
+        BigDecimal amount = BigDecimal.valueOf(10000);
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
-            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
+            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, amount);
+
+        Balance existingBalance = new Balance(userId);
+        existingBalance.setId(1L);
+        existingBalance.setAmount(BigDecimal.valueOf(5000));
         
-        ChargeBalanceUseCase.ChargeBalanceResult expectedResult = 
-            ChargeBalanceUseCase.ChargeBalanceResult.success(userId, newBalance, transactionId);
+        Balance savedBalance = new Balance(userId);
+        savedBalance.setId(1L);
+        savedBalance.setAmount(BigDecimal.valueOf(15000));
         
-        when(balanceFacade.chargeBalance(command)).thenReturn(expectedResult);
+        BalanceTransaction savedTransaction = new BalanceTransaction(userId, amount, 
+            BalanceTransaction.TransactionType.CHARGE, "잔액 충전");
+        savedTransaction.setId(1L);
+
+        when(loadUserPort.existsById(userId)).thenReturn(true);
+        when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
+        when(loadBalancePort.saveBalance(any(Balance.class))).thenReturn(savedBalance);
+        when(saveBalanceTransactionPort.saveBalanceTransaction(any(BalanceTransaction.class)))
+            .thenReturn(savedTransaction);
 
         // when
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(command);
@@ -50,39 +73,36 @@ class ChargeBalanceServiceTest {
         // then
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getUserId()).isEqualTo(userId);
-        assertThat(result.getNewBalance()).isEqualTo(newBalance);
-        assertThat(result.getTransactionId()).isEqualTo(transactionId);
-        assertThat(result.getErrorMessage()).isNull();
+        assertThat(result.getNewBalance()).isEqualTo(BigDecimal.valueOf(15000));
+        assertThat(result.getTransactionId()).isEqualTo(1L);
         
-        verify(balanceFacade).chargeBalance(command);
+        verify(loadUserPort).existsById(userId);
+        verify(loadBalancePort).loadActiveBalanceByUserId(userId);
+        verify(loadBalancePort).saveBalance(any(Balance.class));
+        verify(saveBalanceTransactionPort).saveBalanceTransaction(any(BalanceTransaction.class));
     }
 
     @Test
-    @DisplayName("잔액 충전 실패")
-    void chargeBalance_Failure() {
+    @DisplayName("잔액 충전 실패 - 사용자가 존재하지 않는 경우")
+    void chargeBalance_Failure_UserNotFound() {
         // given
-        Long userId = 999L;
-        BigDecimal chargeAmount = new BigDecimal("10000");
-        String errorMessage = "사용자를 찾을 수 없습니다.";
-        
+        Long userId = 1L;
+        BigDecimal amount = BigDecimal.valueOf(10000);
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
-            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
-        
-        ChargeBalanceUseCase.ChargeBalanceResult expectedResult = 
-            ChargeBalanceUseCase.ChargeBalanceResult.failure(errorMessage);
-        
-        when(balanceFacade.chargeBalance(command)).thenReturn(expectedResult);
+            new ChargeBalanceUseCase.ChargeBalanceCommand(userId, amount);
+
+        when(loadUserPort.existsById(userId)).thenReturn(false);
 
         // when
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo(errorMessage);
-        assertThat(result.getUserId()).isNull();
-        assertThat(result.getNewBalance()).isNull();
-        assertThat(result.getTransactionId()).isNull();
+        assertThat(result.getErrorMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
         
-        verify(balanceFacade).chargeBalance(command);
+        verify(loadUserPort).existsById(userId);
+        verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
+        verify(loadBalancePort, never()).saveBalance(any());
+        verify(saveBalanceTransactionPort, never()).saveBalanceTransaction(any());
     }
 } 

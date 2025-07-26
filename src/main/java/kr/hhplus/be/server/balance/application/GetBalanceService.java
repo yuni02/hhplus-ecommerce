@@ -1,26 +1,48 @@
 package kr.hhplus.be.server.balance.application;
 
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
-import kr.hhplus.be.server.balance.application.facade.BalanceFacade;
+import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
+import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
+import kr.hhplus.be.server.balance.domain.Balance;
 
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 /**
- * 잔액 조회 Application 서비스 (Facade 패턴 적용)
+ * 잔액 조회 Application 서비스
  */
 @Service
 public class GetBalanceService implements GetBalanceUseCase {
 
-    private final BalanceFacade balanceFacade;
+    private final LoadUserPort loadUserPort;
+    private final LoadBalancePort loadBalancePort;
 
-    public GetBalanceService(BalanceFacade balanceFacade) {
-        this.balanceFacade = balanceFacade;
+    public GetBalanceService(LoadUserPort loadUserPort, LoadBalancePort loadBalancePort) {
+        this.loadUserPort = loadUserPort;
+        this.loadBalancePort = loadBalancePort;
     }
 
     @Override
     public Optional<GetBalanceResult> getBalance(GetBalanceCommand command) {
-        return balanceFacade.getBalance(command);
+        try {
+            // 1. 사용자 존재 확인
+            if (!loadUserPort.existsById(command.getUserId())) {
+                return Optional.empty();
+            }
+
+            // 2. 잔액 조회
+            Optional<Balance> balanceOpt = loadBalancePort.loadActiveBalanceByUserId(command.getUserId());
+            
+            if (balanceOpt.isEmpty()) {
+                return Optional.empty();
+            }
+
+            Balance balance = balanceOpt.get();
+            return Optional.of(new GetBalanceResult(command.getUserId(), balance.getAmount()));
+
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 } 

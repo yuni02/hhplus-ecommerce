@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.coupon.adapter.in.web;
 
-import kr.hhplus.be.server.coupon.application.facade.CouponFacade;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.response.CouponResponse;
@@ -21,10 +20,13 @@ import java.util.stream.Collectors;
 @Tag(name = "Coupon", description = "쿠폰 관리 API")
 public class CouponController {
 
-    private final CouponFacade couponFacade;
+    private final IssueCouponUseCase issueCouponUseCase;
+    private final GetUserCouponsUseCase getUserCouponsUseCase;
 
-    public CouponController(CouponFacade couponFacade) {
-        this.couponFacade = couponFacade;
+    public CouponController(IssueCouponUseCase issueCouponUseCase,
+                          GetUserCouponsUseCase getUserCouponsUseCase) {
+        this.issueCouponUseCase = issueCouponUseCase;
+        this.getUserCouponsUseCase = getUserCouponsUseCase;
     }
 
     @PostMapping("/{id}/issue")
@@ -39,12 +41,12 @@ public class CouponController {
             @Parameter(description = "사용자 ID", required = true, example = "1") @RequestParam(name = "userId", required = true) Long userId) {
         
         IssueCouponUseCase.IssueCouponCommand command = new IssueCouponUseCase.IssueCouponCommand(userId, id);
-        IssueCouponUseCase.IssueCouponResult result = couponFacade.issueCoupon(command);
-
+        IssueCouponUseCase.IssueCouponResult result = issueCouponUseCase.issueCoupon(command);
+        
         if (!result.isSuccess()) {
             return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
         }
-
+        
         CouponResponse response = new CouponResponse(
                 result.getUserCouponId(),
                 result.getCouponId(),
@@ -53,7 +55,7 @@ public class CouponController {
                 result.getStatus(),
                 result.getIssuedAt()
         );
-
+        
         return ResponseEntity.ok(response);
     }
 
@@ -68,8 +70,8 @@ public class CouponController {
             @Parameter(description = "사용자 ID", required = true, example = "1") @PathVariable(name = "userId") Long userId) {
         
         GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
-        GetUserCouponsUseCase.GetUserCouponsResult result = couponFacade.getUserCoupons(command);
-
+        GetUserCouponsUseCase.GetUserCouponsResult result = getUserCouponsUseCase.getUserCoupons(command);
+        
         List<UserCouponResponse> responses = result.getUserCoupons().stream()
                 .map(userCoupon -> new UserCouponResponse(
                         userCoupon.getUserCouponId(),
@@ -81,7 +83,7 @@ public class CouponController {
                         userCoupon.getUsedAt()
                 ))
                 .collect(Collectors.toList());
-
+        
         return ResponseEntity.ok(responses);
     }
 } 

@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
-import kr.hhplus.be.server.order.application.facade.OrderFacade;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.application.response.OrderResponse;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
@@ -21,10 +20,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Order", description = "주문 관리 API")
 public class OrderController {
 
-    private final OrderFacade orderFacade;
+    private final CreateOrderUseCase createOrderUseCase;
 
-    public OrderController(OrderFacade orderFacade) {
-        this.orderFacade = orderFacade;
+    public OrderController(CreateOrderUseCase createOrderUseCase) {
+        this.createOrderUseCase = createOrderUseCase;
     }
 
     /**
@@ -47,7 +46,7 @@ public class OrderController {
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
                 request.getUserId(), orderItemCommands, request.getUserCouponId());
 
-        CreateOrderUseCase.CreateOrderResult result = orderFacade.createOrder(command);
+        CreateOrderUseCase.CreateOrderResult result = createOrderUseCase.createOrder(command);
 
         if (!result.isSuccess()) {
             return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
