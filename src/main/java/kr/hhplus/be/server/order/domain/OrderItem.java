@@ -1,20 +1,48 @@
 package kr.hhplus.be.server.order.domain;
 
+import jakarta.persistence.*;
+import kr.hhplus.be.server.product.domain.Product;
 import java.math.BigDecimal;
 
 /**
  * 주문 아이템 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * ERD의 ORDER_ITEM 테이블과 매핑
  */
+@Entity
+@Table(name = "order_items")
 public class OrderItem {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "order_id", nullable = false)
     private Long orderId;
+
+    @Column(name = "product_id", nullable = false)
     private Long productId;
+
+    @Column(name = "product_name", nullable = false)
     private String productName;
+
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @Column(name = "unit_price_snapshot", nullable = false)
     private BigDecimal unitPrice;
+
+    @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
+
+    // 실제 엔티티와의 관계 (Lazy Loading)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", insertable = false, updatable = false)
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    private Product product;
 
     public OrderItem() {}
 
@@ -24,7 +52,7 @@ public class OrderItem {
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
-        this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        calculateTotalPrice();
     }
 
     public Long getId() {
@@ -78,7 +106,6 @@ public class OrderItem {
     }
 
     public BigDecimal getTotalPrice() {
-        calculateTotalPrice();
         return totalPrice;
     }
 
@@ -86,11 +113,31 @@ public class OrderItem {
         this.totalPrice = totalPrice;
     }
 
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
+        if (order != null) {
+            this.orderId = order.getId();
+        }
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+        if (product != null) {
+            this.productId = product.getId();
+        }
+    }
+
     public void calculateTotalPrice() {
-        if (this.unitPrice != null && this.quantity != null) {
-            this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
-        } else {
-            this.totalPrice = BigDecimal.ZERO;
+        if (quantity != null && unitPrice != null) {
+            this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
     }
 } 
