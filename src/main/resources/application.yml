@@ -13,13 +13,25 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
-    generate-ddl: false
-    show-sql: false
+    generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
+    show-sql: true      # 실행되는 SQL 출력
     hibernate:
-      ddl-auto: none
+      ddl-auto: update  # 스키마 변경사항을 자동으로 반영 (기존 데이터 유지)
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: true          # SQL을 읽기 쉽게 포맷팅
+      hibernate.use_sql_comments: true    # SQL에 주석 추가
+      hibernate.jdbc.batch_size: 20       # 배치 처리 최적화
+      hibernate.order_inserts: true       # INSERT 순서 최적화
+      hibernate.order_updates: true       # UPDATE 순서 최적화
+
+# 로깅 설정
+logging:
+  level:
+    org.hibernate.SQL: DEBUG                # SQL 쿼리 로깅
+    org.hibernate.type.descriptor.sql: TRACE # 바인딩 파라미터 로깅
+    org.springframework.orm.jpa: DEBUG       # JPA 관련 로깅
 
 ---
 spring.config.activate.on-profile: local, test
