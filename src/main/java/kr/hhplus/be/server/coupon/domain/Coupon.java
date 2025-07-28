@@ -1,24 +1,51 @@
 package kr.hhplus.be.server.coupon.domain;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 쿠폰 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * ERD의 COUPON 테이블과 매핑
  */
+@Entity
+@Table(name = "coupons")
 public class Coupon {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "discount_amount", nullable = false)
     private BigDecimal discountAmount;
+
+    @Column(name = "total_quantity", nullable = false)
     private Integer maxIssuanceCount;
+
+    @Column(name = "issued_count", nullable = false)
     private Integer issuedCount = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private CouponStatus status = CouponStatus.ACTIVE;
+
+    @Column(name = "valid_from")
     private LocalDateTime validFrom;
+
+    @Column(name = "valid_to")
     private LocalDateTime validTo;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     public Coupon() {}
@@ -33,6 +60,17 @@ public class Coupon {
         this.validTo = validTo;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -124,15 +162,20 @@ public class Coupon {
     }
 
     public boolean canIssue() {
-        return status == CouponStatus.ACTIVE && 
-               issuedCount < maxIssuanceCount && 
-               LocalDateTime.now().isAfter(validFrom) && 
-               LocalDateTime.now().isBefore(validTo);
+        return status == CouponStatus.ACTIVE 
+            && issuedCount < maxIssuanceCount
+            && (validFrom == null || LocalDateTime.now().isAfter(validFrom))
+            && (validTo == null || LocalDateTime.now().isBefore(validTo));
     }
 
     public void incrementIssuedCount() {
+        if (!canIssue()) {
+            throw new IllegalStateException("쿠폰을 발급할 수 없습니다.");
+        }
         this.issuedCount++;
         this.updatedAt = LocalDateTime.now();
+        
+        // 발급 수량이 최대치에 도달하면 상태를 SOLD_OUT으로 변경
         if (this.issuedCount >= this.maxIssuanceCount) {
             this.status = CouponStatus.SOLD_OUT;
         }
