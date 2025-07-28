@@ -36,7 +36,7 @@ class BalanceTransactionTest {
         // given
         Long userId = 1L;
         BigDecimal amount = new BigDecimal("5000");
-        BalanceTransaction.TransactionType type = BalanceTransaction.TransactionType.DEDUCT;
+        BalanceTransaction.TransactionType type = BalanceTransaction.TransactionType.PAYMENT;
         String description = "주문 결제";
 
         // when
@@ -154,7 +154,10 @@ class BalanceTransactionTest {
     void validateBalanceTransactionTypes() {
         // given & when & then
         assertThat(BalanceTransaction.TransactionType.CHARGE).isNotNull();
-        assertThat(BalanceTransaction.TransactionType.DEDUCT).isNotNull();
+        assertThat(BalanceTransaction.TransactionType.PAYMENT).isNotNull();
+        assertThat(BalanceTransaction.TransactionType.REFUND).isNotNull();
+        assertThat(BalanceTransaction.TransactionType.DEPOSIT).isNotNull();
+        assertThat(BalanceTransaction.TransactionType.CHARGE).isNotNull();  // 잔액 충전 타입   
         
         assertThat(BalanceTransaction.TransactionStatus.COMPLETED).isNotNull();
         assertThat(BalanceTransaction.TransactionStatus.FAILED).isNotNull();

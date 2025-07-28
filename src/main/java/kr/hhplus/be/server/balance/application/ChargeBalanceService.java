@@ -57,7 +57,7 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
             BalanceTransaction transaction = new BalanceTransaction(
                     command.getUserId(), 
                     command.getAmount(), 
-                    BalanceTransaction.TransactionType.CHARGE, 
+                    BalanceTransaction.TransactionType.CHARGE,  // 잔액 충전 타입
                     "잔액 충전"
             );
             transaction.setCreatedAt(LocalDateTime.now());

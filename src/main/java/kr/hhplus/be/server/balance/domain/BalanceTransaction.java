@@ -1,42 +1,54 @@
 package kr.hhplus.be.server.balance.domain;
 
+import jakarta.persistence.*;
+import kr.hhplus.be.server.user.domain.User;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-
 /**
- * 잔액 거래 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * 사용자 잔액 거래 내역 도메인 엔티티
+ * ERD의 USER_BALANCE_TX 테이블과 매핑
+ * 로그성 테이블 (INSERT ONLY, 감사 추적)
  */
 @Entity
-@Table(name = "balance_transactions")
+@Table(name = "user_balance_tx")
 public class BalanceTransaction {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;    
-    @Column(name = "user_id")
+
+    @Column(name = "user_id", nullable = false)
     private Long userId;
-    @Column(name = "amount")
+
+    @Column(name = "amount", nullable = false)
     private BigDecimal amount;
-    @Column(name = "type")
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tx_type", nullable = false)
     private TransactionType type;
-    @Column(name = "status")
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private TransactionStatus status = TransactionStatus.COMPLETED;
-    @Column(name = "description")
+
+    @Column(name = "memo")
     private String description;
-    @Column(name = "reference_id")
+
+    @Column(name = "related_order_id")
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
-    @Column(name = "created_at")
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    @Column(name = "updated_at")
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // 실제 엔티티와의 관계 (Lazy Loading)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
 
     public BalanceTransaction() {}
 
@@ -46,6 +58,18 @@ public class BalanceTransaction {
         this.type = type;
         this.description = description;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -120,11 +144,19 @@ public class BalanceTransaction {
         this.updatedAt = updatedAt;
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     public enum TransactionType {
-        CHARGE, DEDUCT, REFUND
+        DEPOSIT, PAYMENT, REFUND, CHARGE
     }
 
     public enum TransactionStatus {
-        PENDING, COMPLETED, FAILED, CANCELLED
+        PENDING, PROCESSING, COMPLETED, FAILED
     }
 } 
