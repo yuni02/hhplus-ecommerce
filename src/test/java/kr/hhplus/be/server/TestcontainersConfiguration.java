@@ -1,11 +1,13 @@
 package kr.hhplus.be.server;
 
 import jakarta.annotation.PreDestroy;
-import org.springframework.context.annotation.Configuration;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-@Configuration
+/**
+ * 테스트 전용 Testcontainers 설정
+ * 메인 애플리케이션에서는 로드되지 않음
+ */
 class TestcontainersConfiguration {
 
 	public static final MySQLContainer<?> MYSQL_CONTAINER;
