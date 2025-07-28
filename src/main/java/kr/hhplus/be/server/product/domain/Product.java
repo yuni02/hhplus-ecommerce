@@ -1,22 +1,45 @@
 package kr.hhplus.be.server.product.domain;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 상품 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * ERD의 PRODUCT 테이블과 매핑
  */
+@Entity
+@Table(name = "products")
 public class Product {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "current_price", nullable = false)
     private BigDecimal currentPrice;
+
+    @Column(name = "stock", nullable = false)
     private Integer stock;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE;
+
+    @Column(name = "category")
     private String category;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     public Product() {}
@@ -29,6 +52,17 @@ public class Product {
         this.category = category;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -112,16 +146,32 @@ public class Product {
     }
 
     public void decreaseStock(Integer quantity) {
-        if (!hasStock(quantity)) {
-            throw new InsufficientStockException("재고가 부족합니다.");
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("차감할 수량은 양수여야 합니다.");
+        }
+        if (stock < quantity) {
+            throw new InsufficientStockException("재고가 부족합니다. 현재 재고: " + stock);
         }
         this.stock -= quantity;
         this.updatedAt = LocalDateTime.now();
+        
+        // 재고가 0이 되면 상태를 SOLD_OUT으로 변경
+        if (this.stock == 0) {
+            this.status = ProductStatus.SOLD_OUT;
+        }
     }
 
     public void increaseStock(Integer quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("증가할 수량은 양수여야 합니다.");
+        }
         this.stock += quantity;
         this.updatedAt = LocalDateTime.now();
+        
+        // 재고가 생기면 상태를 ACTIVE로 변경 (SOLD_OUT에서만)
+        if (this.status == ProductStatus.SOLD_OUT && this.stock > 0) {
+            this.status = ProductStatus.ACTIVE;
+        }
     }
 
     public enum ProductStatus {

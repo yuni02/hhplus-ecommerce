@@ -1,48 +1,89 @@
 package kr.hhplus.be.server.product.domain;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.ConstraintMode;
 
 /**
  * 상품 통계 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * ERD의 PRODUCT_STAT 테이블과 매핑
  */
+@Entity
+@Table(name = "product_stats")
+@IdClass(ProductStatsId.class)
 public class ProductStats {
 
-    private Long id;
+    @Id
+    @Column(name = "product_id")
     private Long productId;
-    private String productName;
+
+    @Id
+    @Column(name = "date")
+    private LocalDate date;
+
+    @Column(name = "quantity_sold", nullable = false)
     private Integer recentSalesCount; // 최근 3일간 판매량
+
+    @Column(name = "revenue", nullable = false)
     private BigDecimal recentSalesAmount; // 최근 3일간 판매액
+
+    @Column(name = "total_sales_count")
     private Integer totalSalesCount; // 전체 판매량
+
+    @Column(name = "total_sales_amount")
     private BigDecimal totalSalesAmount; // 전체 판매액
+
+    @Column(name = "product_rank")
     private Integer rank; // 인기 순위
+
+    @Column(name = "conversion_rate")
     private BigDecimal conversionRate; // 전환율
+
+    @Column(name = "last_order_date")
     private LocalDateTime lastOrderDate; // 마지막 주문일
+
+    @Column(name = "aggregation_date")
     private LocalDateTime aggregationDate; // 집계일
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // 실제 엔티티와의 관계 (Lazy Loading)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", insertable = false, updatable = false, 
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Product product;
 
     public ProductStats() {}
 
-    public ProductStats(Long productId, String productName) {
+    public ProductStats(Long productId, LocalDate date) {
         this.productId = productId;
-        this.productName = productName;
+        this.date = date;
         this.recentSalesCount = 0;
         this.recentSalesAmount = BigDecimal.ZERO;
         this.totalSalesCount = 0;
         this.totalSalesAmount = BigDecimal.ZERO;
+        this.rank = 0;
         this.conversionRate = BigDecimal.ZERO;
+        this.aggregationDate = LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getProductId() {
@@ -53,12 +94,12 @@ public class ProductStats {
         this.productId = productId;
     }
 
-    public String getProductName() {
-        return productName;
+    public LocalDate getDate() {
+        return date;
     }
 
-    public void setProductName(String productName) {
-        this.productName = productName;
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 
     public Integer getRecentSalesCount() {
@@ -141,20 +182,28 @@ public class ProductStats {
         this.updatedAt = updatedAt;
     }
 
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
     public void addSale(Integer quantity, BigDecimal amount) {
-        this.totalSalesCount += quantity;
-        this.totalSalesAmount = this.totalSalesAmount.add(amount);
-        this.recentSalesCount += quantity;
-        this.recentSalesAmount = this.recentSalesAmount.add(amount);
+        this.recentSalesCount = (this.recentSalesCount != null ? this.recentSalesCount : 0) + quantity;
+        this.recentSalesAmount = (this.recentSalesAmount != null ? this.recentSalesAmount : BigDecimal.ZERO).add(amount);
+        this.totalSalesCount = (this.totalSalesCount != null ? this.totalSalesCount : 0) + quantity;
+        this.totalSalesAmount = (this.totalSalesAmount != null ? this.totalSalesAmount : BigDecimal.ZERO).add(amount);
         this.lastOrderDate = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     public void calculateConversionRate(Integer totalViews) {
-        if (totalViews > 0) {
+        if (totalViews != null && totalViews > 0 && this.totalSalesCount != null) {
             this.conversionRate = BigDecimal.valueOf(this.totalSalesCount)
                     .divide(BigDecimal.valueOf(totalViews), 4, BigDecimal.ROUND_HALF_UP);
+            this.updatedAt = LocalDateTime.now();
         }
-        this.updatedAt = LocalDateTime.now();
     }
 }
