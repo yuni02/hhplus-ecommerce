@@ -42,6 +42,12 @@ dependencies {
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")
 
+    // QueryDSL
+	implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
+	annotationProcessor("com.querydsl:querydsl-apt:5.0.0:jakarta")
+	annotationProcessor("jakarta.annotation:jakarta.annotation-api")
+	annotationProcessor("jakarta.persistence:jakarta.persistence-api")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -59,4 +65,19 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("user.timezone", "UTC")
+}
+
+// QueryDSL 설정
+val querydslDir = "$buildDir/generated/querydsl"
+
+sourceSets {
+	main {
+		java {
+			srcDir(querydslDir)
+		}
+	}
+}
+
+tasks.withType<JavaCompile> {
+	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
 }
