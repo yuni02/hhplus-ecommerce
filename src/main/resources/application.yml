@@ -16,7 +16,7 @@ spring:
     generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
     show-sql: true      # 실행되는 SQL 출력
     hibernate:
-      ddl-auto: update  # 스키마 변경사항을 자동으로 반영 (기존 데이터 유지) 
+      ddl-auto: create  # 테이블을 새로 생성 (기존 데이터 삭제됨 - 주의!)
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
@@ -26,6 +26,10 @@ spring:
       hibernate.order_inserts: true       # INSERT 순서 최적화
       hibernate.order_updates: true       # UPDATE 순서 최적화
       hibernate.hbm2ddl.constraint_foreign_key: false  # 외래키 제약조건 생성 비활성화
+  sql:
+    init:
+      mode: always  # 애플리케이션 시작 시 schema.sql 실행
+      continue-on-error: true  # 에러가 발생해도 계속 실행
 
 # 로깅 설정
 logging:
