@@ -25,6 +25,7 @@ spring:
       hibernate.jdbc.batch_size: 20       # 배치 처리 최적화
       hibernate.order_inserts: true       # INSERT 순서 최적화
       hibernate.order_updates: true       # UPDATE 순서 최적화
+      hibernate.hbm2ddl.constraint_foreign_key: false  # 외래키 제약조건 생성 비활성화
 
 # 로깅 설정
 logging:
