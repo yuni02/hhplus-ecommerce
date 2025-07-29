@@ -2,25 +2,14 @@ package kr.hhplus.be.server.balance.domain;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-
 /**
  * 잔액 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
-
- @Entity
- @Table(name = "users")
 public class Balance {
-    @Id
-    @Column(name = "id")
+    
     private Long id;
-    @Column(name = "user_id")
     private Long userId;
-    @Column(name = "amount")
     private BigDecimal amount = BigDecimal.ZERO;
     private BalanceStatus status = BalanceStatus.ACTIVE;
 

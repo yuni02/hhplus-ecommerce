@@ -2,6 +2,8 @@ package kr.hhplus.be.server.coupon.adapter.out.persistence;
 
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveCouponPort;
+import kr.hhplus.be.server.coupon.infrastructure.persistence.adapter.CouponPersistenceAdapter;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

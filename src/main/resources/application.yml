@@ -16,7 +16,7 @@ spring:
     generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
     show-sql: true      # 실행되는 SQL 출력
     hibernate:
-      ddl-auto: update  # 스키마 변경사항을 자동으로 반영 (기존 데이터 유지)
+      ddl-auto: update  # 스키마 변경사항을 자동으로 반영 (기존 데이터 유지) 
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC

@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.order.domain;
 
-import jakarta.persistence.*;
 import kr.hhplus.be.server.user.domain.User;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,48 +8,20 @@ import java.util.List;
 
 /**
  * 주문 도메인 엔티티
- * ERD의 ORDER 테이블과 매핑
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
-@Entity
-@Table(name = "orders")
 public class Order {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
-
-    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
-
-    @Column(name = "total_price", nullable = false)
     private BigDecimal totalAmount;
-
-    @Column(name = "discounted_price", nullable = false)
     private BigDecimal discountedAmount;
-
-    @Column(name = "user_coupon_id")
     private Long userCouponId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime orderedAt;
-
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    // 실제 엔티티와의 관계 (Lazy Loading)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderHistoryEvent> historyEvents = new ArrayList<>();
 
     public Order() {
@@ -70,17 +41,6 @@ public class Order {
         for (OrderItem item : this.orderItems) {
             item.setOrder(this);
         }
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        orderedAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {

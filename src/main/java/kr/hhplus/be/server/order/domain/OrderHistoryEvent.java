@@ -1,57 +1,26 @@
 package kr.hhplus.be.server.order.domain;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 주문 이력 이벤트 도메인 엔티티
- * ERD의 ORDER_HISTORY_EVENT 테이블과 매핑
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  * 이벤트 소싱 및 감사 추적을 위한 로그성 테이블 (INSERT ONLY)
  */
-@Entity
-@Table(name = "order_history_events")
 public class OrderHistoryEvent {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id; // 로그 고유 ID (불변)
-
-    @Column(name = "order_id", nullable = false)
     private Long orderId; // FK → Order
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "event_type", nullable = false)
     private OrderEventType eventType; // ORDER_COMPLETED / CANCELLED / REFUNDED
-
-    @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt; // 이벤트 발생 시각
-
-    @Column(name = "cancel_reason")
     private String cancelReason; // 주문 취소 사유 (nullable)
-
-    @Column(name = "refund_amount")
     private Integer refundAmount; // 환불 금액 (nullable)
-
-    @Column(name = "payment_method")
     private String paymentMethod; // 결제 수단 (nullable)
-
-    @Column(name = "total_amount", nullable = false)
     private Integer totalAmount; // 주문 총액
-
-    @Column(name = "discount_amount")
     private Integer discountAmount; // 할인 금액
-
-    @Column(name = "final_amount", nullable = false)
     private Integer finalAmount; // 최종 결제 금액
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // 로그 생성 시각
-
-    // 실제 엔티티와의 관계 (Lazy Loading)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", insertable = false, updatable = false)
     private Order order;
 
     public OrderHistoryEvent() {}
@@ -106,16 +75,6 @@ public class OrderHistoryEvent {
         event.occurredAt = LocalDateTime.now();
         event.createdAt = LocalDateTime.now();
         return event;
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (occurredAt == null) {
-            occurredAt = LocalDateTime.now();
-        }
     }
 
     // Getters and Setters

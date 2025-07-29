@@ -1,30 +1,57 @@
-package kr.hhplus.be.server.coupon.domain;
+package kr.hhplus.be.server.coupon.infrastructure.persistence.entity;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 쿠폰 도메인 엔티티
- * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
+ * Coupon 인프라스트럭처 엔티티
+ * Coupon 도메인 전용 JPA 매핑 엔티티
+ * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
-public class Coupon {
+@Entity
+@Table(name = "coupons")
+public class CouponEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "discount_amount", nullable = false)
     private BigDecimal discountAmount;
+
+    @Column(name = "total_quantity", nullable = false)
     private Integer maxIssuanceCount;
+
+    @Column(name = "issued_count", nullable = false)
     private Integer issuedCount = 0;
-    private CouponStatus status = CouponStatus.ACTIVE;
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ACTIVE"; // enum 대신 varchar
+
+    @Column(name = "valid_from")
     private LocalDateTime validFrom;
+
+    @Column(name = "valid_to")
     private LocalDateTime validTo;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public Coupon() {}
+    public CouponEntity() {}
 
-    public Coupon(String name, String description, BigDecimal discountAmount, 
-                  Integer maxIssuanceCount, LocalDateTime validFrom, LocalDateTime validTo) {
+    public CouponEntity(String name, String description, BigDecimal discountAmount, 
+                       Integer maxIssuanceCount, LocalDateTime validFrom, LocalDateTime validTo) {
         this.name = name;
         this.description = description;
         this.discountAmount = discountAmount;
@@ -33,6 +60,17 @@ public class Coupon {
         this.validTo = validTo;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -83,11 +121,11 @@ public class Coupon {
         this.issuedCount = issuedCount;
     }
 
-    public CouponStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(CouponStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -122,28 +160,4 @@ public class Coupon {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-    public boolean canIssue() {
-        return status == CouponStatus.ACTIVE 
-            && issuedCount < maxIssuanceCount
-            && (validFrom == null || LocalDateTime.now().isAfter(validFrom))
-            && (validTo == null || LocalDateTime.now().isBefore(validTo));
-    }
-
-    public void incrementIssuedCount() {
-        if (!canIssue()) {
-            throw new IllegalStateException("쿠폰을 발급할 수 없습니다.");
-        }
-        this.issuedCount++;
-        this.updatedAt = LocalDateTime.now();
-        
-        // 발급 수량이 최대치에 도달하면 상태를 SOLD_OUT으로 변경
-        if (this.issuedCount >= this.maxIssuanceCount) {
-            this.status = CouponStatus.SOLD_OUT;
-        }
-    }
-
-    public enum CouponStatus {
-        ACTIVE, INACTIVE, SOLD_OUT, EXPIRED
-    }
-} 
+}

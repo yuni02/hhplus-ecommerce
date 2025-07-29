@@ -1,36 +1,72 @@
-package kr.hhplus.be.server.coupon.domain;
+package kr.hhplus.be.server.coupon.infrastructure.persistence.entity;
 
-import kr.hhplus.be.server.user.domain.User;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * 사용자 쿠폰 도메인 엔티티
- * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
+ * UserCoupon 인프라스트럭처 엔티티
+ * Coupon 도메인 전용 JPA 매핑 엔티티
+ * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
-public class UserCoupon {
+@Entity
+@Table(name = "user_coupons")
+public class UserCouponEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
-    private Long userId;
-    private Long couponId;
+
+    @Column(name = "user_id", nullable = false)
+    private Long userId; // 외래키 제약조건 없음
+
+    @Column(name = "coupon_id", nullable = false)
+    private Long couponId; // 외래키 제약조건 없음
+
+    @Column(name = "discount_amount", nullable = false)
     private Integer discountAmount; // 할인 금액
-    private UserCouponStatus status = UserCouponStatus.AVAILABLE;
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "AVAILABLE"; // enum 대신 varchar
+
+    @Column(name = "issued_at", nullable = false)
     private LocalDateTime issuedAt;
+
+    @Column(name = "used_at")
     private LocalDateTime usedAt;
-    private Long orderId; // 사용된 주문 ID
+
+    @Column(name = "order_id")
+    private Long orderId; // 사용된 주문 ID - 외래키 제약조건 없음
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-    private User user;
-    private Coupon coupon;
 
-    public UserCoupon() {}
+    public UserCouponEntity() {}
 
-    public UserCoupon(Long userId, Long couponId, Integer discountAmount) {
+    public UserCouponEntity(Long userId, Long couponId, Integer discountAmount) {
         this.userId = userId;
         this.couponId = couponId;
         this.discountAmount = discountAmount;
         this.issuedAt = LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (issuedAt == null) {
+            issuedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -65,11 +101,11 @@ public class UserCoupon {
         this.discountAmount = discountAmount;
     }
 
-    public UserCouponStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(UserCouponStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -112,47 +148,4 @@ public class UserCoupon {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Coupon getCoupon() {
-        return coupon;
-    }
-
-    public void setCoupon(Coupon coupon) {
-        this.coupon = coupon;
-    }
-
-    public boolean isAvailable() {
-        return status == UserCouponStatus.AVAILABLE;
-    }
-
-    public void use(Long orderId) {
-        if (!isAvailable()) {
-            throw new IllegalStateException("사용할 수 없는 쿠폰입니다.");
-        }
-        this.status = UserCouponStatus.USED;
-        this.orderId = orderId;
-        this.usedAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void use(LocalDateTime usedAt) {
-        if (!isAvailable()) {
-            throw new IllegalStateException("사용할 수 없는 쿠폰입니다.");
-        }
-        this.status = UserCouponStatus.USED;
-        this.usedAt = usedAt;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public enum UserCouponStatus {
-        AVAILABLE, USED, EXPIRED
-    }
-} 
+}

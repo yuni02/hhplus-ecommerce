@@ -1,27 +1,44 @@
-package kr.hhplus.be.server.order.domain;
+package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
-import kr.hhplus.be.server.product.domain.Product;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
- * 주문 아이템 도메인 엔티티
- * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
+ * OrderItem 인프라스트럭처 엔티티
+ * Order 도메인 전용 JPA 매핑 엔티티
+ * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
-public class OrderItem {
+@Entity
+@Table(name = "order_items")
+public class OrderItemEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
-    private Long orderId;
-    private Long productId;
+
+    @Column(name = "order_id", nullable = false)
+    private Long orderId; // 외래키 제약조건 없음
+
+    @Column(name = "product_id", nullable = false)
+    private Long productId; // 외래키 제약조건 없음
+
+    @Column(name = "product_name", nullable = false)
     private String productName;
+
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;
+
+    @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
-    private Order order;
-    private Product product;
 
-    public OrderItem() {}
+    public OrderItemEntity() {}
 
-    public OrderItem(Long orderId, Long productId, String productName, Integer quantity, BigDecimal unitPrice) {
+    public OrderItemEntity(Long orderId, Long productId, String productName, 
+                          Integer quantity, BigDecimal unitPrice) {
         this.orderId = orderId;
         this.productId = productId;
         this.productName = productName;
@@ -88,31 +105,9 @@ public class OrderItem {
         this.totalPrice = totalPrice;
     }
 
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-        if (order != null) {
-            this.orderId = order.getId();
-        }
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-        if (product != null) {
-            this.productId = product.getId();
-        }
-    }
-
-    public void calculateTotalPrice() {
+    private void calculateTotalPrice() {
         if (quantity != null && unitPrice != null) {
             this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
     }
-} 
+}

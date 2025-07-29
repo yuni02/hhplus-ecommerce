@@ -1,45 +1,22 @@
 package kr.hhplus.be.server.product.domain;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 상품 도메인 엔티티
- * ERD의 PRODUCT 테이블과 매핑
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
-@Entity
-@Table(name = "products")
 public class Product {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
-
-    @Column(name = "name", nullable = false)
     private String name;
-
-    @Column(name = "description")
     private String description;
-
-    @Column(name = "current_price", nullable = false)
     private BigDecimal currentPrice;
-
-    @Column(name = "stock", nullable = false)
     private Integer stock;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE;
-
-    @Column(name = "category")
     private String category;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     public Product() {}
@@ -52,17 +29,6 @@ public class Product {
         this.category = category;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
