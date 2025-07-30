@@ -41,7 +41,7 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
             }
             
             // 2. 사용자 존재 확인
-            if (!loadUserPort.existsById(command.getUserId())) {
+            if (!loadUserPort.existsByUserId(command.getUserId())) {
                 return ChargeBalanceResult.failure("사용자를 찾을 수 없습니다.");
             }
 

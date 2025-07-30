@@ -12,6 +12,7 @@ import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRep
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -67,11 +68,27 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      * Balance 도메인 객체를 UserEntity로 변환
      */
     private UserEntity mapToUserEntity(Balance balance) {
+        String username = null;  // 기본값
+        
+        // 새로운 엔티티인 경우 기존 사용자 정보 조회
+        // if (balance.getId() == null) {
+            var existingUser = userJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
+            if (existingUser.isPresent()) {
+                username = existingUser.get().getUsername();
+                System.out.println("Found existing user: " + username + " for userId: " + balance.getUserId());
+            } else {
+                System.out.println("No existing user found for userId: " + balance.getUserId());
+            }
+        // }
+        
         return UserEntity.builder()
                 .id(balance.getId())
                 .userId(balance.getUserId())
+                .username(username)
                 .amount(balance.getAmount())
                 .status(balance.getStatus().name())
+                .createdAt(LocalDateTime.now())  // 항상 현재 시간으로 설정
+                .updatedAt(LocalDateTime.now())
                 .build();
     }
 

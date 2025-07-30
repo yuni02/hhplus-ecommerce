@@ -29,7 +29,7 @@ public class GetBalanceService implements GetBalanceUseCase {
     public Optional<GetBalanceResult> getBalance(GetBalanceCommand command) {
         try {
             // 1. 사용자 존재 확인
-            if (!loadUserPort.existsById(command.getUserId())) {
+            if (!loadUserPort.existsByUserId(command.getUserId())) {
                 return Optional.empty();
             }
 
