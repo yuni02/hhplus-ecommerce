@@ -76,4 +76,26 @@ public class ProductEntity {
         this.status = status;
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 재고 차감 비즈니스 메서드
+    public boolean deductStock(Integer quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");
+        }
+        if (this.stock < quantity) {
+            return false; // 재고 부족
+        }
+        this.stock -= quantity;
+        this.updatedAt = LocalDateTime.now();
+        return true;
+    }
+
+    // 재고 복구 비즈니스 메서드
+    public void restoreStock(Integer quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("복구 수량은 0보다 커야 합니다.");
+        }
+        this.stock += quantity;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

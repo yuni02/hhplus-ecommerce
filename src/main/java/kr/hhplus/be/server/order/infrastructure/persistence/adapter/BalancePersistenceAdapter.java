@@ -33,16 +33,14 @@ public class BalancePersistenceAdapter implements DeductBalancePort {
                 return false; // 잔액 정보가 없음
             }
             
-            if (balance.getAmount().compareTo(amount) < 0) {
-                return false; // 잔액 부족
+            boolean success = balance.deductAmount(amount);
+            if (success) {
+                balanceJpaRepository.save(balance);
             }
-            
-            balance.setAmount(balance.getAmount().subtract(amount));
-            balanceJpaRepository.save(balance);
-            return true;
+            return success;
             
         } catch (Exception e) {
-            return false;
+            return false;   
         }
     }
 }

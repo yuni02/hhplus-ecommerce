@@ -47,4 +47,24 @@ public class BalanceEntity {
     public void updateStatus(String status) {
         this.status = status;
     }
+
+    // 잔액 차감 비즈니스 메서드
+    public boolean deductAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
+        }
+        if (this.amount.compareTo(amount) < 0) {
+            return false; // 잔액 부족
+        }
+        this.amount = this.amount.subtract(amount);
+        return true;
+    }
+
+    // 잔액 충전 비즈니스 메서드
+    public void chargeAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+        }
+        this.amount = this.amount.add(amount);
+    }
 }

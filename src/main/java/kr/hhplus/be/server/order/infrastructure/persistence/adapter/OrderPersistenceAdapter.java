@@ -65,17 +65,17 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      * Order 도메인 객체를 OrderEntity로 변환
      */
     private OrderEntity mapToOrderEntity(Order order) {
-        OrderEntity entity = new OrderEntity();
-        entity.setId(order.getId());
-        entity.setUserId(order.getUserId());
-        entity.setTotalAmount(order.getTotalAmount());
-        entity.setDiscountAmount(order.getDiscountedAmount());
-        entity.setFinalAmount(order.getDiscountedAmount()); // 할인 후 최종 금액
-        entity.setStatus(order.getStatus().name()); // enum을 string으로 변환
-        entity.setUserCouponId(order.getUserCouponId());
-        entity.setOrderedAt(order.getOrderedAt());
-        entity.setCreatedAt(order.getOrderedAt());
-        entity.setUpdatedAt(order.getUpdatedAt());
+        OrderEntity entity = OrderEntity.builder()
+            .id(order.getId())
+            .userId(order.getUserId())
+            .totalAmount(order.getTotalAmount())
+            .discountAmount(order.getDiscountedAmount())  
+            .userCouponId(order.getUserCouponId())
+            .status(order.getStatus().name())
+            .orderedAt(order.getOrderedAt())
+            .createdAt(order.getOrderedAt())
+            .updatedAt(order.getUpdatedAt())
+            .build();
         return entity;
     }
 
@@ -83,14 +83,15 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      * OrderItem 도메인 객체를 OrderItemEntity로 변환
      */
     private OrderItemEntity mapToOrderItemEntity(OrderItem orderItem, Long orderId) {
-        OrderItemEntity entity = new OrderItemEntity();
-        entity.setId(orderItem.getId());
-        entity.setOrderId(orderId);
-        entity.setProductId(orderItem.getProductId());
-        entity.setProductName(orderItem.getProductName());
-        entity.setQuantity(orderItem.getQuantity());
-        entity.setUnitPrice(orderItem.getUnitPrice());
-        entity.setTotalPrice(orderItem.getTotalPrice());
+        OrderItemEntity entity = OrderItemEntity.builder()
+            .id(orderItem.getId())
+            .orderId(orderId)
+            .productId(orderItem.getProductId())
+            .productName(orderItem.getProductName())
+            .quantity(orderItem.getQuantity())
+            .unitPrice(orderItem.getUnitPrice())
+            .totalPrice(orderItem.getTotalPrice())
+            .build();
         return entity;
     }
 
@@ -98,18 +99,19 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      * OrderHistoryEvent 도메인 객체를 OrderHistoryEventEntity로 변환
      */
     private OrderHistoryEventEntity mapToOrderHistoryEventEntity(OrderHistoryEvent event, Long orderId) {
-        OrderHistoryEventEntity entity = new OrderHistoryEventEntity();
-        entity.setId(event.getId());
-        entity.setOrderId(orderId);
-        entity.setEventType(event.getEventType().name()); // enum을 string으로 변환
-        entity.setOccurredAt(event.getOccurredAt());
-        entity.setCancelReason(event.getCancelReason());
-        entity.setRefundAmount(event.getRefundAmount());
-        entity.setPaymentMethod(event.getPaymentMethod());
-        entity.setTotalAmount(event.getTotalAmount());
-        entity.setDiscountAmount(event.getDiscountAmount());
-        entity.setFinalAmount(event.getFinalAmount());
-        entity.setCreatedAt(event.getCreatedAt());
+        OrderHistoryEventEntity entity = OrderHistoryEventEntity.builder()
+            .id(event.getId())
+            .orderId(orderId)
+            .eventType(event.getEventType().name())
+            .occurredAt(event.getOccurredAt())
+            .cancelReason(event.getCancelReason())
+            .refundAmount(event.getRefundAmount())
+            .paymentMethod(event.getPaymentMethod())
+            .totalAmount(event.getTotalAmount())
+            .discountAmount(event.getDiscountAmount())
+            .finalAmount(event.getFinalAmount())
+            .createdAt(event.getCreatedAt())
+            .build();
         return entity;
     }
 

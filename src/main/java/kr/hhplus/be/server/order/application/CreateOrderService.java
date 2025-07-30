@@ -188,9 +188,15 @@ public class CreateOrderService implements CreateOrderUseCase {
                                    List<OrderItem> orderItems, 
                                    BigDecimal totalAmount, 
                                    BigDecimal discountedAmount) {
-        Order order = new Order(command.getUserId(), orderItems, totalAmount, command.getUserCouponId());
-        order.setDiscountedAmount(discountedAmount);
-        order.setOrderedAt(LocalDateTime.now());
+        Order order = Order.builder()
+            .userId(command.getUserId())
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(command.getUserCouponId())
+            .discountedAmount(discountedAmount)
+            .orderedAt(LocalDateTime.now())
+            .status(Order.OrderStatus.PENDING)
+            .build();
         order.complete();
 
         // 주문 아이템에 orderId 설정
@@ -233,8 +239,13 @@ public class CreateOrderService implements CreateOrderUseCase {
      * 주문 아이템 생성
      */
     private OrderItem createOrderItem(Long productId, String productName, Integer quantity, BigDecimal unitPrice) {
-        OrderItem orderItem = new OrderItem(null, productId, productName, quantity, unitPrice);
-        orderItem.setId(orderItemIdGenerator.getAndIncrement());
+        OrderItem orderItem = OrderItem.builder()
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
+        orderItem.setId(orderItemIdGenerator.getAndIncrement());    
         return orderItem;
     }
 
