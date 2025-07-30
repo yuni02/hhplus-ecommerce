@@ -38,14 +38,12 @@ public class UserPersistenceAdapter implements LoadUserPort {
      */
     private User mapToDomain(UserEntity entity) {
         User user = User.builder()
+            .userId(entity.getUserId())
             .username(entity.getUsername())
-            .name(entity.getName())
-            .email(entity.getEmail())
-            .phoneNumber(entity.getPhoneNumber())
+            .amount(entity.getAmount())
+            .status(User.UserStatus.valueOf(entity.getStatus()))
             .build();
         user.setId(entity.getId());
-        user.setBalance(entity.getBalance());
-        user.setStatus(User.UserStatus.valueOf(entity.getStatus()));
         user.setCreatedAt(entity.getCreatedAt());
         user.setUpdatedAt(entity.getUpdatedAt());
         return user;

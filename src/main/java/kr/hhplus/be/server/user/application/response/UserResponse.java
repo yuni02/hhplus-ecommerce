@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.user.application.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Schema(description = "사용자 응답")
@@ -9,14 +10,14 @@ public class UserResponse {
     @Schema(description = "사용자 ID", example = "1")
     private Long id;
 
-    @Schema(description = "사용자명", example = "홍길동")
-    private String name;
+    @Schema(description = "사용자 번호", example = "1")
+    private Long userId;
 
-    @Schema(description = "이메일", example = "hong@example.com")
-    private String email;
+    @Schema(description = "사용자명", example = "user123")
+    private String username;
 
-    @Schema(description = "전화번호", example = "010-1234-5678")
-    private String phoneNumber;
+    @Schema(description = "잔액", example = "50000")
+    private BigDecimal amount;
 
     @Schema(description = "상태", example = "ACTIVE")
     private String status;
@@ -29,12 +30,11 @@ public class UserResponse {
 
     public UserResponse() {}
 
-    public UserResponse(Long id, String name, String email, String phoneNumber, 
-                       String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public UserResponse(Long id, Long userId, String username, BigDecimal amount, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
-        this.name = name;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
+        this.userId = userId;
+        this.username = username;
+        this.amount = amount;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -48,28 +48,28 @@ public class UserResponse {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    public String getEmail() {
-        return email;
+    public String getUsername() {
+        return username;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public BigDecimal getAmount() {
+        return amount;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 
     public String getStatus() {

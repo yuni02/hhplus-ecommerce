@@ -22,13 +22,11 @@ import java.time.LocalDateTime;
 public class User {
 
     private Long id;
+    private Long userId;
     private String username;
-    private String name;
-    private String email;
-    private String phoneNumber;
     
     @Builder.Default
-    private BigDecimal balance = BigDecimal.ZERO;
+    private BigDecimal amount = BigDecimal.ZERO;
     
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
@@ -58,7 +56,7 @@ public class User {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("충전 금액은 양수여야 합니다.");
         }
-        this.balance = this.balance.add(amount);
+        this.amount = this.amount.add(amount);
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -69,10 +67,10 @@ public class User {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("차감 금액은 양수여야 합니다.");
         }
-        if (this.balance.compareTo(amount) < 0) {
-            throw new InsufficientBalanceException("잔액이 부족합니다. 현재 잔액: " + this.balance);
+        if (this.amount.compareTo(amount) < 0) {
+            throw new InsufficientBalanceException("잔액이 부족합니다. 현재 잔액: " + this.amount);
         }
-        this.balance = this.balance.subtract(amount);
+        this.amount = this.amount.subtract(amount);
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -80,7 +78,7 @@ public class User {
      * 잔액 확인
      */
     public boolean hasSufficientBalance(BigDecimal amount) {
-        return this.balance.compareTo(amount) >= 0;
+        return this.amount.compareTo(amount) >= 0;
     }
 
     public enum UserStatus {

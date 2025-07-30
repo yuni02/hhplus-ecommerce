@@ -4,10 +4,10 @@ import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
-import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceTransactionEntity;
-import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceTransactionJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,25 +21,25 @@ import java.util.Optional;
 @Component
 public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTransactionPort {
 
-    private final BalanceJpaRepository balanceJpaRepository;
+    private final UserJpaRepository userJpaRepository;
     private final BalanceTransactionJpaRepository balanceTransactionJpaRepository;
 
-    public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository,
+    public BalancePersistenceAdapter(UserJpaRepository userJpaRepository,
                                    BalanceTransactionJpaRepository balanceTransactionJpaRepository) {
-        this.balanceJpaRepository = balanceJpaRepository;
+        this.userJpaRepository = userJpaRepository;
         this.balanceTransactionJpaRepository = balanceTransactionJpaRepository;
     }
 
     @Override
     public Optional<Balance> loadActiveBalanceByUserId(Long userId) {
-        return balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
+        return userJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
                 .map(this::mapToBalance);
     }
 
     @Override
     public Balance saveBalance(Balance balance) {
-        BalanceEntity entity = mapToBalanceEntity(balance);
-        BalanceEntity savedEntity = balanceJpaRepository.save(entity);
+        UserEntity entity = mapToUserEntity(balance);
+        UserEntity savedEntity = userJpaRepository.save(entity);
         return mapToBalance(savedEntity);
     }
 
@@ -52,9 +52,9 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     }
 
     /**
-     * BalanceEntity를 Balance 도메인 객체로 변환
+     * UserEntity를 Balance 도메인 객체로 변환
      */
-    private Balance mapToBalance(BalanceEntity entity) {
+    private Balance mapToBalance(UserEntity entity) {
         return new Balance(
                 entity.getId(),
                 entity.getUserId(),
@@ -64,15 +64,15 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     }
 
     /**
-     * Balance 도메인 객체를 BalanceEntity로 변환
+     * Balance 도메인 객체를 UserEntity로 변환
      */
-    private BalanceEntity mapToBalanceEntity(Balance balance) {
-        return new BalanceEntity(
-                balance.getId(),
-                balance.getUserId(),
-                balance.getAmount(),
-                balance.getStatus().name()
-        );
+    private UserEntity mapToUserEntity(Balance balance) {
+        return UserEntity.builder()
+                .id(balance.getId())
+                .userId(balance.getUserId())
+                .amount(balance.getAmount())
+                .status(balance.getStatus().name())
+                .build();
     }
 
     /**
@@ -96,8 +96,6 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      * BalanceTransaction 도메인 객체를 BalanceTransactionEntity로 변환
      */
     private BalanceTransactionEntity mapToBalanceTransactionEntity(BalanceTransaction transaction) {
-        // BalanceTransactionEntity의 setter가 접근 불가(visible하지 않음)하므로 생성자 또는 빌더 패턴 사용 필요
-        // 예시: 생성자 또는 빌더가 public/protected라면 아래와 같이 작성
         return BalanceTransactionEntity.builder()
                 .id(transaction.getId())
                 .userId(transaction.getUserId())

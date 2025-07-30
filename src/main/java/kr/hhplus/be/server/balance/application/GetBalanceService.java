@@ -5,6 +5,7 @@ import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -18,7 +19,8 @@ public class GetBalanceService implements GetBalanceUseCase {
     private final LoadUserPort loadUserPort;
     private final LoadBalancePort loadBalancePort;
 
-    public GetBalanceService(LoadUserPort loadUserPort, LoadBalancePort loadBalancePort) {
+    public GetBalanceService(@Qualifier("balanceUserPersistenceAdapter") LoadUserPort loadUserPort, 
+                           LoadBalancePort loadBalancePort) {
         this.loadUserPort = loadUserPort;
         this.loadBalancePort = loadBalancePort;
     }

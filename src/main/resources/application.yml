@@ -16,12 +16,14 @@ spring:
     generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
     show-sql: true      # 실행되는 SQL 출력
     hibernate:
-      ddl-auto: create  # 테이블을 새로 생성 (기존 데이터 삭제됨 - 주의!)
+      ddl-auto: validate  # 기존 테이블 구조 검증 (데이터 유지)
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
       hibernate.format_sql: true          # SQL을 읽기 쉽게 포맷팅
       hibernate.use_sql_comments: true    # SQL에 주석 추가
+      hibernate.highlight_sql: true       # SQL 하이라이팅
+      hibernate.generate_statistics: true # Hibernate 통계 생성
       hibernate.jdbc.batch_size: 20       # 배치 처리 최적화
       hibernate.order_inserts: true       # INSERT 순서 최적화
       hibernate.order_updates: true       # UPDATE 순서 최적화
@@ -37,6 +39,12 @@ logging:
     org.hibernate.SQL: DEBUG                # SQL 쿼리 로깅
     org.hibernate.type.descriptor.sql: TRACE # 바인딩 파라미터 로깅
     org.springframework.orm.jpa: DEBUG       # JPA 관련 로깅
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # 파라미터 바인딩 상세 로깅
+    org.hibernate.stat: DEBUG               # Hibernate 통계 정보
+    org.hibernate.engine.transaction.internal: DEBUG  # 트랜잭션 로깅
+    kr.hhplus.be.server: DEBUG              # 애플리케이션 로깅
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 ---
 spring.config.activate.on-profile: local, test

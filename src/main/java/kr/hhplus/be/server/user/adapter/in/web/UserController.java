@@ -44,9 +44,9 @@ public class UserController {
             GetUserUseCase.GetUserResult result = userOpt.get();
             UserResponse response = new UserResponse(
                     result.getId(),
-                    result.getName(),
-                    result.getEmail(),
-                    result.getPhoneNumber(),
+                    result.getUserId(),
+                    result.getUsername(),
+                    result.getAmount(),
                     result.getStatus(),
                     result.getCreatedAt(),
                     result.getUpdatedAt()

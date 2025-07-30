@@ -29,7 +29,8 @@ public class UserPersistenceAdapter implements LoadUserPort {
 
     @Override
     public boolean existsById(Long userId) {
-        return userJpaRepository.existsById(userId);
+        // userId로 조회하도록 수정 (기본 키가 아닌 userId 필드로 조회)
+        return userJpaRepository.findByUserIdAndStatus(userId, "ACTIVE").isPresent();
     }
 
     /**
@@ -38,9 +39,9 @@ public class UserPersistenceAdapter implements LoadUserPort {
     private LoadUserPort.UserInfo mapToUserInfo(UserEntity entity) {
         return new LoadUserPort.UserInfo(
                 entity.getId(),
-                entity.getName(),
-                entity.getEmail(),
-                entity.getPhoneNumber(),
+                entity.getUserId(),
+                entity.getUsername(),
+                entity.getAmount(),
                 entity.getStatus()
         );
     }

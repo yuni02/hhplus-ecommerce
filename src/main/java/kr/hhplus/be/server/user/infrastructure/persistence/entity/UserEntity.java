@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 /**
  * User 인프라스트럭처 엔티티
- * User 도메인 전용 JPA 매핑 엔티티
+ * User 도메인과 Balance 도메인을 통합한 JPA 매핑 엔티티
  * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
 @Entity
@@ -30,23 +30,17 @@ public class UserEntity {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "username", unique = true, nullable = false)
     private String username;
 
-    @Column(name = "name", nullable = false)
-    private String name;
-
-    @Column(name = "email", nullable = false)
-    private String email;
-
-    @Column(name = "phone_number")
-    private String phoneNumber;
-
-    @Column(name = "balance", nullable = false)
+    @Column(name = "amount")
     @Builder.Default
-    private BigDecimal balance = BigDecimal.ZERO;
+    private BigDecimal amount = BigDecimal.ZERO;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", length = 20)
     @Builder.Default
     private String status = "ACTIVE"; // enum 대신 varchar
 
@@ -67,14 +61,36 @@ public class UserEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    // 필요한 경우에만 public setter 제공
-    public void updateBalance(BigDecimal balance) {
-        this.balance = balance;
+    // 잔액 관련 비즈니스 메서드들
+    public void updateAmount(BigDecimal amount) {
+        this.amount = amount;
         this.updatedAt = LocalDateTime.now();
     }
 
     public void updateStatus(String status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 잔액 차감 비즈니스 메서드
+    public boolean deductAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
+        }
+        if (this.amount.compareTo(amount) < 0) {
+            return false; // 잔액 부족
+        }
+        this.amount = this.amount.subtract(amount);
+        this.updatedAt = LocalDateTime.now();
+        return true;
+    }
+
+    // 잔액 충전 비즈니스 메서드
+    public void chargeAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+        }
+        this.amount = this.amount.add(amount);
         this.updatedAt = LocalDateTime.now();
     }
 }

@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.adapter;
 
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
-import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
-import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,26 +16,26 @@ import java.math.BigDecimal;
 @Component("orderBalancePersistenceAdapter")
 public class BalancePersistenceAdapter implements DeductBalancePort {
 
-    private final BalanceJpaRepository balanceJpaRepository;
+    private final UserJpaRepository userJpaRepository;
 
-    public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository) {
-        this.balanceJpaRepository = balanceJpaRepository;
+    public BalancePersistenceAdapter(UserJpaRepository userJpaRepository) {
+        this.userJpaRepository = userJpaRepository;
     }
 
     @Override
     @Transactional
     public boolean deductBalance(Long userId, BigDecimal amount) {
         try {
-            BalanceEntity balance = balanceJpaRepository.findByUserId(userId)
+            UserEntity user = userJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
                     .orElse(null);
             
-            if (balance == null) {
+            if (user == null) {
                 return false; // 잔액 정보가 없음
             }
             
-            boolean success = balance.deductAmount(amount);
+            boolean success = user.deductAmount(amount);
             if (success) {
-                balanceJpaRepository.save(balance);
+                userJpaRepository.save(user);
             }
             return success;
             

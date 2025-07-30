@@ -23,9 +23,9 @@ public class GetUserService implements GetUserUseCase {
         return loadUserPort.loadUserById(command.getUserId())
                 .map(userInfo -> new GetUserResult(
                         userInfo.getId(),
-                        userInfo.getName(),
-                        userInfo.getEmail(),
-                        userInfo.getPhoneNumber(),
+                        userInfo.getUserId(),
+                        userInfo.getUsername(),
+                        userInfo.getAmount(),
                         userInfo.getStatus(),
                         null, // createdAt은 별도 조회 필요
                         null  // updatedAt은 별도 조회 필요

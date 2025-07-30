@@ -2,6 +2,7 @@ package kr.hhplus.be.server.user.application.port.in;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 /**
  * 사용자 조회 Incoming Port (Use Case)
@@ -33,19 +34,18 @@ public interface GetUserUseCase {
      */
     class GetUserResult {
         private final Long id;
-        private final String name;
-        private final String email;
-        private final String phoneNumber;
+        private final Long userId;
+        private final String username;
+        private final BigDecimal amount;
         private final String status;
         private final LocalDateTime createdAt;
         private final LocalDateTime updatedAt;
         
-        public GetUserResult(Long id, String name, String email, String phoneNumber,
-                           String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        public GetUserResult(Long id, Long userId, String username, BigDecimal amount, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
             this.id = id;
-            this.name = name;
-            this.email = email;
-            this.phoneNumber = phoneNumber;
+            this.userId = userId;
+            this.username = username;
+            this.amount = amount;
             this.status = status;
             this.createdAt = createdAt;
             this.updatedAt = updatedAt;
@@ -55,16 +55,16 @@ public interface GetUserUseCase {
             return id;
         }
         
-        public String getName() {
-            return name;
+        public Long getUserId() {
+            return userId;
         }
         
-        public String getEmail() {
-            return email;
+        public String getUsername() {
+            return username;
         }
         
-        public String getPhoneNumber() {
-            return phoneNumber;
+        public BigDecimal getAmount() {
+            return amount;
         }
         
         public String getStatus() {
