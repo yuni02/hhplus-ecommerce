@@ -96,16 +96,18 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      * BalanceTransaction 도메인 객체를 BalanceTransactionEntity로 변환
      */
     private BalanceTransactionEntity mapToBalanceTransactionEntity(BalanceTransaction transaction) {
-        BalanceTransactionEntity entity = new BalanceTransactionEntity();
-        entity.setId(transaction.getId());
-        entity.setUserId(transaction.getUserId());
-        entity.setAmount(transaction.getAmount());
-        entity.setType(transaction.getType().name());
-        entity.setStatus(transaction.getStatus().name());
-        entity.setDescription(transaction.getDescription());
-        entity.setReferenceId(transaction.getReferenceId());
-        entity.setCreatedAt(transaction.getCreatedAt());
-        entity.setUpdatedAt(transaction.getUpdatedAt());
-        return entity;
+        // BalanceTransactionEntity의 setter가 접근 불가(visible하지 않음)하므로 생성자 또는 빌더 패턴 사용 필요
+        // 예시: 생성자 또는 빌더가 public/protected라면 아래와 같이 작성
+        return BalanceTransactionEntity.builder()
+                .id(transaction.getId())
+                .userId(transaction.getUserId())
+                .amount(transaction.getAmount())
+                .type(transaction.getType() != null ? transaction.getType().name() : null)
+                .status(transaction.getStatus() != null ? transaction.getStatus().name() : null)
+                .description(transaction.getDescription())
+                .referenceId(transaction.getReferenceId())
+                .createdAt(transaction.getCreatedAt())
+                .updatedAt(transaction.getUpdatedAt())
+                .build();
     }
 }

@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
@@ -10,6 +17,11 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "order_history_events")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderHistoryEventEntity {
 
     @Id
@@ -47,20 +59,6 @@ public class OrderHistoryEventEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // 로그 생성 시각
 
-    public OrderHistoryEventEntity() {}
-
-    public OrderHistoryEventEntity(Long orderId, String eventType, Integer totalAmount, 
-                                  Integer discountAmount, Integer finalAmount, String paymentMethod) {
-        this.orderId = orderId;
-        this.eventType = eventType;
-        this.totalAmount = totalAmount;
-        this.discountAmount = discountAmount;
-        this.finalAmount = finalAmount;
-        this.paymentMethod = paymentMethod;
-        this.occurredAt = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-    }
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -69,91 +67,8 @@ public class OrderHistoryEventEntity {
         }
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getOrderId() {
-        return orderId;
-    }
-
+    // 필요한 경우에만 public setter 제공
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
-    }
-
-    public LocalDateTime getOccurredAt() {
-        return occurredAt;
-    }
-
-    public void setOccurredAt(LocalDateTime occurredAt) {
-        this.occurredAt = occurredAt;
-    }
-
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
-
-    public Integer getRefundAmount() {
-        return refundAmount;
-    }
-
-    public void setRefundAmount(Integer refundAmount) {
-        this.refundAmount = refundAmount;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public Integer getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(Integer totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public Integer getDiscountAmount() {
-        return discountAmount;
-    }
-
-    public void setDiscountAmount(Integer discountAmount) {
-        this.discountAmount = discountAmount;
-    }
-
-    public Integer getFinalAmount() {
-        return finalAmount;
-    }
-
-    public void setFinalAmount(Integer finalAmount) {
-        this.finalAmount = finalAmount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }

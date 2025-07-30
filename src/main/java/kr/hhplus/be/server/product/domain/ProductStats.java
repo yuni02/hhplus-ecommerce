@@ -1,5 +1,11 @@
 package kr.hhplus.be.server.product.domain;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,6 +14,11 @@ import java.time.LocalDateTime;
  * 상품 통계 도메인 엔티티
  * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductStats {
 
     private Long productId;
@@ -24,126 +35,7 @@ public class ProductStats {
     private LocalDateTime updatedAt;
     private Product product;
 
-    public ProductStats() {}
-
-    public ProductStats(Long productId, LocalDate date) {
-        this.productId = productId;
-        this.date = date;
-        this.recentSalesCount = 0;
-        this.recentSalesAmount = BigDecimal.ZERO;
-        this.totalSalesCount = 0;
-        this.totalSalesAmount = BigDecimal.ZERO;
-        this.rank = 0;
-        this.conversionRate = BigDecimal.ZERO;
-        this.aggregationDate = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public Integer getRecentSalesCount() {
-        return recentSalesCount;
-    }
-
-    public void setRecentSalesCount(Integer recentSalesCount) {
-        this.recentSalesCount = recentSalesCount;
-    }
-
-    public BigDecimal getRecentSalesAmount() {
-        return recentSalesAmount;
-    }
-
-    public void setRecentSalesAmount(BigDecimal recentSalesAmount) {
-        this.recentSalesAmount = recentSalesAmount;
-    }
-
-    public Integer getTotalSalesCount() {
-        return totalSalesCount;
-    }
-
-    public void setTotalSalesCount(Integer totalSalesCount) {
-        this.totalSalesCount = totalSalesCount;
-    }
-
-    public BigDecimal getTotalSalesAmount() {
-        return totalSalesAmount;
-    }
-
-    public void setTotalSalesAmount(BigDecimal totalSalesAmount) {
-        this.totalSalesAmount = totalSalesAmount;
-    }
-
-    public Integer getRank() {
-        return rank;
-    }
-
-    public void setRank(Integer rank) {
-        this.rank = rank;
-    }
-
-    public BigDecimal getConversionRate() {
-        return conversionRate;
-    }
-
-    public void setConversionRate(BigDecimal conversionRate) {
-        this.conversionRate = conversionRate;
-    }
-
-    public LocalDateTime getLastOrderDate() {
-        return lastOrderDate;
-    }
-
-    public void setLastOrderDate(LocalDateTime lastOrderDate) {
-        this.lastOrderDate = lastOrderDate;
-    }
-
-    public LocalDateTime getAggregationDate() {
-        return aggregationDate;
-    }
-
-    public void setAggregationDate(LocalDateTime aggregationDate) {
-        this.aggregationDate = aggregationDate;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
+    // 비즈니스 로직 메서드들
     public void addSale(Integer quantity, BigDecimal amount) {
         this.recentSalesCount = (this.recentSalesCount != null ? this.recentSalesCount : 0) + quantity;
         this.recentSalesAmount = (this.recentSalesAmount != null ? this.recentSalesAmount : BigDecimal.ZERO).add(amount);
@@ -156,7 +48,7 @@ public class ProductStats {
     public void calculateConversionRate(Integer totalViews) {
         if (totalViews != null && totalViews > 0 && this.totalSalesCount != null) {
             this.conversionRate = BigDecimal.valueOf(this.totalSalesCount)
-                    .divide(BigDecimal.valueOf(totalViews), 4, BigDecimal.ROUND_HALF_UP);
+                    .divide(BigDecimal.valueOf(totalViews), 4, java.math.RoundingMode.HALF_UP);
             this.updatedAt = LocalDateTime.now();
         }
     }

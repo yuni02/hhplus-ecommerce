@@ -62,11 +62,11 @@ public class IssueCouponService implements IssueCouponUseCase {
             }
 
             // 6. 사용자 쿠폰 생성
-            UserCoupon userCoupon = new UserCoupon(
-                    command.getUserId(),
-                    command.getCouponId(),
-                    couponInfo.getDiscountAmount()
-            );
+            UserCoupon userCoupon = UserCoupon.builder()
+                    .userId(command.getUserId())
+                    .couponId(command.getCouponId())
+                    .discountAmount(couponInfo.getDiscountAmount())
+                    .build();
             
             UserCoupon savedUserCoupon = saveUserCouponPort.saveUserCoupon(userCoupon);
 

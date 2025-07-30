@@ -47,9 +47,12 @@ class UseCouponServiceTest {
         UseCouponUseCase.UseCouponCommand command = 
             new UseCouponUseCase.UseCouponCommand(userId, userCouponId, orderAmount);
 
-        UserCoupon userCoupon = new UserCoupon(userId, 1L, 2000);
-        userCoupon.setId(userCouponId);
-        userCoupon.setStatus(UserCoupon.UserCouponStatus.AVAILABLE);
+        UserCoupon userCoupon = UserCoupon.builder()
+            .userId(userId)
+            .couponId(1L)
+            .discountAmount(2000)
+            .status(UserCoupon.UserCouponStatus.AVAILABLE)
+            .build();
 
         when(loadUserCouponPort.loadUserCoupon(userCouponId)).thenReturn(Optional.of(userCoupon));
 
@@ -80,9 +83,12 @@ class UseCouponServiceTest {
         UseCouponUseCase.UseCouponCommand command = 
             new UseCouponUseCase.UseCouponCommand(userId, userCouponId, orderAmount);
 
-        UserCoupon userCoupon = new UserCoupon(userId, 1L, 2000);
-        userCoupon.setId(userCouponId);
-        userCoupon.setStatus(UserCoupon.UserCouponStatus.AVAILABLE);
+        UserCoupon userCoupon = UserCoupon.builder()
+            .userId(userId)
+            .couponId(1L)
+            .discountAmount(2000)
+            .status(UserCoupon.UserCouponStatus.AVAILABLE)
+            .build();
 
         when(loadUserCouponPort.loadUserCoupon(userCouponId)).thenReturn(Optional.of(userCoupon));
 
@@ -133,9 +139,12 @@ class UseCouponServiceTest {
         UseCouponUseCase.UseCouponCommand command = 
             new UseCouponUseCase.UseCouponCommand(userId, userCouponId, orderAmount);
 
-        UserCoupon userCoupon = new UserCoupon(2L, 1L, 2000); // 다른 사용자의 쿠폰
-        userCoupon.setId(userCouponId);
-        userCoupon.setStatus(UserCoupon.UserCouponStatus.AVAILABLE);
+        UserCoupon userCoupon = UserCoupon.builder()
+            .userId(2L)
+            .couponId(1L)
+            .discountAmount(2000)
+            .status(UserCoupon.UserCouponStatus.AVAILABLE)
+            .build();
 
         when(loadUserCouponPort.loadUserCoupon(userCouponId)).thenReturn(Optional.of(userCoupon));
 
@@ -161,10 +170,13 @@ class UseCouponServiceTest {
         UseCouponUseCase.UseCouponCommand command = 
             new UseCouponUseCase.UseCouponCommand(userId, userCouponId, orderAmount);
 
-        UserCoupon userCoupon = new UserCoupon(userId, 1L, 2000);
-        userCoupon.setId(userCouponId);
-        userCoupon.setStatus(UserCoupon.UserCouponStatus.USED); // 이미 사용된 상태
-        userCoupon.setUsedAt(LocalDateTime.now());
+        UserCoupon userCoupon = UserCoupon.builder()
+            .userId(userId)
+            .couponId(1L)
+            .discountAmount(2000)
+            .status(UserCoupon.UserCouponStatus.USED)
+            .usedAt(LocalDateTime.now())
+            .build();
 
         when(loadUserCouponPort.loadUserCoupon(userCouponId)).thenReturn(Optional.of(userCoupon));
 
@@ -190,9 +202,12 @@ class UseCouponServiceTest {
         UseCouponUseCase.UseCouponCommand command = 
             new UseCouponUseCase.UseCouponCommand(userId, userCouponId, orderAmount);
 
-        UserCoupon userCoupon = new UserCoupon(userId, 1L, 2000);
-        userCoupon.setId(userCouponId);
-        userCoupon.setStatus(UserCoupon.UserCouponStatus.EXPIRED); // 만료된 상태
+        UserCoupon userCoupon = UserCoupon.builder()
+            .userId(userId)
+            .couponId(1L)
+            .discountAmount(2000)
+            .status(UserCoupon.UserCouponStatus.EXPIRED)
+            .build();
 
         when(loadUserCouponPort.loadUserCoupon(userCouponId)).thenReturn(Optional.of(userCoupon));
 

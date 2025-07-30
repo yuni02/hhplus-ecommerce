@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.user.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,6 +18,11 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "users")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserEntity {
 
     @Id
@@ -31,9 +43,11 @@ public class UserEntity {
     private String phoneNumber;
 
     @Column(name = "balance", nullable = false)
+    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "ACTIVE"; // enum 대신 varchar
 
     @Column(name = "created_at", nullable = false)
@@ -41,17 +55,6 @@ public class UserEntity {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    public UserEntity() {}
-
-    public UserEntity(String username, String name, String email, String phoneNumber) {
-        this.username = username;
-        this.name = name;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
 
     @PrePersist
     protected void onCreate() {
@@ -64,75 +67,14 @@ public class UserEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public BigDecimal getBalance() {
-        return balance;
-    }
-
-    public void setBalance(BigDecimal balance) {
+    // 필요한 경우에만 public setter 제공
+    public void updateBalance(BigDecimal balance) {
         this.balance = balance;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
+    public void updateStatus(String status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+        this.updatedAt = LocalDateTime.now();
     }
 }

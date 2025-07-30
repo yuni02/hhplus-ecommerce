@@ -20,7 +20,13 @@ class OrderItemTest {
         BigDecimal unitPrice = new BigDecimal("10000");
 
         // when
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
 
         // then
         assertThat(orderItem.getOrderId()).isEqualTo(orderId);
@@ -40,7 +46,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         Long itemId = 1L;
 
@@ -75,7 +87,13 @@ class OrderItemTest {
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
         
-        OrderItem orderItem = new OrderItem();
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
 
         // when
         orderItem.setOrderId(orderId);
@@ -103,7 +121,13 @@ class OrderItemTest {
         BigDecimal unitPrice = new BigDecimal("5000");
 
         // when
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
 
         // then
         assertThat(orderItem.getTotalPrice()).isEqualTo(new BigDecimal("15000"));
@@ -118,7 +142,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         Integer newQuantity = 5;
 
@@ -139,7 +169,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+                            OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         BigDecimal newUnitPrice = new BigDecimal("8000");
 
@@ -160,7 +196,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         String newProductName = "새로운 상품명";
 
@@ -180,7 +222,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         Long newOrderId = 2L;
 
@@ -200,7 +248,13 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = new OrderItem(orderId, productId, productName, quantity, unitPrice);
+        OrderItem orderItem = OrderItem.builder()
+            .orderId(orderId)
+            .productId(productId)
+            .productName(productName)
+            .quantity(quantity)
+            .unitPrice(unitPrice)
+            .build();
         
         Long newProductId = 2L;
 

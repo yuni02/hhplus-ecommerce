@@ -20,7 +20,12 @@ class BalanceTransactionTest {
         String description = "잔액 충전";
 
         // when
-        BalanceTransaction transaction = new BalanceTransaction(userId, amount, type, description);
+        BalanceTransaction transaction = BalanceTransaction.builder()
+            .userId(userId)
+            .amount(amount)
+            .type(type)
+            .description(description)
+            .build();
 
         // then
         assertThat(transaction.getUserId()).isEqualTo(userId);
@@ -40,7 +45,7 @@ class BalanceTransactionTest {
         String description = "주문 결제";
 
         // when
-        BalanceTransaction transaction = new BalanceTransaction(userId, amount, type, description);
+        BalanceTransaction transaction = BalanceTransaction.create(userId, amount, type, description);
 
         // then
         assertThat(transaction.getUserId()).isEqualTo(userId);
@@ -58,7 +63,7 @@ class BalanceTransactionTest {
         BigDecimal amount = new BigDecimal("10000");
         BalanceTransaction.TransactionType type = BalanceTransaction.TransactionType.CHARGE;
         String description = "잔액 충전";
-        BalanceTransaction transaction = new BalanceTransaction(userId, amount, type, description);
+        BalanceTransaction transaction = BalanceTransaction.create(userId, amount, type, description);
         
         Long transactionId = 1L;
 
@@ -77,7 +82,7 @@ class BalanceTransactionTest {
         BigDecimal amount = new BigDecimal("10000");
         BalanceTransaction.TransactionType type = BalanceTransaction.TransactionType.CHARGE;
         String description = "잔액 충전";
-        BalanceTransaction transaction = new BalanceTransaction(userId, amount, type, description);
+        BalanceTransaction transaction = BalanceTransaction.create(userId, amount, type, description);
 
         // when
         transaction.setStatus(BalanceTransaction.TransactionStatus.FAILED);
@@ -93,8 +98,8 @@ class BalanceTransactionTest {
         Long userId = 1L;
         BigDecimal amount = new BigDecimal("10000");
         BalanceTransaction.TransactionType type = BalanceTransaction.TransactionType.CHARGE;
-        String description = "잔액 충전";
-        BalanceTransaction transaction = new BalanceTransaction(userId, amount, type, description);
+        String description = "잔액 충전";   
+        BalanceTransaction transaction = BalanceTransaction.create(userId, amount, type, description);
         
         LocalDateTime now = LocalDateTime.now();
 
@@ -130,7 +135,14 @@ class BalanceTransactionTest {
         BalanceTransaction.TransactionStatus status = BalanceTransaction.TransactionStatus.COMPLETED;
         LocalDateTime createdAt = LocalDateTime.now();
         
-        BalanceTransaction transaction = new BalanceTransaction();
+        BalanceTransaction transaction = BalanceTransaction.builder()
+            .userId(userId)
+            .amount(amount)
+            .type(type)
+            .description(description)
+            .status(status)
+            .createdAt(createdAt)
+            .build();
 
         // when
         transaction.setUserId(userId);

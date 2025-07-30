@@ -50,10 +50,13 @@ class IssueCouponServiceTest {
 
         LoadCouponPort.CouponInfo couponInfo = new LoadCouponPort.CouponInfo(
             couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE");
-        
-        UserCoupon savedUserCoupon = new UserCoupon(userId, couponId, 1000);
-        savedUserCoupon.setId(1L);
-        savedUserCoupon.setIssuedAt(LocalDateTime.now());
+
+        UserCoupon savedUserCoupon = UserCoupon.builder()
+            .userId(userId)
+            .couponId(couponId)
+            .discountAmount(1000)
+            .issuedAt(LocalDateTime.now())
+            .build();
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadCouponPort.loadCouponByIdWithLock(couponId)).thenReturn(Optional.of(couponInfo));

@@ -18,8 +18,7 @@ class BalanceTest {
         BigDecimal initialAmount = new BigDecimal("50000");
 
         // when
-        Balance balance = new Balance(userId);
-        balance.setAmount(initialAmount);
+        Balance balance = Balance.builder().userId(userId).amount(initialAmount).build();
 
         // then
         assertThat(balance.getUserId()).isEqualTo(userId);
@@ -34,7 +33,7 @@ class BalanceTest {
         Long userId = 1L;
 
         // when
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
 
         // then
         assertThat(balance.getUserId()).isEqualTo(userId);
@@ -47,7 +46,7 @@ class BalanceTest {
     void chargeBalance_Success() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal chargeAmount = new BigDecimal("10000");
@@ -64,7 +63,7 @@ class BalanceTest {
     void chargeBalance_NegativeAmount() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal negativeAmount = new BigDecimal("-1000");
@@ -80,7 +79,7 @@ class BalanceTest {
     void chargeBalance_ZeroAmount() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal zeroAmount = BigDecimal.ZERO;
@@ -96,7 +95,7 @@ class BalanceTest {
     void deductBalance_Success() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal deductAmount = new BigDecimal("20000");
@@ -113,7 +112,7 @@ class BalanceTest {
     void deductBalance_InsufficientBalance() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal deductAmount = new BigDecimal("60000");
@@ -130,7 +129,7 @@ class BalanceTest {
     void deductBalance_NegativeAmount() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal negativeAmount = new BigDecimal("-1000");
@@ -146,7 +145,7 @@ class BalanceTest {
     void deductBalance_ZeroAmount() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal zeroAmount = BigDecimal.ZERO;
@@ -162,7 +161,7 @@ class BalanceTest {
     void changeBalanceStatus() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
 
         // when
         balance.setStatus(Balance.BalanceStatus.INACTIVE);
@@ -177,7 +176,7 @@ class BalanceTest {
         // given
         Long userId = 1L;
         Long balanceId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
 
         // when
         balance.setId(balanceId);
@@ -191,7 +190,7 @@ class BalanceTest {
     void chargeBalance_Validation() {
         // given
         Long userId = 1L;
-        Balance balance = new Balance(userId);
+        Balance balance = Balance.builder().userId(userId).build();
         balance.setAmount(new BigDecimal("50000"));
         
         BigDecimal chargeAmount = new BigDecimal("10000");

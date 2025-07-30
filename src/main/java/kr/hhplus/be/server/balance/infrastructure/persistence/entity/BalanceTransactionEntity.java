@@ -1,16 +1,28 @@
 package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * BalanceTransaction 인프라스트럭처 엔티티
- * Balance 도메인 전용 JPA 매핑 엔티티
+ * BalanceTransaction 도메인 전용 JPA 매핑 엔티티
  * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
 @Entity
 @Table(name = "user_balance_tx")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BalanceTransactionEntity {
 
     @Id
@@ -28,6 +40,7 @@ public class BalanceTransactionEntity {
     private String type; // enum 대신 varchar
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "COMPLETED"; // enum 대신 varchar
 
     @Column(name = "memo")
@@ -42,17 +55,6 @@ public class BalanceTransactionEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public BalanceTransactionEntity() {}
-
-    public BalanceTransactionEntity(Long userId, BigDecimal amount, String type, String description) {
-        this.userId = userId;
-        this.amount = amount;
-        this.type = type;
-        this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -62,77 +64,5 @@ public class BalanceTransactionEntity {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Long getReferenceId() {
-        return referenceId;
-    }
-
-    public void setReferenceId(Long referenceId) {
-        this.referenceId = referenceId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

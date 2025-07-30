@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.coupon.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,6 +18,11 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "coupons")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CouponEntity {
 
     @Id
@@ -31,9 +43,11 @@ public class CouponEntity {
     private Integer maxIssuanceCount;
 
     @Column(name = "issued_count", nullable = false)
+    @Builder.Default
     private Integer issuedCount = 0;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "ACTIVE"; // enum 대신 varchar
 
     @Column(name = "valid_from")
@@ -48,20 +62,6 @@ public class CouponEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public CouponEntity() {}
-
-    public CouponEntity(String name, String description, BigDecimal discountAmount, 
-                       Integer maxIssuanceCount, LocalDateTime validFrom, LocalDateTime validTo) {
-        this.name = name;
-        this.description = description;
-        this.discountAmount = discountAmount;
-        this.maxIssuanceCount = maxIssuanceCount;
-        this.validFrom = validFrom;
-        this.validTo = validTo;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -73,91 +73,33 @@ public class CouponEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
+    // 필요한 경우에만 public setter 제공
+    public void incrementIssuedCount() {
+        this.issuedCount++;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public BigDecimal getDiscountAmount() {
-        return discountAmount;
-    }
-
-    public void setDiscountAmount(BigDecimal discountAmount) {
-        this.discountAmount = discountAmount;
-    }
-
-    public Integer getMaxIssuanceCount() {
-        return maxIssuanceCount;
-    }
-
-    public void setMaxIssuanceCount(Integer maxIssuanceCount) {
-        this.maxIssuanceCount = maxIssuanceCount;
-    }
-
-    public Integer getIssuedCount() {
-        return issuedCount;
-    }
-
-    public void setIssuedCount(Integer issuedCount) {
-        this.issuedCount = issuedCount;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
+    public void updateStatus(String status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public LocalDateTime getValidFrom() {
-        return validFrom;
-    }
-
-    public void setValidFrom(LocalDateTime validFrom) {
-        this.validFrom = validFrom;
-    }
-
-    public LocalDateTime getValidTo() {
-        return validTo;
-    }
-
-    public void setValidTo(LocalDateTime validTo) {
-        this.validTo = validTo;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    // 기존 복잡한 생성자 제거
+    // 정적 팩토리 메서드 제공
+    public static CouponEntity create(String name, String description, BigDecimal discountAmount,
+                                      Integer maxIssuanceCount, Integer issuedCount, String status,
+                                      LocalDateTime validFrom, LocalDateTime validTo) {
+        CouponEntity entity = new CouponEntity();
+        entity.name = name;
+        entity.description = description;
+        entity.discountAmount = discountAmount;
+        entity.maxIssuanceCount = maxIssuanceCount;
+        entity.issuedCount = issuedCount != null ? issuedCount : 0;
+        entity.status = status != null ? status : "ACTIVE";
+        entity.validFrom = validFrom;
+        entity.validTo = validTo;
+        entity.createdAt = LocalDateTime.now();
+        entity.updatedAt = LocalDateTime.now();
+        return entity;
     }
 }

@@ -47,21 +47,19 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
 
             // 3. 기존 잔액 조회 또는 새로 생성
             Balance balance = loadBalancePort.loadActiveBalanceByUserId(command.getUserId())
-                    .orElse(new Balance(command.getUserId()));
+                    .orElse(Balance.builder().userId(command.getUserId()).build());
 
             // 4. 잔액 충전 (도메인 로직)
             balance.charge(command.getAmount());
             Balance savedBalance = loadBalancePort.saveBalance(balance);
 
             // 5. 거래 내역 생성
-            BalanceTransaction transaction = new BalanceTransaction(
+            BalanceTransaction transaction = BalanceTransaction.create(
                     command.getUserId(), 
                     command.getAmount(), 
                     BalanceTransaction.TransactionType.CHARGE,  // 잔액 충전 타입
                     "잔액 충전"
             );
-            transaction.setCreatedAt(LocalDateTime.now());
-            transaction.setUpdatedAt(LocalDateTime.now());
             BalanceTransaction savedTransaction = saveBalanceTransactionPort.saveBalanceTransaction(transaction);
 
             return ChargeBalanceResult.success(

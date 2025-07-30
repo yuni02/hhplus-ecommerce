@@ -42,9 +42,7 @@ class GetBalanceServiceTest {
         BigDecimal balance = BigDecimal.valueOf(50000);
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
 
-        Balance existingBalance = new Balance(userId);
-        existingBalance.setId(1L);
-        existingBalance.setAmount(balance);
+        Balance existingBalance = Balance.builder().userId(userId).amount(balance).build();
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));

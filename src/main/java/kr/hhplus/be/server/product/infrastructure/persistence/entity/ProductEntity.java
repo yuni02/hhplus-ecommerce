@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.product.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,6 +18,11 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "products")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductEntity {
 
     @Id
@@ -31,6 +43,7 @@ public class ProductEntity {
     private Integer stock;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "ACTIVE"; // enum 대신 varchar
 
     @Column(name = "category")
@@ -41,18 +54,6 @@ public class ProductEntity {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    public ProductEntity() {}
-
-    public ProductEntity(String name, String description, BigDecimal currentPrice, Integer stock, String category) {
-        this.name = name;
-        this.description = description;
-        this.currentPrice = currentPrice;
-        this.stock = stock;
-        this.category = category;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
 
     @PrePersist
     protected void onCreate() {
@@ -65,75 +66,14 @@ public class ProductEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public BigDecimal getCurrentPrice() {
-        return currentPrice;
-    }
-
-    public void setCurrentPrice(BigDecimal currentPrice) {
-        this.currentPrice = currentPrice;
-    }
-
-    public Integer getStock() {
-        return stock;
-    }
-
-    public void setStock(Integer stock) {
+    // 필요한 경우에만 public setter 제공
+    public void updateStock(Integer stock) {
         this.stock = stock;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
+    public void updateStatus(String status) {
         this.status = status;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+        this.updatedAt = LocalDateTime.now();
     }
 }

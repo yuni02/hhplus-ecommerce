@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +20,11 @@ import java.util.List;
  */
 @Entity
 @Table(name = "orders")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderEntity {
 
     @Id
@@ -33,6 +45,7 @@ public class OrderEntity {
     private BigDecimal finalAmount;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "PENDING"; // enum 대신 varchar
 
     @Column(name = "payment_method", length = 50)
@@ -52,24 +65,12 @@ public class OrderEntity {
 
     // 느슨한 관계 - 외래키 제약조건 없음
     @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<OrderItemEntity> orderItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<OrderHistoryEventEntity> historyEvents = new ArrayList<>();
-
-    public OrderEntity() {}
-
-    public OrderEntity(Long userId, BigDecimal totalAmount, BigDecimal discountAmount, 
-                      BigDecimal finalAmount, String paymentMethod) {
-        this.userId = userId;
-        this.totalAmount = totalAmount;
-        this.discountAmount = discountAmount;
-        this.finalAmount = finalAmount;
-        this.paymentMethod = paymentMethod;
-        this.orderedAt = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
 
     @PrePersist
     protected void onCreate() {
@@ -85,108 +86,19 @@ public class OrderEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public BigDecimal getDiscountAmount() {
-        return discountAmount;
-    }
-
-    public void setDiscountAmount(BigDecimal discountAmount) {
-        this.discountAmount = discountAmount;
-    }
-
-    public BigDecimal getFinalAmount() {
-        return finalAmount;
-    }
-
-    public void setFinalAmount(BigDecimal finalAmount) {
-        this.finalAmount = finalAmount;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
+    // 필요한 경우에만 public setter 제공
+    public void updateStatus(String status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public String getPaymentMethod() {
-        return paymentMethod;
+    public void addOrderItem(OrderItemEntity orderItem) {
+        this.orderItems.add(orderItem);
+        orderItem.setOrderId(this.id);
     }
 
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public Long getUserCouponId() {
-        return userCouponId;
-    }
-
-    public void setUserCouponId(Long userCouponId) {
-        this.userCouponId = userCouponId;
-    }
-
-    public LocalDateTime getOrderedAt() {
-        return orderedAt;
-    }
-
-    public void setOrderedAt(LocalDateTime orderedAt) {
-        this.orderedAt = orderedAt;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public List<OrderItemEntity> getOrderItems() {
-        return orderItems;
-    }
-
-    public void setOrderItems(List<OrderItemEntity> orderItems) {
-        this.orderItems = orderItems;
-    }
-
-    public List<OrderHistoryEventEntity> getHistoryEvents() {
-        return historyEvents;
-    }
-
-    public void setHistoryEvents(List<OrderHistoryEventEntity> historyEvents) {
-        this.historyEvents = historyEvents;
+    public void addHistoryEvent(OrderHistoryEventEntity historyEvent) {
+        this.historyEvents.add(historyEvent);
+        historyEvent.setOrderId(this.id);
     }
 }

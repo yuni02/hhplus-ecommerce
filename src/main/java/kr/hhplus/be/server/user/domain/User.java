@@ -1,5 +1,12 @@
 package kr.hhplus.be.server.user.domain;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -7,6 +14,11 @@ import java.time.LocalDateTime;
  * 사용자 도메인 엔티티
  * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
     private Long id;
@@ -14,94 +26,17 @@ public class User {
     private String name;
     private String email;
     private String phoneNumber;
+    
+    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
+    
+    @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public User() {}
-
-    public User(String username, String name, String email, String phoneNumber) {
-        this.username = username;
-        this.name = name;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public BigDecimal getBalance() {
-        return balance;
-    }
-
-    public void setBalance(BigDecimal balance) {
-        this.balance = balance;
-    }
-
-    public UserStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(UserStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
+    // 비즈니스 로직 메서드들
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
     }

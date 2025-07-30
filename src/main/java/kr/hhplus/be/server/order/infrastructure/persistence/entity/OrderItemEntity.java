@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 
 /**
@@ -10,6 +17,11 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "order_items")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderItemEntity {
 
     @Id
@@ -35,74 +47,19 @@ public class OrderItemEntity {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
-    public OrderItemEntity() {}
-
-    public OrderItemEntity(Long orderId, Long productId, String productName, 
-                          Integer quantity, BigDecimal unitPrice) {
-        this.orderId = orderId;
-        this.productId = productId;
-        this.productName = productName;
-        this.quantity = quantity;
-        this.unitPrice = unitPrice;
-        calculateTotalPrice();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getOrderId() {
-        return orderId;
-    }
-
+    // 필요한 경우에만 public setter 제공
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
 
-    public Long getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-
-    public String getProductName() {
-        return productName;
-    }
-
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
+    public void updateQuantity(Integer quantity) {
         this.quantity = quantity;
         calculateTotalPrice();
     }
 
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public void setUnitPrice(BigDecimal unitPrice) {
+    public void updateUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
         calculateTotalPrice();
-    }
-
-    public BigDecimal getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
     }
 
     private void calculateTotalPrice() {

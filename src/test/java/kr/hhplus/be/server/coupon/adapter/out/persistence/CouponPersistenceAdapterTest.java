@@ -22,7 +22,7 @@ class CouponPersistenceAdapterTest {
 
     @BeforeEach
     void setUp() {
-        couponPersistenceAdapter = new CouponPersistenceAdapter();
+        couponPersistenceAdapter = new CouponPersistenceAdapter(null);
     }
 
     @Test

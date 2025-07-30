@@ -22,7 +22,12 @@ class OrderTest {
         Long userCouponId = null;
 
         // when
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // then
         assertThat(order.getUserId()).isEqualTo(userId);
@@ -42,7 +47,12 @@ class OrderTest {
         Long userCouponId = 1L;
 
         // when
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // then
         assertThat(order.getUserId()).isEqualTo(userId);
@@ -60,7 +70,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = null;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
         
         Long orderId = 1L;
 
@@ -79,7 +94,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = 1L;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
         
         BigDecimal discountedAmount = new BigDecimal("18000");
 
@@ -98,7 +118,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = null;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // when
         order.setStatus(Order.OrderStatus.COMPLETED);
@@ -115,7 +140,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = null;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+            Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
         
         LocalDateTime orderedAt = LocalDateTime.now();
 
@@ -134,7 +164,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = null;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // when
         order.complete();
@@ -152,7 +187,12 @@ class OrderTest {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
         Long userCouponId = null;
-        Order order = new Order(userId, orderItems, totalAmount, userCouponId);
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // when
         order.cancel();
@@ -196,7 +236,12 @@ class OrderTest {
         Order.OrderStatus status = Order.OrderStatus.COMPLETED;
         LocalDateTime orderedAt = LocalDateTime.now();
         
-        Order order = new Order();
+        Order order = Order.builder()
+            .userId(userId)
+            .orderItems(orderItems)
+            .totalAmount(totalAmount)
+            .userCouponId(userCouponId)
+            .build();
 
         // when
         order.setUserId(userId);

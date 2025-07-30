@@ -49,15 +49,13 @@ class ChargeBalanceServiceTest {
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
             new ChargeBalanceUseCase.ChargeBalanceCommand(userId, amount);
 
-        Balance existingBalance = new Balance(userId);
-        existingBalance.setId(1L);
-        existingBalance.setAmount(BigDecimal.valueOf(5000));
+        Balance existingBalance = Balance.builder().userId(userId).amount(BigDecimal.valueOf(5000)).build();
         
-        Balance savedBalance = new Balance(userId);
+        Balance savedBalance = Balance.builder().userId(userId).build();
         savedBalance.setId(1L);
         savedBalance.setAmount(BigDecimal.valueOf(15000));
         
-        BalanceTransaction savedTransaction = new BalanceTransaction(userId, amount, 
+        BalanceTransaction savedTransaction = BalanceTransaction.create(userId, amount, 
             BalanceTransaction.TransactionType.CHARGE, "잔액 충전");
         savedTransaction.setId(1L);
 

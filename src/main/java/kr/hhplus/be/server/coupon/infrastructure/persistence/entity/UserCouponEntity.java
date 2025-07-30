@@ -1,15 +1,27 @@
 package kr.hhplus.be.server.coupon.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
  * UserCoupon 인프라스트럭처 엔티티
- * Coupon 도메인 전용 JPA 매핑 엔티티
+ * UserCoupon 도메인 전용 JPA 매핑 엔티티
  * 외래키 제약조건 없이 느슨한 결합으로 설계
  */
 @Entity
 @Table(name = "user_coupons")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserCouponEntity {
 
     @Id
@@ -27,6 +39,7 @@ public class UserCouponEntity {
     private Integer discountAmount; // 할인 금액
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "AVAILABLE"; // enum 대신 varchar
 
     @Column(name = "issued_at", nullable = false)
@@ -44,17 +57,6 @@ public class UserCouponEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public UserCouponEntity() {}
-
-    public UserCouponEntity(Long userId, Long couponId, Integer discountAmount) {
-        this.userId = userId;
-        this.couponId = couponId;
-        this.discountAmount = discountAmount;
-        this.issuedAt = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -69,83 +71,34 @@ public class UserCouponEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public Long getCouponId() {
-        return couponId;
-    }
-
-    public void setCouponId(Long couponId) {
-        this.couponId = couponId;
-    }
-
-    public Integer getDiscountAmount() {
-        return discountAmount;
-    }
-
-    public void setDiscountAmount(Integer discountAmount) {
-        this.discountAmount = discountAmount;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getIssuedAt() {
-        return issuedAt;
-    }
-
-    public void setIssuedAt(LocalDateTime issuedAt) {
-        this.issuedAt = issuedAt;
-    }
-
-    public LocalDateTime getUsedAt() {
-        return usedAt;
-    }
-
-    public void setUsedAt(LocalDateTime usedAt) {
-        this.usedAt = usedAt;
-    }
-
-    public Long getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(Long orderId) {
+    // 필요한 경우에만 public setter 제공
+    public void use(Long orderId) {
+        this.status = "USED";
         this.orderId = orderId;
+        this.usedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public void updateStatus(String status) {
+        this.status = status;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    // 기존 복잡한 생성자 제거
+    // 정적 팩토리 메서드 제공
+    public static UserCouponEntity create(Long userId, Long couponId, Integer discountAmount, String status,
+                                          LocalDateTime issuedAt, LocalDateTime usedAt, Long orderId,
+                                          LocalDateTime createdAt, LocalDateTime updatedAt) {
+        UserCouponEntity entity = new UserCouponEntity();
+        entity.userId = userId;
+        entity.couponId = couponId;
+        entity.discountAmount = discountAmount;
+        entity.status = status != null ? status : "AVAILABLE";
+        entity.issuedAt = issuedAt != null ? issuedAt : LocalDateTime.now();
+        entity.usedAt = usedAt;
+        entity.orderId = orderId;
+        entity.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        entity.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
+        return entity;
     }
 }

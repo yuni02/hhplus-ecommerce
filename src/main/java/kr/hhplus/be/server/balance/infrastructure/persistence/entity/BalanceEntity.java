@@ -1,6 +1,13 @@
 package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 
 /**
@@ -10,6 +17,11 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "users")
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BalanceEntity {
     
     @Id
@@ -20,53 +32,19 @@ public class BalanceEntity {
     private Long userId;
     
     @Column(name = "amount")
+    @Builder.Default
     private BigDecimal amount = BigDecimal.ZERO;
     
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "ACTIVE"; // enum 대신 varchar
 
-    public BalanceEntity() {}
-
-    public BalanceEntity(Long userId) {
-        this.userId = userId;
-    }
-
-    public BalanceEntity(Long id, Long userId, BigDecimal amount, String status) {
-        this.id = id;
-        this.userId = userId;
-        this.amount = amount;
-        this.status = status;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
+    // 필요한 경우에만 public setter 제공
+    public void updateAmount(BigDecimal amount) {
         this.amount = amount;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
+    public void updateStatus(String status) {
         this.status = status;
     }
 }
