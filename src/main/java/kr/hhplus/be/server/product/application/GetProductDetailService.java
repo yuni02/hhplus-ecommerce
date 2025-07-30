@@ -51,8 +51,8 @@ public class GetProductDetailService implements GetProductDetailUseCase {
                     productInfo.getCurrentPrice(),
                     productInfo.getStock(),
                     productInfo.getStatus(),
-                    null, // createdAt - ProductInfo에 없는 경우
-                    null  // updatedAt - ProductInfo에 없는 경우
+                    productInfo.getCreatedAt(),
+                    productInfo.getUpdatedAt()
             );
 
             return Optional.of(result);

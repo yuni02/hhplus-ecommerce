@@ -49,7 +49,9 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
                 entity.getCurrentPrice().intValue(),
                 entity.getStock(),
                 entity.getStatus(),
-                entity.getCategory()
+                entity.getCategory(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 
