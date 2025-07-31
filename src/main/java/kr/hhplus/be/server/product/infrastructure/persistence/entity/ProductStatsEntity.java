@@ -1,6 +1,9 @@
 package kr.hhplus.be.server.product.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +16,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "product_stats")
 @IdClass(ProductStatsId.class)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductStatsEntity {
 
     @Id
@@ -58,21 +64,7 @@ public class ProductStatsEntity {
     @JoinColumn(name = "product_id", insertable = false, updatable = false)
     private ProductEntity product;
 
-    public ProductStatsEntity() {}
 
-    public ProductStatsEntity(Long productId, LocalDate date) {
-        this.productId = productId;
-        this.date = date;
-        this.recentSalesCount = 0;
-        this.recentSalesAmount = BigDecimal.ZERO;
-        this.totalSalesCount = 0;
-        this.totalSalesAmount = BigDecimal.ZERO;
-        this.rank = 0;
-        this.conversionRate = BigDecimal.ZERO;
-        this.aggregationDate = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
 
     @PrePersist
     protected void onCreate() {

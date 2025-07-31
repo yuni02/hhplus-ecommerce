@@ -35,4 +35,22 @@ public interface OrderItemJpaRepository extends JpaRepository<OrderItemEntity, L
      * 주문과 상품으로 주문 아이템 조회
      */
     List<OrderItemEntity> findByOrderIdAndProductId(Long orderId, Long productId);
+
+    /**
+     * 최근 3일간 상품별 판매 통계 조회
+     */
+    @Query("""
+        SELECT oi.productId, oi.productName, 
+               SUM(oi.quantity) as totalQuantity, 
+               SUM(oi.totalPrice) as totalAmount,
+               MAX(o.orderedAt) as lastOrderDate
+        FROM OrderItemEntity oi
+        JOIN OrderEntity o ON oi.orderId = o.id
+        WHERE o.orderedAt BETWEEN :startDate AND :endDate
+        AND o.status = 'COMPLETED'
+        GROUP BY oi.productId, oi.productName
+        ORDER BY totalQuantity DESC
+        """)
+    List<Object[]> findProductSalesStatsByDateRange(@Param("startDate") java.time.LocalDateTime startDate, 
+                                                   @Param("endDate") java.time.LocalDateTime endDate);
 }

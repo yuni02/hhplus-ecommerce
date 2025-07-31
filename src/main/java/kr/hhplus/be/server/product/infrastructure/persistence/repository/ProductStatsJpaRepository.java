@@ -48,4 +48,9 @@ public interface ProductStatsJpaRepository extends JpaRepository<ProductStatsEnt
      */
     @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.date = :date ORDER BY ps.totalSalesAmount DESC")
     List<ProductStatsEntity> findTopProductsByTotalSales(@Param("date") LocalDate date);
+
+    /**
+     * 특정 날짜의 통계 삭제
+     */
+    void deleteByDate(LocalDate date);
 }

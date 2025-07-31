@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.product.domain;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,35 +21,57 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ProductStats {
-
+    
     private Long productId;
     private LocalDate date;
-    private Integer recentSalesCount; // 최근 3일간 판매량
-    private BigDecimal recentSalesAmount; // 최근 3일간 판매액
-    private Integer totalSalesCount; // 전체 판매량
-    private BigDecimal totalSalesAmount; // 전체 판매액
-    private Integer rank; // 인기 순위
-    private BigDecimal conversionRate; // 전환율
+    
+    @Builder.Default
+    private Integer recentSalesCount = 0; // 최근 3일간 판매량
+    
+    @Builder.Default
+    private BigDecimal recentSalesAmount = BigDecimal.ZERO; // 최근 3일간 판매액
+    
+    @Builder.Default
+    private Integer totalSalesCount = 0; // 전체 판매량
+    
+    @Builder.Default
+    private BigDecimal totalSalesAmount = BigDecimal.ZERO; // 전체 판매액
+    
+    @Builder.Default
+    private Integer rank = 0; // 인기 순위
+    
+    @Builder.Default
+    private BigDecimal conversionRate = BigDecimal.ZERO; // 전환율
+    
     private LocalDateTime lastOrderDate; // 마지막 주문일
-    private LocalDateTime aggregationDate; // 집계일
+    
+    @Builder.Default
+    private LocalDateTime aggregationDate = LocalDateTime.now(); // 집계일
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Product product;
-
+    
     // 비즈니스 로직 메서드들
-    public void addSale(Integer quantity, BigDecimal amount) {
-        this.recentSalesCount = (this.recentSalesCount != null ? this.recentSalesCount : 0) + quantity;
-        this.recentSalesAmount = (this.recentSalesAmount != null ? this.recentSalesAmount : BigDecimal.ZERO).add(amount);
-        this.totalSalesCount = (this.totalSalesCount != null ? this.totalSalesCount : 0) + quantity;
-        this.totalSalesAmount = (this.totalSalesAmount != null ? this.totalSalesAmount : BigDecimal.ZERO).add(amount);
-        this.lastOrderDate = LocalDateTime.now();
+    public void updateRecentSales(Integer quantity, BigDecimal amount) {
+        this.recentSalesCount += quantity;
+        this.recentSalesAmount = this.recentSalesAmount.add(amount);
         this.updatedAt = LocalDateTime.now();
     }
-
-    public void calculateConversionRate(Integer totalViews) {
-        if (totalViews != null && totalViews > 0 && this.totalSalesCount != null) {
-            this.conversionRate = BigDecimal.valueOf(this.totalSalesCount)
-                    .divide(BigDecimal.valueOf(totalViews), 4, java.math.RoundingMode.HALF_UP);
+    
+    public void updateTotalSales(Integer quantity, BigDecimal amount) {
+        this.totalSalesCount += quantity;
+        this.totalSalesAmount = this.totalSalesAmount.add(amount);
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void setRank(Integer rank) {
+        this.rank = rank;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void updateLastOrderDate(LocalDateTime orderDate) {
+        if (this.lastOrderDate == null || orderDate.isAfter(this.lastOrderDate)) {
+            this.lastOrderDate = orderDate;
             this.updatedAt = LocalDateTime.now();
         }
     }
