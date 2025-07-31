@@ -67,7 +67,7 @@ class ProductIntegrationTest {
         assertThat(result).isPresent();
         assertThat(result.get().getId()).isEqualTo(productId);
         assertThat(result.get().getName()).isEqualTo("테스트 상품");
-        assertThat(result.get().getCurrentPrice()).isEqualTo(new BigDecimal("10000"));
+        assertThat(result.get().getCurrentPrice()).isEqualTo(10000);
         assertThat(result.get().getStock()).isEqualTo(100);
     }
 

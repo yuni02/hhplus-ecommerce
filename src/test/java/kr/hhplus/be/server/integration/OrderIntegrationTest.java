@@ -65,10 +65,11 @@ class OrderIntegrationTest {
 
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
+                .userId(1L)  // userId 설정
                 .username("testuser")
                 .status("ACTIVE")
                 .build();
-        testUser = userJpaRepository.save(testUser);
+        testUser = userJpaRepository.saveAndFlush(testUser);
 
         // 테스트용 상품 생성
         testProduct = ProductEntity.builder()
@@ -78,22 +79,22 @@ class OrderIntegrationTest {
                 .stock(100)
                 .status("ACTIVE")
                 .build();
-        testProduct = productJpaRepository.save(testProduct);
+        testProduct = productJpaRepository.saveAndFlush(testProduct);
 
         // 테스트용 잔액 생성
         testBalance = BalanceEntity.builder()
-                .userId(testUser.getId())
+                .userId(testUser.getUserId())  // userId 필드 사용
                 .amount(new BigDecimal("50000"))
                 .status("ACTIVE")
                 .build();
-        balanceJpaRepository.save(testBalance);
+        balanceJpaRepository.saveAndFlush(testBalance);
     }
 
     @Test
     @DisplayName("주문 생성 성공")
     void 주문_생성_성공() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         Long productId = testProduct.getId();
         Integer quantity = 2;
 
@@ -125,7 +126,7 @@ class OrderIntegrationTest {
     @DisplayName("주문 생성 실패 - 존재하지 않는 상품")
     void 주문_생성_실패_존재하지_않는_상품() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         Long nonExistentProductId = 9999L;
         Integer quantity = 1;
 
@@ -144,7 +145,7 @@ class OrderIntegrationTest {
     @DisplayName("주문 생성 실패 - 잔액 부족")
     void 주문_생성_실패_잔액_부족() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         Long productId = testProduct.getId();
         Integer quantity = 10; // 총 100,000원 (잔액 50,000원보다 많음)
 

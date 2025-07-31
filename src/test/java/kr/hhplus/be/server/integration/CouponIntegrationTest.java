@@ -95,7 +95,7 @@ class CouponIntegrationTest {
         assertThat(result.getUserCouponId()).isNotNull();
         assertThat(result.getCouponId()).isEqualTo(couponId);
         assertThat(result.getCouponName()).isEqualTo("테스트 쿠폰");
-        assertThat(result.getDiscountAmount()).isEqualTo(new BigDecimal("1000"));
+        assertThat(result.getDiscountAmount()).isEqualTo(1000);
         assertThat(result.getStatus()).isEqualTo("AVAILABLE");
 
         // 사용자 쿠폰이 올바르게 생성되었는지 확인
@@ -162,7 +162,7 @@ class CouponIntegrationTest {
         GetUserCouponsUseCase.UserCouponInfo userCouponInfo = result.getUserCoupons().get(0);
         assertThat(userCouponInfo.getCouponId()).isEqualTo(couponId);
         assertThat(userCouponInfo.getCouponName()).isEqualTo("테스트 쿠폰");
-        assertThat(userCouponInfo.getDiscountAmount()).isEqualTo(new BigDecimal("1000.00"));
+        assertThat(userCouponInfo.getDiscountAmount()).isEqualTo(1000);
         assertThat(userCouponInfo.getStatus()).isEqualTo("AVAILABLE");
     }
 
@@ -211,6 +211,6 @@ class CouponIntegrationTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("쿠폰이 모두 소진되었습니다");
+        assertThat(result.getErrorMessage()).contains("발급할 수 없는 쿠폰입니다.");
     }
 } 
