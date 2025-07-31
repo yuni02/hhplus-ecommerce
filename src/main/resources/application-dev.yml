@@ -1,0 +1,35 @@
+# 개발 환경 전용 설정
+spring:
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+      exclude: 
+        - static/**
+        - public/**
+        - templates/**
+        - META-INF/**
+        - WEB-INF/**
+    livereload:
+      enabled: true
+      port: 35729
+    add-properties: true
+
+# 개발 환경 로깅 설정
+logging:
+  level:
+    org.springframework.boot.devtools: DEBUG
+    org.springframework.boot.autoconfigure: DEBUG
+    kr.hhplus.be.server: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# 개발 환경 JPA 설정
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true 

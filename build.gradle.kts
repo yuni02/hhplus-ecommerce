@@ -47,6 +47,9 @@ dependencies {
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")
 
+    // DevTools (개발 시 자동 재시작)
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -55,13 +58,14 @@ dependencies {
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	    implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
-    testImplementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
+	
 
 }
 
 tasks.withType<JavaCompile> {
 	options.compilerArgs.add("-parameters")
+	options.isFork = true
+	options.forkOptions.jvmArgs.add("-Dspring.profiles.active=dev")
 }
 
 tasks.withType<Test> {
