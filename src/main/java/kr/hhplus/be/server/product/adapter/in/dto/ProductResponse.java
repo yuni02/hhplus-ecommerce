@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.application.response;
+package kr.hhplus.be.server.product.adapter.in.dto;
 
 import java.time.LocalDateTime;
 

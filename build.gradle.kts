@@ -42,8 +42,7 @@ dependencies {
 	testAnnotationProcessor("org.projectlombok:lombok")
 
     // Swagger/OpenAPI
-    // implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")

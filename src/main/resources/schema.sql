@@ -28,3 +28,23 @@ ALTER TABLE product_stats DROP FOREIGN KEY IF EXISTS FK_product_stats_product_id
 -- BalanceEntity는 users 테이블을 공유하므로 별도 제약조건 없음
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- 새로운 balance 테이블 생성
+CREATE TABLE IF NOT EXISTS balances (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0
+);
+
+-- 기존 users 테이블에서 amount 데이터를 balances 테이블로 마이그레이션
+INSERT INTO balances (user_id, amount, status, created_at, updated_at, version)
+SELECT user_id, amount, status, created_at, updated_at, 0
+FROM users 
+WHERE amount > 0 OR amount IS NOT NULL;
+
+-- users 테이블에서 amount 컬럼 제거 (선택사항)
+-- ALTER TABLE users DROP COLUMN amount;

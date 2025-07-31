@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.application.response;
+package kr.hhplus.be.server.order.adapter.in.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;

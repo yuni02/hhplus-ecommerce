@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.hhplus.be.server.balance.adapter.in.docs.BalanceSchemaDescription;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public interface BalanceApiDocumentation {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     ResponseEntity<?> getBalance(
-            @Parameter(description = "사용자 ID", required = true, example = "1")
+            @Parameter(description = BalanceSchemaDescription.userId, required = true, example = "1001")
             @RequestParam("userId") Long userId);
 
     @PostMapping("/balance/charge")

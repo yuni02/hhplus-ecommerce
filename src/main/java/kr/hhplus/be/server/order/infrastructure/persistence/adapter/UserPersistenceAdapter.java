@@ -40,7 +40,6 @@ public class UserPersistenceAdapter implements LoadUserPort {
         User user = User.builder()
             .userId(entity.getUserId())
             .username(entity.getUsername())
-            .amount(entity.getAmount())
             .status(User.UserStatus.valueOf(entity.getStatus()))
             .build();
         user.setId(entity.getId());

@@ -1,14 +1,28 @@
 package kr.hhplus.be.server.order.adapter.in.dto;
 
-import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
+import kr.hhplus.be.server.order.adapter.in.docs.OrderSchemaDescription;
+import java.util.List;  
 
+@Schema(description = "주문 요청")
 public class OrderRequest {
+    
+    @Schema(description = OrderSchemaDescription.userId, example = "1001", required = true)
     private Long userId;
+    
+    @Schema(description = OrderSchemaDescription.orderProduct, required = true)
     private List<OrderItemRequest> orderItems;
+    
+    @Schema(description = OrderSchemaDescription.couponId + " (선택사항)", example = "1")
     private Long userCouponId;
 
+    @Schema(description = "주문 상품 요청")
     public static class OrderItemRequest {
+        
+        @Schema(description = OrderSchemaDescription.productId, example = "1", required = true)
         private Long productId;
+        
+        @Schema(description = OrderSchemaDescription.quantity, example = "2", required = true)
         private Integer quantity;
 
         public OrderItemRequest() {

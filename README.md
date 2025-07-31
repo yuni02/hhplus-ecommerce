@@ -64,8 +64,9 @@ src/main/java/kr/hhplus/be/server/
 ├── balance/                    # 잔액 관리 도메인
 │   ├── adapter/
 │   │   ├── in/                # Incoming Adapters
-│   │   │   ├── dto/           # Request/Response DTOs
-│   │   │   └── web/           # Controllers + API Documentation
+│   │   │   ├── dto/           # Request & Response DTOs
+│   │   │   ├── web/           # Controllers
+│   │   │   └── docs/          # API Documentation Constants
 │   │   └── out/               # Outgoing Adapters
 │   │       └── persistence/   # Persistence Adapters
 │   ├── application/           # Application Layer

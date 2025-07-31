@@ -1,12 +1,12 @@
-package kr.hhplus.be.server.balance.application.response;
+package kr.hhplus.be.server.product.adapter.in.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "에러 응답")
 public class ErrorResponse {
 
-    @Schema(description = "에러 메시지", example = "잔액 충전에 실패했습니다.")
-    private String message;
+    @Schema(description = "에러 메시지", example = "상품 조회에 실패했습니다.")
+    private String message; 
 
     public ErrorResponse() {}
 

@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.application.response.OrderResponse;
+import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;    
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
 
 import org.springframework.http.ResponseEntity;

@@ -4,11 +4,10 @@ import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
+import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceTransactionEntity;
+import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceTransactionJpaRepository;
-import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
-import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
-
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,30 +16,30 @@ import java.util.Optional;
 
 /**
  * Balance 인프라스트럭처 영속성 Adapter
- * Balance 도메인 전용 데이터 접근
+ * 잔액 전용 데이터 접근
  */
 @Component
 public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTransactionPort {
 
-    private final UserJpaRepository userJpaRepository;
+    private final BalanceJpaRepository balanceJpaRepository;
     private final BalanceTransactionJpaRepository balanceTransactionJpaRepository;
 
-    public BalancePersistenceAdapter(UserJpaRepository userJpaRepository,
+    public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository,
                                    BalanceTransactionJpaRepository balanceTransactionJpaRepository) {
-        this.userJpaRepository = userJpaRepository;
+        this.balanceJpaRepository = balanceJpaRepository;
         this.balanceTransactionJpaRepository = balanceTransactionJpaRepository;
     }
 
     @Override
     public Optional<Balance> loadActiveBalanceByUserId(Long userId) {
-        return userJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
+        return balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
                 .map(this::mapToBalance);
     }
 
     @Override
     public Balance saveBalance(Balance balance) {
-        UserEntity entity = mapToUserEntity(balance);
-        UserEntity savedEntity = userJpaRepository.save(entity);
+        BalanceEntity entity = mapToBalanceEntity(balance);
+        BalanceEntity savedEntity = balanceJpaRepository.save(entity);
         return mapToBalance(savedEntity);
     }
 
@@ -53,9 +52,9 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     }
 
     /**
-     * UserEntity를 Balance 도메인 객체로 변환
+     * BalanceEntity를 Balance 도메인 객체로 변환
      */
-    private Balance mapToBalance(UserEntity entity) {
+    private Balance mapToBalance(BalanceEntity entity) {
         return new Balance(
                 entity.getId(),
                 entity.getUserId(),
@@ -65,29 +64,15 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     }
 
     /**
-     * Balance 도메인 객체를 UserEntity로 변환
+     * Balance 도메인 객체를 BalanceEntity로 변환
      */
-    private UserEntity mapToUserEntity(Balance balance) {
-        String username = null;  // 기본값
-        
-        // 새로운 엔티티인 경우 기존 사용자 정보 조회
-        // if (balance.getId() == null) {
-            var existingUser = userJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
-            if (existingUser.isPresent()) {
-                username = existingUser.get().getUsername();
-                System.out.println("Found existing user: " + username + " for userId: " + balance.getUserId());
-            } else {
-                System.out.println("No existing user found for userId: " + balance.getUserId());
-            }
-        // }
-        
-        return UserEntity.builder()
+    private BalanceEntity mapToBalanceEntity(Balance balance) {
+        return BalanceEntity.builder()
                 .id(balance.getId())
                 .userId(balance.getUserId())
-                .username(username)
                 .amount(balance.getAmount())
                 .status(balance.getStatus().name())
-                .createdAt(LocalDateTime.now())  // 항상 현재 시간으로 설정
+                .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
     }
@@ -117,8 +102,8 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
                 .id(transaction.getId())
                 .userId(transaction.getUserId())
                 .amount(transaction.getAmount())
-                .type(transaction.getType() != null ? transaction.getType().name() : null)
-                .status(transaction.getStatus() != null ? transaction.getStatus().name() : null)
+                .type(transaction.getType().name())
+                .status(transaction.getStatus().name())
                 .description(transaction.getDescription())
                 .referenceId(transaction.getReferenceId())
                 .createdAt(transaction.getCreatedAt())

@@ -25,7 +25,6 @@ public class GetUserService implements GetUserUseCase {
                         userInfo.getId(),
                         userInfo.getUserId(),
                         userInfo.getUsername(),
-                        userInfo.getAmount(),
                         userInfo.getStatus(),
                         null, // createdAt은 별도 조회 필요
                         null  // updatedAt은 별도 조회 필요

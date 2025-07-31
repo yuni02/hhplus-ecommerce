@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.hhplus.be.server.coupon.adapter.in.docs.CouponSchemaDescription;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,9 +26,9 @@ public interface CouponApiDocumentation {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     ResponseEntity<?> issueCoupon(
-            @Parameter(description = "쿠폰 ID", required = true, example = "1") 
+            @Parameter(description = CouponSchemaDescription.couponId, required = true, example = "1") 
             @PathVariable(name = "id") Long id,
-            @Parameter(description = "사용자 ID", required = true, example = "1") 
+            @Parameter(description = CouponSchemaDescription.userId, required = true, example = "1001") 
             @RequestParam(name = "userId", required = true) Long userId);
 
     @GetMapping("/users/{userId}")
@@ -38,6 +39,6 @@ public interface CouponApiDocumentation {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     ResponseEntity<?> getUserCoupons(
-            @Parameter(description = "사용자 ID", required = true, example = "1") 
+            @Parameter(description = CouponSchemaDescription.userId, required = true, example = "1001") 
             @PathVariable(name = "userId") Long userId);
 } 

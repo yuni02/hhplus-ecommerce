@@ -2,8 +2,8 @@ package kr.hhplus.be.server.coupon.adapter.in.web;
 
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
-import kr.hhplus.be.server.coupon.application.response.CouponResponse;
-import kr.hhplus.be.server.coupon.application.response.UserCouponResponse;
+import kr.hhplus.be.server.coupon.adapter.in.dto.CouponResponse;
+import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;       
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

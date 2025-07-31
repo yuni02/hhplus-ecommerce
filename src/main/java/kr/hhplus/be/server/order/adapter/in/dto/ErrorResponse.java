@@ -1,11 +1,11 @@
-package kr.hhplus.be.server.product.application.response;
+package kr.hhplus.be.server.order.adapter.in.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "에러 응답")
-public class ErrorResponse {
+        public class ErrorResponse {
 
-    @Schema(description = "에러 메시지", example = "상품 조회에 실패했습니다.")
+    @Schema(description = "에러 메시지", example = "주문 생성에 실패했습니다.")
     private String message;
 
     public ErrorResponse() {}

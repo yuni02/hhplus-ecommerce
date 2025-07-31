@@ -2,8 +2,8 @@ package kr.hhplus.be.server.product.adapter.in.web;
 
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
-import kr.hhplus.be.server.product.application.response.PopularProductStatsResponse;
-import kr.hhplus.be.server.product.application.response.ProductResponse;
+import kr.hhplus.be.server.product.adapter.in.dto.PopularProductStatsResponse;
+import kr.hhplus.be.server.product.adapter.in.dto.ProductResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;

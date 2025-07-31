@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.user.adapter.in.web;
 
 import kr.hhplus.be.server.user.application.port.in.GetUserUseCase;
-import kr.hhplus.be.server.user.application.response.ErrorResponse;
-import kr.hhplus.be.server.user.application.response.UserResponse;
+import kr.hhplus.be.server.user.adapter.in.dto.ErrorResponse;
+import kr.hhplus.be.server.user.adapter.in.dto.UserResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
+import kr.hhplus.be.server.user.adapter.in.docs.UserSchemaDescription;
 
 @RestController
 @RequestMapping("/api/users")
@@ -31,7 +32,7 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResponseEntity<?> getUser(
-            @Parameter(description = "사용자 ID", required = true, example = "1") 
+            @Parameter(description = UserSchemaDescription.userId, required = true, example = "1001") 
             @PathVariable Long userId) {
         try {
             GetUserUseCase.GetUserCommand command = new GetUserUseCase.GetUserCommand(userId);
@@ -46,7 +47,6 @@ public class UserController {
                     result.getId(),
                     result.getUserId(),
                     result.getUsername(),
-                    result.getAmount(),
                     result.getStatus(),
                     result.getCreatedAt(),
                     result.getUpdatedAt()

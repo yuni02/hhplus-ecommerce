@@ -1,0 +1,96 @@
+package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
+
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 잔액 전용 엔티티
+ * 동시성 제어를 위해 별도 테이블로 분리
+ */
+@Entity
+@Table(name = "balances")
+@Getter
+@Setter(AccessLevel.PRIVATE)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BalanceEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "user_id", unique = true, nullable = false)
+    private Long userId;
+
+    @Column(name = "amount", precision = 15, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal amount = BigDecimal.ZERO;
+
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
+    private String status = "ACTIVE";
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // 잔액 관련 비즈니스 메서드들
+    public void updateAmount(BigDecimal amount) {
+        this.amount = amount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateStatus(String status) {
+        this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 잔액 차감 비즈니스 메서드
+    public boolean deductAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
+        }
+        if (this.amount.compareTo(amount) < 0) {
+            return false; // 잔액 부족
+        }
+        this.amount = this.amount.subtract(amount);
+        this.updatedAt = LocalDateTime.now();
+        return true;
+    }
+
+    // 잔액 충전 비즈니스 메서드
+    public void chargeAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+        }
+        this.amount = this.amount.add(amount);
+        this.updatedAt = LocalDateTime.now();
+    }
+}

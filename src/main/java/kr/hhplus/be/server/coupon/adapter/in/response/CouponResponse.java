@@ -1,58 +1,71 @@
-package kr.hhplus.be.server.coupon.application.response;
+package kr.hhplus.be.server.coupon.adapter.in.response;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.LocalDateTime; 
+import io.swagger.v3.oas.annotations.media.Schema;      
 
-@Schema(description = "사용자 쿠폰 응답")
-public class UserCouponResponse {
+@Schema(description = "쿠폰 응답")
+public class CouponResponse {
 
     @Schema(description = "사용자 쿠폰 ID", example = "1")
-    private final Long userCouponId;
+    private Long userCouponId;
 
     @Schema(description = "쿠폰 ID", example = "1")
-    private final Long couponId;
+    private Long couponId;
 
     @Schema(description = "쿠폰명", example = "신규 가입 쿠폰")
-    private final String couponName;
+    private String couponName;
 
     @Schema(description = "할인 금액", example = "1000")
-    private final Integer discountAmount;
+    private Integer discountAmount;
 
     @Schema(description = "상태", example = "AVAILABLE")
     private String status;
 
     @Schema(description = "발급일시")
-    private final LocalDateTime issuedAt;
+    private LocalDateTime issuedAt;
 
-    @Schema(description = "사용일시")
-    private LocalDateTime usedAt;
+    public CouponResponse() {}
 
-    public UserCouponResponse(Long userCouponId, Long couponId, String couponName,
-                             Integer discountAmount, String status,
-                             LocalDateTime issuedAt, LocalDateTime usedAt) {
+    public CouponResponse(Long userCouponId, Long couponId, String couponName, 
+                         Integer discountAmount, String status, LocalDateTime issuedAt) {
         this.userCouponId = userCouponId;
         this.couponId = couponId;
         this.couponName = couponName;
         this.discountAmount = discountAmount;
         this.status = status;
         this.issuedAt = issuedAt;
-        this.usedAt = usedAt;
     }
 
     public Long getUserCouponId() {
         return userCouponId;
     }
 
+    public void setUserCouponId(Long userCouponId) {
+        this.userCouponId = userCouponId;
+    }
+
     public Long getCouponId() {
         return couponId;
+    }
+
+    public void setCouponId(Long couponId) {
+        this.couponId = couponId;
     }
 
     public String getCouponName() {
         return couponName;
     }
 
+    public void setCouponName(String couponName) {
+        this.couponName = couponName;
+    }
+
     public Integer getDiscountAmount() {
         return discountAmount;
+    }
+
+    public void setDiscountAmount(Integer discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     public String getStatus() {
@@ -67,11 +80,7 @@ public class UserCouponResponse {
         return issuedAt;
     }
 
-    public LocalDateTime getUsedAt() {
-        return usedAt;
-    }
-
-    public void setUsedAt(LocalDateTime usedAt) {
-        this.usedAt = usedAt;
+    public void setIssuedAt(LocalDateTime issuedAt) {
+        this.issuedAt = issuedAt;
     }
 } 

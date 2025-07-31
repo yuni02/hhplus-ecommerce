@@ -1,11 +1,11 @@
-package kr.hhplus.be.server.user.application.response;
+package kr.hhplus.be.server.coupon.adapter.in.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "에러 응답")
 public class ErrorResponse {
 
-    @Schema(description = "에러 메시지", example = "사용자 조회에 실패했습니다.")
+    @Schema(description = "에러 메시지", example = "쿠폰 발급에 실패했습니다.")
     private String message;
 
     public ErrorResponse() {}

@@ -3,14 +3,14 @@ package kr.hhplus.be.server.balance.adapter.in.web;
 import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceRequest;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
-import kr.hhplus.be.server.balance.application.response.BalanceResponse;
-import kr.hhplus.be.server.balance.application.response.ChargeBalanceResponse;
+import kr.hhplus.be.server.balance.adapter.in.dto.BalanceResponse;
+import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceResponse;   
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
-import java.math.BigDecimal;
+import java.math.BigDecimal;    
 
 @RestController
 @RequestMapping("/api/users")
