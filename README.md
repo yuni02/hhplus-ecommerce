@@ -65,7 +65,7 @@ src/main/java/kr/hhplus/be/server/
 │   ├── adapter/
 │   │   ├── in/                # Incoming Adapters
 │   │   │   ├── dto/           # Request/Response DTOs
-│   │   │   └── web/           # Controllers
+│   │   │   └── web/           # Controllers + API Documentation
 │   │   └── out/               # Outgoing Adapters
 │   │       └── persistence/   # Persistence Adapters
 │   ├── application/           # Application Layer
@@ -81,6 +81,7 @@ src/main/java/kr/hhplus/be/server/
 ├── product/                   # 상품 관리 도메인
 ├── user/                      # 사용자 관리 도메인
 └── shared/                    # 공통 모듈
+    ├── api/                   # 공통 API 문서화
     ├── config/                # 설정 클래스
     ├── domain/                # 공통 도메인
     ├── exception/             # 예외 처리
@@ -107,15 +108,31 @@ src/main/java/kr/hhplus/be/server/
 
 ## 주요 컴포넌트 설명
 
-### 1. Controller (Incoming Adapter)
+### 1. API Documentation Interface
+```java
+@Tag(name = "Balance", description = "사용자 잔액 관리 API")
+public interface BalanceApiDocumentation {
+    @GetMapping("/balance")
+    @Operation(summary = "잔액 조회", description = "사용자의 현재 잔액을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<?> getBalance(@Parameter(description = "사용자 ID", required = true, example = "1")
+                                @RequestParam("userId") Long userId);
+}
+```
+
+### 2. Controller (Incoming Adapter)
 ```java
 @RestController
 @RequestMapping("/api/users")
-public class BalanceController {
+public class BalanceController implements BalanceApiDocumentation {
     private final GetBalanceUseCase getBalanceUseCase;
     private final ChargeBalanceUseCase chargeBalanceUseCase;
     
-    @GetMapping("/balance")
+    @Override
     public ResponseEntity<?> getBalance(@RequestParam("userId") Long userId) {
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
         var balanceOpt = getBalanceUseCase.getBalance(command);

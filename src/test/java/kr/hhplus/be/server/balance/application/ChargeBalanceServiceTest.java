@@ -59,7 +59,7 @@ class ChargeBalanceServiceTest {
             BalanceTransaction.TransactionType.CHARGE, "잔액 충전");
         savedTransaction.setId(1L);
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
+        when(loadUserPort.existsByUserId(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
         when(loadBalancePort.saveBalance(any(Balance.class))).thenReturn(savedBalance);
         when(saveBalanceTransactionPort.saveBalanceTransaction(any(BalanceTransaction.class)))
@@ -74,7 +74,7 @@ class ChargeBalanceServiceTest {
         assertThat(result.getNewBalance()).isEqualTo(BigDecimal.valueOf(15000));
         assertThat(result.getTransactionId()).isEqualTo(1L);
         
-        verify(loadUserPort).existsById(userId);
+        verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort).loadActiveBalanceByUserId(userId);
         verify(loadBalancePort).saveBalance(any(Balance.class));
         verify(saveBalanceTransactionPort).saveBalanceTransaction(any(BalanceTransaction.class));
@@ -89,7 +89,7 @@ class ChargeBalanceServiceTest {
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
             new ChargeBalanceUseCase.ChargeBalanceCommand(userId, amount);
 
-        when(loadUserPort.existsById(userId)).thenReturn(false);
+        when(loadUserPort.existsByUserId(userId)).thenReturn(false);                        
 
         // when
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(command);
@@ -98,7 +98,7 @@ class ChargeBalanceServiceTest {
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getErrorMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
         
-        verify(loadUserPort).existsById(userId);
+        verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
         verify(loadBalancePort, never()).saveBalance(any());
         verify(saveBalanceTransactionPort, never()).saveBalanceTransaction(any());

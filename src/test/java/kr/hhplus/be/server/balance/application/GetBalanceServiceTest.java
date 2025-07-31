@@ -44,7 +44,7 @@ class GetBalanceServiceTest {
 
         Balance existingBalance = Balance.builder().userId(userId).amount(balance).build();
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
+        when(loadUserPort.existsByUserId(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
 
         // when
@@ -55,7 +55,7 @@ class GetBalanceServiceTest {
         assertThat(result.get().getUserId()).isEqualTo(userId);
         assertThat(result.get().getBalance()).isEqualTo(balance);
         
-        verify(loadUserPort).existsById(userId);
+        verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort).loadActiveBalanceByUserId(userId);
     }
 
@@ -66,7 +66,7 @@ class GetBalanceServiceTest {
         Long userId = 999L;
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
 
-        when(loadUserPort.existsById(userId)).thenReturn(false);
+        when(loadUserPort.existsByUserId(userId)).thenReturn(false);
 
         // when
         Optional<GetBalanceUseCase.GetBalanceResult> result = getBalanceService.getBalance(command);
@@ -74,7 +74,7 @@ class GetBalanceServiceTest {
         // then
         assertThat(result).isEmpty();
         
-        verify(loadUserPort).existsById(userId);
+        verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
     }
 } 
