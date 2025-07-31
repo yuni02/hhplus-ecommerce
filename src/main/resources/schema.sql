@@ -48,3 +48,17 @@ WHERE amount > 0 OR amount IS NOT NULL;
 
 -- users 테이블에서 amount 컬럼 제거 (선택사항)
 -- ALTER TABLE users DROP COLUMN amount;
+-- 사용자 조회 최적화
+CREATE INDEX idx_userid_status ON users (user_id, status);
+
+-- 주문 조회 최적화
+CREATE INDEX idx_orders_user_id ON orders (user_id);
+CREATE INDEX idx_orders_ordered_at ON orders (ordered_at);
+
+-- 상품 통계 조회 최적화
+CREATE INDEX idx_product_stats_date ON product_stats (date);
+CREATE INDEX idx_product_stats_product_id ON product_stats (product_id);
+
+-- 잔액 거래 내역 조회 최적화
+CREATE INDEX idx_balance_tx_user_id ON user_balance_tx (user_id);
+CREATE INDEX idx_balance_tx_created_at ON user_balance_tx (created_at);
