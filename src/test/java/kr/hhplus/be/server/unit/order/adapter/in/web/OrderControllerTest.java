@@ -54,9 +54,9 @@ class OrderControllerTest {
 
         CreateOrderUseCase.OrderItemResult orderItemResult = new CreateOrderUseCase.OrderItemResult(
                 1L, productId, "상품명", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
-        CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(
+        CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(     
                 1L, userId, null, BigDecimal.valueOf(20000), BigDecimal.valueOf(20000), 
-                "COMPLETED", List.of(orderItemResult), LocalDateTime.now());
+                BigDecimal.valueOf(20000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());
 
         when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
@@ -90,7 +90,7 @@ class OrderControllerTest {
                 1L, productId, "상품명", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(
                 1L, userId, userCouponId, BigDecimal.valueOf(20000), BigDecimal.valueOf(19000), 
-                "COMPLETED", List.of(orderItemResult), LocalDateTime.now());
+                BigDecimal.valueOf(19000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());    
 
         when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);

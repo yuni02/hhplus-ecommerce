@@ -16,11 +16,14 @@ public class OrderResponse {
     @Schema(description = "사용자 쿠폰 ID", example = "1")
     private Long userCouponId;
     
-    @Schema(description = "총 주문 금액", example = "50000")
-    private Integer totalPrice;
+    @Schema(description = "총 주문 금액 (할인 전)", example = "50000")
+    private Integer totalAmount;
     
-    @Schema(description = "할인 후 금액", example = "45000")
-    private Integer discountedPrice;
+    @Schema(description = "할인 후 금액", example = "4900")
+    private Integer discountedAmount;
+    
+    @Schema(description = "할인 금액", example = "100")
+    private Integer discountAmount;
     
     @Schema(description = "주문 상태", example = "COMPLETED")
     private String status;
@@ -78,14 +81,15 @@ public class OrderResponse {
 
     public OrderResponse() {}
 
-    public OrderResponse(Long id, Long userId, Long userCouponId, Integer totalPrice, 
-                        Integer discountedPrice, String status, List<OrderItemResponse> orderItems, 
+    public OrderResponse(Long id, Long userId, Long userCouponId, Integer totalAmount, 
+                        Integer discountedAmount, Integer discountAmount, String status, List<OrderItemResponse> orderItems, 
                         LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.userCouponId = userCouponId;
-        this.totalPrice = totalPrice;
-        this.discountedPrice = discountedPrice;
+        this.totalAmount = totalAmount;
+        this.discountedAmount = discountedAmount;
+        this.discountAmount = discountAmount;
         this.status = status;
         this.orderItems = orderItems;
         this.createdAt = createdAt;
@@ -97,10 +101,12 @@ public class OrderResponse {
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getUserCouponId() { return userCouponId; }
     public void setUserCouponId(Long userCouponId) { this.userCouponId = userCouponId; }
-    public Integer getTotalPrice() { return totalPrice; }
-    public void setTotalPrice(Integer totalPrice) { this.totalPrice = totalPrice; }
-    public Integer getDiscountedPrice() { return discountedPrice; }
-    public void setDiscountedPrice(Integer discountedPrice) { this.discountedPrice = discountedPrice; }
+    public Integer getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(Integer totalAmount) { this.totalAmount = totalAmount; }
+    public Integer getDiscountedAmount() { return discountedAmount; }
+    public void setDiscountedAmount(Integer discountedAmount) { this.discountedAmount = discountedAmount; }
+    public Integer getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(Integer discountAmount) { this.discountAmount = discountAmount; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public List<OrderItemResponse> getOrderItems() { return orderItems; }

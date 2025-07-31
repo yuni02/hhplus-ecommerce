@@ -50,11 +50,11 @@ public class OrderHistoryEventEntity {
     @Column(name = "total_amount", nullable = false)
     private Integer totalAmount; // 주문 총액
 
-    @Column(name = "discount_amount")
-    private Integer discountAmount; // 할인 금액
+    @Column(name = "discounted_amount")
+    private Integer discountedAmount; // 할인 금액
 
-    @Column(name = "final_amount", nullable = false)
-    private Integer finalAmount; // 최종 결제 금액
+    @Column(name = "discount_amount", nullable = false)
+    private Integer discountAmount; // 할인 금액
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // 로그 생성 시각

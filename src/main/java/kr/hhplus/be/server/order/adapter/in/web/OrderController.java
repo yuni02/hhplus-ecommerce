@@ -64,12 +64,16 @@ public class OrderController {
                         item.getTotalPrice().intValue()))
                 .collect(Collectors.toList());
 
+        // 할인 금액 계산
+        int discountAmount = result.getTotalAmount().intValue() - result.getFinalAmount().intValue();
+        
         OrderResponse response = new OrderResponse(
                 result.getOrderId(),
                 result.getUserId(),
                 result.getUserCouponId(),
                 result.getTotalAmount().intValue(),
-                result.getDiscountedAmount().intValue(),
+                result.getFinalAmount().intValue(),
+                discountAmount,
                 result.getStatus(),
                 orderItemResponses,
                 result.getCreatedAt());

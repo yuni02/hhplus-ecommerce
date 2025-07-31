@@ -83,7 +83,7 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     }
 
     private UserCouponEntity mapToUserCouponEntity(UserCoupon userCoupon) {
-        return UserCouponEntity.create(
+        UserCouponEntity entity = UserCouponEntity.create(
                 userCoupon.getUserId(),
                 userCoupon.getCouponId(),
                 userCoupon.getDiscountAmount(),
@@ -94,5 +94,12 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
                 userCoupon.getCreatedAt(),
                 userCoupon.getUpdatedAt()
         );
+        
+        // id가 있으면 설정 (UPDATE를 위해)
+        if (userCoupon.getId() != null) {
+            entity.setId(userCoupon.getId());
+        }
+        
+        return entity;
     }
 } 

@@ -24,7 +24,7 @@ public class UserPersistenceAdapter implements LoadUserPort {
 
     @Override
     public boolean existsById(Long userId) {
-        return userJpaRepository.existsById(userId);
+        return userJpaRepository.findByUserIdAndStatus(userId, "ACTIVE").isPresent();
     }
 
     @Override

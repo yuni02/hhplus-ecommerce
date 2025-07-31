@@ -38,11 +38,11 @@ public class OrderEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "discount_amount")
-    private BigDecimal discountAmount;
+    @Column(name = "discounted_amount")
+    private BigDecimal discountedAmount;
 
-    @Column(name = "final_amount", nullable = false)
-    private BigDecimal finalAmount;
+    @Column(name = "discount_amount", nullable = false)        
+    private BigDecimal discountAmount;
 
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default

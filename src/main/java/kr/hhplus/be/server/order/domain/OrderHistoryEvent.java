@@ -31,7 +31,7 @@ public class OrderHistoryEvent {
     private String paymentMethod; // 결제 수단 (nullable)
     private Integer totalAmount; // 주문 총액
     private Integer discountAmount; // 할인 금액
-    private Integer finalAmount; // 최종 결제 금액
+    private Integer discountedAmount; // 할인 금액
     private LocalDateTime createdAt; // 로그 생성 시각
     private Order order;
 
@@ -39,18 +39,18 @@ public class OrderHistoryEvent {
      * 주문 완료 이벤트 생성
      */
     public static OrderHistoryEvent orderCompleted(Long orderId, Integer totalAmount, 
-                                                  Integer discountAmount, Integer finalAmount, 
+                                                  Integer discountAmount, Integer discountedAmount, 
                                                   String paymentMethod) {
         return OrderHistoryEvent.builder()
                 .orderId(orderId)
                 .eventType(OrderEventType.ORDER_COMPLETED)
                 .totalAmount(totalAmount)
                 .discountAmount(discountAmount)
-                .finalAmount(finalAmount)
+                .discountedAmount(discountedAmount)
                 .paymentMethod(paymentMethod)
                 .occurredAt(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())
-                .build();
+                .build();       
     }
 
     /**
@@ -64,7 +64,7 @@ public class OrderHistoryEvent {
                 .cancelReason(cancelReason)
                 .totalAmount(totalAmount)
                 .discountAmount(discountAmount)
-                .finalAmount(0) // 취소된 주문의 최종 금액은 0
+                .discountedAmount(0) // 취소된 주문의 최종 금액은 0
                 .occurredAt(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -80,7 +80,7 @@ public class OrderHistoryEvent {
                 .eventType(OrderEventType.REFUNDED)
                 .refundAmount(refundAmount)
                 .totalAmount(totalAmount)
-                .finalAmount(refundAmount)
+                .discountedAmount(refundAmount)
                 .paymentMethod(paymentMethod)
                 .occurredAt(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())

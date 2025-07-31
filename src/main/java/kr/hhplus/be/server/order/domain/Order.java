@@ -32,6 +32,7 @@ public class Order {
     
     private BigDecimal totalAmount;
     private BigDecimal discountedAmount;
+    private BigDecimal discountAmount;     
     private Long userCouponId;
     
     @Builder.Default
@@ -70,6 +71,23 @@ public class Order {
 
     public boolean isCancelled() {
         return status == OrderStatus.CANCELLED;
+    }
+
+    public void calculateFinalAmount() {
+        if (totalAmount != null) {
+            if (discountedAmount != null && discountedAmount.compareTo(BigDecimal.ZERO) > 0) {
+                this.discountAmount = totalAmount.subtract(discountedAmount);
+            } else {    
+                this.discountAmount = totalAmount;
+            }
+        }
+    }
+
+    public BigDecimal getFinalAmount() {
+        if (discountAmount == null) {
+            calculateFinalAmount();
+        }
+        return discountAmount;
     }
 
     public enum OrderStatus {

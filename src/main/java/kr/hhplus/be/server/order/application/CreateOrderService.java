@@ -32,7 +32,7 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final SaveOrderPort saveOrderPort;
     private final UseCouponUseCase useCouponUseCase;
     
-    private final AtomicLong orderItemIdGenerator = new AtomicLong(1);
+
 
     public CreateOrderService(LoadUserPort loadUserPort,
                              LoadProductPort loadProductPort,
@@ -86,7 +86,7 @@ public class CreateOrderService implements CreateOrderUseCase {
 
             // 5. 주문 생성 및 저장
             Order order = createAndSaveOrder(command, createdOrderItems, 
-                                           itemsResult.getTotalAmount(), discountResult.getDiscountedAmount());
+                                           itemsResult.getTotalAmount(), discountResult);
 
             // 6. 결과 반환
             return createOrderResult(order, createdOrderItems);
@@ -150,7 +150,13 @@ public class CreateOrderService implements CreateOrderUseCase {
             );
 
             orderItems.add(orderItem);
-            totalAmount = totalAmount.add(orderItem.getTotalPrice());
+            
+            // null 체크 추가
+            if (orderItem.getTotalPrice() != null) {
+                totalAmount = totalAmount.add(orderItem.getTotalPrice());
+            } else {
+                return OrderItemsResult.failure("주문 아이템 가격 계산에 실패했습니다.");
+            }
 
             // 재고 차감
             if (!updateProductStockPort.deductStock(itemCommand.getProductId(), itemCommand.getQuantity())) {
@@ -187,16 +193,19 @@ public class CreateOrderService implements CreateOrderUseCase {
     private Order createAndSaveOrder(CreateOrderCommand command, 
                                    List<OrderItem> orderItems, 
                                    BigDecimal totalAmount, 
-                                   BigDecimal discountedAmount) {
+                                   CouponDiscountResult discountResult) {
         Order order = Order.builder()
             .userId(command.getUserId())
             .orderItems(orderItems)
             .totalAmount(totalAmount)
             .userCouponId(command.getUserCouponId())
-            .discountedAmount(discountedAmount)
+            .discountedAmount(discountResult.getDiscountedAmount())
             .orderedAt(LocalDateTime.now())
             .status(Order.OrderStatus.PENDING)
             .build();
+        
+        // finalAmount 계산
+        order.calculateFinalAmount();
         order.complete();
 
         // 주문 아이템에 orderId 설정
@@ -229,6 +238,7 @@ public class CreateOrderService implements CreateOrderUseCase {
             order.getUserCouponId(),
             order.getTotalAmount(),
             order.getDiscountedAmount(),
+            order.getFinalAmount(),
             order.getStatus().name(),
             orderItemResults,
             order.getOrderedAt()
@@ -245,7 +255,10 @@ public class CreateOrderService implements CreateOrderUseCase {
             .quantity(quantity)
             .unitPrice(unitPrice)
             .build();
-        orderItem.setId(orderItemIdGenerator.getAndIncrement());    
+        
+        // totalPrice 계산
+        orderItem.calculateTotalPrice();
+        
         return orderItem;
     }
 

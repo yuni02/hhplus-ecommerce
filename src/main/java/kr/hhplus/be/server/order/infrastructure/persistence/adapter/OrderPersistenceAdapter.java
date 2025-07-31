@@ -66,10 +66,10 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      */
     private OrderEntity mapToOrderEntity(Order order) {
         OrderEntity entity = OrderEntity.builder()
-            .id(order.getId())
             .userId(order.getUserId())
             .totalAmount(order.getTotalAmount())
-            .discountAmount(order.getDiscountedAmount())  
+            .discountedAmount(order.getDiscountedAmount())
+            .discountAmount(order.getDiscountAmount())
             .userCouponId(order.getUserCouponId())
             .status(order.getStatus().name())
             .orderedAt(order.getOrderedAt())
@@ -84,7 +84,6 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      */
     private OrderItemEntity mapToOrderItemEntity(OrderItem orderItem, Long orderId) {
         OrderItemEntity entity = OrderItemEntity.builder()
-            .id(orderItem.getId())
             .orderId(orderId)
             .productId(orderItem.getProductId())
             .productName(orderItem.getProductName())
@@ -109,7 +108,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
             .paymentMethod(event.getPaymentMethod())
             .totalAmount(event.getTotalAmount())
             .discountAmount(event.getDiscountAmount())
-            .finalAmount(event.getFinalAmount())
+            .discountedAmount(event.getDiscountedAmount())  
             .createdAt(event.getCreatedAt())
             .build();
         return entity;
@@ -124,7 +123,8 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         order.setId(orderEntity.getId());
         order.setUserId(orderEntity.getUserId());
         order.setTotalAmount(orderEntity.getTotalAmount());
-        order.setDiscountedAmount(orderEntity.getDiscountAmount());
+        order.setDiscountedAmount(orderEntity.getDiscountedAmount());
+        order.setDiscountAmount(orderEntity.getDiscountAmount());
         order.setUserCouponId(orderEntity.getUserCouponId());
         order.setStatus(Order.OrderStatus.valueOf(orderEntity.getStatus())); // string을 enum으로 변환
         order.setOrderedAt(orderEntity.getOrderedAt());
@@ -174,7 +174,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         event.setPaymentMethod(entity.getPaymentMethod());
         event.setTotalAmount(entity.getTotalAmount());
         event.setDiscountAmount(entity.getDiscountAmount());
-        event.setFinalAmount(entity.getFinalAmount());
+        event.setDiscountedAmount(entity.getDiscountedAmount());  
         event.setCreatedAt(entity.getCreatedAt());
         return event;
     }

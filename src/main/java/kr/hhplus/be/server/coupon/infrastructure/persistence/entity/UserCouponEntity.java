@@ -83,6 +83,10 @@ public class UserCouponEntity {
         this.status = status;
         this.updatedAt = LocalDateTime.now();
     }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     // 기존 복잡한 생성자 제거
     // 정적 팩토리 메서드 제공
