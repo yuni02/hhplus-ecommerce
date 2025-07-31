@@ -200,12 +200,13 @@ public class CreateOrderService implements CreateOrderUseCase {
             .totalAmount(totalAmount)
             .userCouponId(command.getUserCouponId())
             .discountedAmount(discountResult.getDiscountedAmount())
+            .discountAmount(BigDecimal.valueOf(discountResult.getDiscountAmount()))
             .orderedAt(LocalDateTime.now())
             .status(Order.OrderStatus.PENDING)
             .build();
         
         // finalAmount 계산
-        order.calculateFinalAmount();
+        order.calculateDiscountedAmount();   
         order.complete();
 
         // 주문 아이템에 orderId 설정
@@ -238,7 +239,7 @@ public class CreateOrderService implements CreateOrderUseCase {
             order.getUserCouponId(),
             order.getTotalAmount(),
             order.getDiscountedAmount(),
-            order.getFinalAmount(),
+            order.getDiscountAmount(),
             order.getStatus().name(),
             orderItemResults,
             order.getOrderedAt()

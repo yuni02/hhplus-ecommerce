@@ -74,14 +74,22 @@ public class BalanceEntity {
 
     // 잔액 차감 비즈니스 메서드
     public boolean deductAmount(BigDecimal amount) {
+        System.out.println("DEBUG: BalanceEntity.deductAmount() 호출 - 현재 잔액: " + this.amount + ", 차감 금액: " + amount);
+        
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("DEBUG: 차감 금액이 유효하지 않습니다: " + amount);
             throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
         }
         if (this.amount.compareTo(amount) < 0) {
+            System.out.println("DEBUG: 잔액 부족 - 현재: " + this.amount + ", 필요: " + amount);
             return false; // 잔액 부족
         }
+        
+        BigDecimal oldAmount = this.amount;
         this.amount = this.amount.subtract(amount);
         this.updatedAt = LocalDateTime.now();
+        
+        System.out.println("DEBUG: 잔액 차감 완료 - 이전: " + oldAmount + ", 차감: " + amount + ", 이후: " + this.amount);
         return true;
     }
 

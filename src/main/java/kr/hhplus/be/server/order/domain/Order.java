@@ -73,21 +73,21 @@ public class Order {
         return status == OrderStatus.CANCELLED;
     }
 
-    public void calculateFinalAmount() {
+    public void calculateDiscountedAmount() {
         if (totalAmount != null) {
-            if (discountedAmount != null && discountedAmount.compareTo(BigDecimal.ZERO) > 0) {
-                this.discountAmount = totalAmount.subtract(discountedAmount);
+            if (discountAmount != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                this.discountedAmount = totalAmount.subtract(discountAmount);
             } else {    
-                this.discountAmount = totalAmount;
+                this.discountedAmount = totalAmount;
             }
         }
     }
 
-    public BigDecimal getFinalAmount() {
-        if (discountAmount == null) {
-            calculateFinalAmount();
+    public BigDecimal getDiscountedAmount() {
+        if (discountedAmount == null) {
+            calculateDiscountedAmount();
         }
-        return discountAmount;
+        return discountedAmount;
     }
 
     public enum OrderStatus {
