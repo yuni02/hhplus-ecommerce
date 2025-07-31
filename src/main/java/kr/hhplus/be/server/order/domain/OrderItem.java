@@ -1,11 +1,24 @@
 package kr.hhplus.be.server.order.domain;
 
+import kr.hhplus.be.server.product.domain.Product;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 
 /**
  * 주문 아이템 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderItem {
 
     private Long id;
@@ -15,82 +28,28 @@ public class OrderItem {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
+    private Order order;
+    private Product product;
 
-    public OrderItem() {}
-
-    public OrderItem(Long orderId, Long productId, String productName, Integer quantity, BigDecimal unitPrice) {
-        this.orderId = orderId;
-        this.productId = productId;
-        this.productName = productName;
-        this.quantity = quantity;
-        this.unitPrice = unitPrice;
-        this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+    // 비즈니스 로직 메서드들
+    public void setOrder(Order order) {
+        this.order = order;
+        if (order != null) {
+            this.orderId = order.getId();
+        }
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
-    }
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-
-    public String getProductName() {
-        return productName;
-    }
-
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-        calculateTotalPrice();
-    }
-
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
-        calculateTotalPrice();
-    }
-
-    public BigDecimal getTotalPrice() {
-        calculateTotalPrice();
-        return totalPrice;
-    }
-
-    public void setTotalPrice(BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
+    public void setProduct(Product product) {
+        this.product = product;
+        if (product != null) {
+            this.productId = product.getId();
+            this.productName = product.getName();
+        }
     }
 
     public void calculateTotalPrice() {
-        if (this.unitPrice != null && this.quantity != null) {
-            this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
-        } else {
-            this.totalPrice = BigDecimal.ZERO;
+        if (quantity != null && unitPrice != null) {
+            this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
     }
 } 

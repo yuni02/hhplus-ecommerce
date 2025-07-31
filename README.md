@@ -19,10 +19,10 @@ Clean Architecture와 Hexagonal Architecture(포트-어댑터 패턴)를 적용�
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     Facades                                  │
+│                   Application Services                       │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
 │  │  Balance    │ │   Coupon    │ │   Order     │ │ Product │ │
-│  │   Facade    │ │   Facade    │ │   Facade    │ │ Facade  │ │
+│  │  Services   │ │  Services   │ │  Services   │ │Services │ │
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -64,16 +64,17 @@ src/main/java/kr/hhplus/be/server/
 ├── balance/                    # 잔액 관리 도메인
 │   ├── adapter/
 │   │   ├── in/                # Incoming Adapters
-│   │   │   ├── dto/           # Request/Response DTOs
-│   │   │   └── web/           # Controllers
+│   │   │   ├── dto/           # Request & Response DTOs
+│   │   │   ├── web/           # Controllers
+│   │   │   └── docs/          # API Documentation Constants
 │   │   └── out/               # Outgoing Adapters
 │   │       └── persistence/   # Persistence Adapters
 │   ├── application/           # Application Layer
-│   │   ├── facade/            # Facade Pattern (핵심 비즈니스 로직)
 │   │   ├── port/              # Port Interfaces
 │   │   │   ├── in/            # Incoming Ports (Use Cases)
 │   │   │   └── out/           # Outgoing Ports
-│   │   └── response/          # Response DTOs
+│   │   ├── response/          # Response DTOs
+│   │   └── *.java             # Application Services
 │   └── domain/                # Domain Layer
 │       └── entities/          # Domain Entities
 ├── coupon/                    # 쿠폰 관리 도메인
@@ -81,6 +82,7 @@ src/main/java/kr/hhplus/be/server/
 ├── product/                   # 상품 관리 도메인
 ├── user/                      # 사용자 관리 도메인
 └── shared/                    # 공통 모듈
+    ├── api/                   # 공통 API 문서화
     ├── config/                # 설정 클래스
     ├── domain/                # 공통 도메인
     ├── exception/             # 예외 처리
@@ -102,55 +104,65 @@ src/main/java/kr/hhplus/be/server/
   - **Incoming Adapter**: 외부 요청을 내부로 전달 (Controller)
   - **Outgoing Adapter**: 내부 요청을 외부로 전달 (Repository Implementation)
 
-### 3. Facade 패턴
-각 도메인에서 복잡한 비즈니스 로직을 캡슐화하여 단순한 인터페이스를 제공합니다.
+### 3. Application Service 패턴
+각 도메인에서 비즈니스 로직을 캡슐화하여 단순한 인터페이스를 제공합니다.
 
 ## 주요 컴포넌트 설명
 
-### 1. Controller (Incoming Adapter)
+### 1. API Documentation Interface
+```java
+@Tag(name = "Balance", description = "사용자 잔액 관리 API")
+public interface BalanceApiDocumentation {
+    @GetMapping("/balance")
+    @Operation(summary = "잔액 조회", description = "사용자의 현재 잔액을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<?> getBalance(@Parameter(description = "사용자 ID", required = true, example = "1")
+                                @RequestParam("userId") Long userId);
+}
+```
+
+### 2. Controller (Incoming Adapter)
 ```java
 @RestController
 @RequestMapping("/api/users")
-public class BalanceController {
-    private final BalanceFacade balanceFacade;
+public class BalanceController implements BalanceApiDocumentation {
+    private final GetBalanceUseCase getBalanceUseCase;
+    private final ChargeBalanceUseCase chargeBalanceUseCase;
     
-    @GetMapping("/balance")
+    @Override
     public ResponseEntity<?> getBalance(@RequestParam("userId") Long userId) {
         GetBalanceUseCase.GetBalanceCommand command = new GetBalanceUseCase.GetBalanceCommand(userId);
-        var balanceOpt = balanceFacade.getBalance(command); // 직접 Facade 호출
+        var balanceOpt = getBalanceUseCase.getBalance(command);
         // ...
     }
 }
 ```
 
-### 2. Facade (핵심 비즈니스 로직)
+### 2. Application Service (핵심 비즈니스 로직)
 ```java
 @Service
-public class BalanceFacade {
+public class GetBalanceService implements GetBalanceUseCase {
     private final LoadUserPort loadUserPort;
     private final LoadBalancePort loadBalancePort;
-    private final SaveBalanceTransactionPort saveBalanceTransactionPort;
     
+    @Override
     public Optional<GetBalanceResult> getBalance(GetBalanceCommand command) {
-        // 복잡한 비즈니스 로직 캡슐화
+        // 1. 사용자 존재 확인
         if (!loadUserPort.existsById(command.getUserId())) {
             return Optional.empty();
         }
-        // ...
-    }
-    
-    @Transactional
-    public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
-        // 1. 입력값 검증
-        // 2. 사용자 존재 확인
-        // 3. 잔액 충전
-        // 4. 거래 내역 생성
-        // 5. 결과 반환
+        // 2. 잔액 조회
+        Optional<Balance> balanceOpt = loadBalancePort.loadActiveBalanceByUserId(command.getUserId());
+        // 3. 결과 반환
     }
 }
 ```
 
-### 3. Use Case (Incoming Port) - 선택적
+### 3. Use Case (Incoming Port)
 ```java
 public interface GetBalanceUseCase {
     Optional<GetBalanceResult> getBalance(GetBalanceCommand command);
@@ -166,20 +178,7 @@ public interface GetBalanceUseCase {
 }
 ```
 
-### 4. Application Service - 선택적 (Facade 래퍼)
-```java
-@Service
-public class GetBalanceService implements GetBalanceUseCase {
-    private final BalanceFacade balanceFacade;
-    
-    @Override
-    public Optional<GetBalanceResult> getBalance(GetBalanceCommand command) {
-        return balanceFacade.getBalance(command); // Facade를 단순 래핑
-    }
-}
-```
-
-### 5. Port (Outgoing)
+### 4. Port (Outgoing)
 ```java
 public interface LoadBalancePort {
     Optional<Balance> loadActiveBalanceByUserId(Long userId);
@@ -187,7 +186,7 @@ public interface LoadBalancePort {
 }
 ```
 
-### 6. Persistence Adapter (Outgoing Adapter)
+### 5. Persistence Adapter (Outgoing Adapter)
 ```java
 @Component
 public class BalancePersistenceAdapter implements LoadBalancePort {
@@ -200,7 +199,7 @@ public class BalancePersistenceAdapter implements LoadBalancePort {
 }
 ```
 
-### 7. Domain Entity
+### 6. Domain Entity
 ```java
 public class Balance {
     private Long id;
@@ -224,17 +223,9 @@ public class Balance {
 - **@Mock**: Mockito를 사용한 Mock 객체 생성
 - **@ExtendWith(MockitoExtension.class)**: Mockito 확장 사용
 
-
 ## 의존성 흐름
 
-### 복잡한 도메인 (Balance, Coupon, Order, Product)
-```
-Controller → Facade → Port ← Adapter → Domain
-    ↑                                    ↓
-    └────────── Response DTOs ←──────────┘
-```
-
-### 단순한 도메인 (User)
+### 모든 도메인 (Balance, Coupon, Order, Product, User)
 ```
 Controller → UseCase → Port ← Adapter → Domain
     ↑                                    ↓
@@ -246,18 +237,18 @@ Controller → UseCase → Port ← Adapter → Domain
 2. **바깥쪽 레이어는 안쪽 레이어의 인터페이스만 알고 있음**
 3. **의존성은 항상 안쪽을 향함**
 
-## Facade 패턴의 역할
+## Application Service 패턴의 역할
 
-### 1. 복잡한 비즈니스 로직 캡슐화
+### 1. 비즈니스 로직 캡슐화
 ```java
-// OrderFacade 예시
-public CreateOrderResult createOrder(CreateOrderCommand command) {
-    // 1. 주문 검증
-    // 2. 주문 아이템 생성 및 재고 차감
-    // 3. 쿠폰 할인 적용
-    // 4. 잔액 차감
-    // 5. 주문 생성 및 저장
-    // 6. 결과 반환
+// ChargeBalanceService 예시
+@Transactional
+public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
+    // 1. 입력값 검증
+    // 2. 사용자 존재 확인
+    // 3. 잔액 충전
+    // 4. 거래 내역 생성
+    // 5. 결과 반환
 }
 ```
 
@@ -265,11 +256,8 @@ public CreateOrderResult createOrder(CreateOrderCommand command) {
 ```java
 // 여러 도메인의 서비스들을 조율
 private final LoadUserPort loadUserPort;           // 사용자 도메인
-private final LoadProductPort loadProductPort;     // 상품 도메인  
-private final UpdateProductStockPort updateProductStockPort; // 재고 관리
-private final DeductBalancePort deductBalancePort; // 잔액 도메인
-private final SaveOrderPort saveOrderPort;         // 주문 저장
-private final UseCouponUseCase useCouponUseCase;   // 쿠폰 도메인
+private final LoadBalancePort loadBalancePort;     // 잔액 도메인
+private final SaveBalanceTransactionPort saveBalanceTransactionPort; // 거래 내역
 ```
 
 ### 3. 에러 처리 및 트랜잭션 관리
@@ -277,7 +265,7 @@ private final UseCouponUseCase useCouponUseCase;   // 쿠폰 도메인
 @Transactional
 public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
     try {
-        // 복잡한 비즈니스 로직
+        // 비즈니스 로직
         return ChargeBalanceResult.success(...);
     } catch (Exception e) {
         // 통합된 에러 처리
@@ -339,7 +327,7 @@ public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
 5. **가독성**: 명확한 구조로 코드 이해도 향상
 
 ### 핵심 특징
-- **Controller**는 **Facade를 직접 호출**하여 복잡한 비즈니스 로직에 접근
-- **Facade**가 **실제 복잡한 비즈니스 로직**을 캡슐화하고 여러 서브시스템을 조율
-- **ApplicationService**는 **선택적으로 Facade를 래핑**하는 역할
+- **Controller**는 **UseCase를 직접 호출**하여 비즈니스 로직에 접근
+- **Application Service**가 **실제 비즈니스 로직**을 캡슐화하고 여러 서브시스템을 조율
 - **Port-Adapter 패턴**으로 의존성 역전 원칙 준수
+- **단순하고 명확한 구조**로 복잡성 최소화

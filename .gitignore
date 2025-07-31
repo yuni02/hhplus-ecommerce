@@ -36,4 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
+### Spring Boot DevTools ###
+.springBeans
+.springBeans/
+.springBeans/workspace/
+.springBeans/workspace/.metadata/
+
 data

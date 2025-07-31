@@ -8,5 +8,5 @@ public interface LoadUserPort {
     /**
      * 사용자 존재 여부 확인
      */
-    boolean existsById(Long userId);
+    boolean existsByUserId(Long userId);
 } 

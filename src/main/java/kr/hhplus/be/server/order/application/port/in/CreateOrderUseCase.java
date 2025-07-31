@@ -72,13 +72,14 @@ public interface CreateOrderUseCase {
         private final Long userCouponId;
         private final BigDecimal totalAmount;
         private final BigDecimal discountedAmount;
+        private final BigDecimal finalAmount;
         private final String status;
         private final List<OrderItemResult> orderItems;
         private final LocalDateTime createdAt;
         private final String errorMessage;
         
         private CreateOrderResult(boolean success, Long orderId, Long userId, Long userCouponId,
-                                BigDecimal totalAmount, BigDecimal discountedAmount, String status,
+                                BigDecimal totalAmount, BigDecimal discountedAmount, BigDecimal finalAmount, String status,
                                 List<OrderItemResult> orderItems, LocalDateTime createdAt, String errorMessage) {
             this.success = success;
             this.orderId = orderId;
@@ -86,6 +87,7 @@ public interface CreateOrderUseCase {
             this.userCouponId = userCouponId;
             this.totalAmount = totalAmount;
             this.discountedAmount = discountedAmount;
+            this.finalAmount = finalAmount;
             this.status = status;
             this.orderItems = orderItems;
             this.createdAt = createdAt;
@@ -93,14 +95,14 @@ public interface CreateOrderUseCase {
         }
         
         public static CreateOrderResult success(Long orderId, Long userId, Long userCouponId,
-                                              BigDecimal totalAmount, BigDecimal discountedAmount, String status,
+                                              BigDecimal totalAmount, BigDecimal discountedAmount, BigDecimal finalAmount, String status,
                                               List<OrderItemResult> orderItems, LocalDateTime createdAt) {
-            return new CreateOrderResult(true, orderId, userId, userCouponId, totalAmount, discountedAmount, 
+            return new CreateOrderResult(true, orderId, userId, userCouponId, totalAmount, discountedAmount, finalAmount,       
                                        status, orderItems, createdAt, null);
         }
         
         public static CreateOrderResult failure(String errorMessage) {
-            return new CreateOrderResult(false, null, null, null, null, null, null, null, null, errorMessage);
+            return new CreateOrderResult(false, null, null, null, null, null, null, null, null, null, errorMessage);
         }
         
         public boolean isSuccess() {
@@ -125,6 +127,10 @@ public interface CreateOrderUseCase {
         
         public BigDecimal getDiscountedAmount() {
             return discountedAmount;
+        }
+        
+        public BigDecimal getFinalAmount() {
+            return finalAmount;
         }
         
         public String getStatus() {

@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
-import kr.hhplus.be.server.order.application.facade.OrderFacade;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.application.response.OrderResponse;
+import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;
+import kr.hhplus.be.server.shared.response.ErrorResponse;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
 
 import org.springframework.http.ResponseEntity;
@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Order", description = "주문 관리 API")
 public class OrderController {
 
-    private final OrderFacade orderFacade;
+    private final CreateOrderUseCase createOrderUseCase;
 
-    public OrderController(OrderFacade orderFacade) {
-        this.orderFacade = orderFacade;
+    public OrderController(CreateOrderUseCase createOrderUseCase) {
+        this.createOrderUseCase = createOrderUseCase;
     }
 
     /**
@@ -47,10 +47,10 @@ public class OrderController {
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
                 request.getUserId(), orderItemCommands, request.getUserCouponId());
 
-        CreateOrderUseCase.CreateOrderResult result = orderFacade.createOrder(command);
+        CreateOrderUseCase.CreateOrderResult result = createOrderUseCase.createOrder(command);
 
         if (!result.isSuccess()) {
-            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
 
         // CreateOrderResult를 OrderResponse로 변환
@@ -64,12 +64,16 @@ public class OrderController {
                         item.getTotalPrice().intValue()))
                 .collect(Collectors.toList());
 
+        // 할인 금액 계산
+        int discountAmount = result.getTotalAmount().intValue() - result.getFinalAmount().intValue();
+        
         OrderResponse response = new OrderResponse(
                 result.getOrderId(),
                 result.getUserId(),
                 result.getUserCouponId(),
                 result.getTotalAmount().intValue(),
-                result.getDiscountedAmount().intValue(),
+                result.getFinalAmount().intValue(),
+                discountAmount,
                 result.getStatus(),
                 orderItemResponses,
                 result.getCreatedAt());

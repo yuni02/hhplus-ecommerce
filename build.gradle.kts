@@ -35,12 +35,20 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 
+    // Lombok
+	compileOnly("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok")
+	testCompileOnly("org.projectlombok:lombok")
+	testAnnotationProcessor("org.projectlombok:lombok")
+
     // Swagger/OpenAPI
-    // implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")
+
+    // DevTools (개발 시 자동 재시작)
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -50,10 +58,14 @@ dependencies {
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	
+
 }
 
 tasks.withType<JavaCompile> {
 	options.compilerArgs.add("-parameters")
+	options.isFork = true
+	options.forkOptions.jvmArgs?.add("-Dspring.profiles.active=dev")
 }
 
 tasks.withType<Test> {

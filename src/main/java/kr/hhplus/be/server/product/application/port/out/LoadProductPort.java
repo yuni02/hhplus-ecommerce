@@ -2,6 +2,7 @@ package kr.hhplus.be.server.product.application.port.out;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 /**
  * 상품 조회 Outgoing Port
@@ -29,9 +30,11 @@ public interface LoadProductPort {
         private final Integer stock;
         private final String status;
         private final String category;
+        private final LocalDateTime createdAt;
+        private final LocalDateTime updatedAt;
         
         public ProductInfo(Long id, String name, String description, Integer currentPrice,
-                          Integer stock, String status, String category) {
+                          Integer stock, String status, String category, LocalDateTime createdAt, LocalDateTime updatedAt) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -39,6 +42,8 @@ public interface LoadProductPort {
             this.stock = stock;
             this.status = status;
             this.category = category;
+            this.createdAt = createdAt;
+            this.updatedAt = updatedAt;
         }
         
         public Long getId() {
@@ -67,6 +72,14 @@ public interface LoadProductPort {
         
         public String getCategory() {
             return category;
+        }
+        
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+        
+        public LocalDateTime getUpdatedAt() {
+            return updatedAt;
         }
     }
 } 

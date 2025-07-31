@@ -13,7 +13,7 @@ import java.util.List;
 public class SwaggerConfig {
 
     @Bean
-    public OpenAPI openAPI() {
+    static public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("E-commerce API")

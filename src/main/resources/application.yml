@@ -11,21 +11,68 @@ spring:
       connection-timeout: 10000
       max-lifetime: 60000
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    open-in-view: false
-    generate-ddl: false
-    show-sql: false
-    hibernate:
-      ddl-auto: none
-    properties:
-      hibernate.timezone.default_storage: NORMALIZE_UTC
-      hibernate.jdbc.time_zone: UTC
-
----
-spring.config.activate.on-profile: local, test
-
-spring:
-  datasource:
     url: jdbc:mysql://localhost:3306/hhplus?characterEncoding=UTF-8&serverTimezone=UTC
     username: application
     password: application
+  jpa:
+    open-in-view: false
+    generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
+    show-sql: true      # 실행되는 SQL 출력
+    hibernate:
+      ddl-auto: validate  # 기존 테이블 구조 검증 (데이터 유지)
+    properties:
+      hibernate.timezone.default_storage: NORMALIZE_UTC
+      hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: true          # SQL을 읽기 쉽게 포맷팅
+      hibernate.use_sql_comments: true    # SQL에 주석 추가
+      hibernate.highlight_sql: true       # SQL 하이라이팅
+      hibernate.generate_statistics: false # Hibernate 통계 생성 비활성화
+      hibernate.jdbc.batch_size: 20       # 배치 처리 최적화
+      hibernate.order_inserts: true       # INSERT 순서 최적화
+      hibernate.order_updates: true       # UPDATE 순서 최적화
+      hibernate.hbm2ddl.constraint_foreign_key: false  # 외래키 제약조건 생성 비활성화
+  sql:
+    init:
+      mode: always  # 애플리케이션 시작 시 schema.sql 실행
+      continue-on-error: true  # 에러가 발생해도 계속 실행
+  
+  # Spring Boot DevTools 설정
+  devtools:
+    restart:
+      enabled: true                    # 자동 재시작 활성화
+      additional-paths: src/main/java  # 감시할 경로
+      exclude: static/**,public/**,templates/**  # 제외할 경로
+      log-condition-evaluation-delta: false  # 조건 평가 로그 비활성화
+    livereload:
+      enabled: true                    # LiveReload 활성화
+      port: 35729                      # LiveReload 포트
+    add-properties: true               # 개발 전용 프로퍼티 추가
+
+# 로깅 설정
+logging:
+  level:
+    # Hibernate 관련 로그 (SQL 쿼리용)
+    org.hibernate.SQL: DEBUG                # SQL 쿼리 로깅
+    org.hibernate.type.descriptor.sql: TRACE # 바인딩 파라미터 로깅
+    org.springframework.orm.jpa: DEBUG       # JPA 관련 로깅
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # 파라미터 바인딩 상세 로깅
+    org.hibernate.stat: WARN                # Hibernate 통계 정보
+    org.hibernate.engine.transaction.internal: WARN  # 트랜잭션 로깅
+    org.hibernate.ejb: WARN                 # Hibernate EJB 로깅
+    org.hibernate.engine: WARN              # Hibernate 엔진 로깅
+    
+    # 애플리케이션 로그
+    kr.hhplus.be.server: DEBUG              # 애플리케이션 로그
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# P6Spy 설정
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      multiline: true
+      logging: slf4j
+
+---
+spring.config.activate.on-profile: local, test

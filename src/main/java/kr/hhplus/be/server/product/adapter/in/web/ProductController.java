@@ -1,10 +1,9 @@
 package kr.hhplus.be.server.product.adapter.in.web;
 
-import kr.hhplus.be.server.product.application.facade.ProductFacade;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
-import kr.hhplus.be.server.product.application.response.PopularProductStatsResponse;
-import kr.hhplus.be.server.product.application.response.ProductResponse;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
+import kr.hhplus.be.server.product.adapter.in.dto.PopularProductStatsResponse;
+import kr.hhplus.be.server.product.adapter.in.dto.ProductResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,10 +20,13 @@ import java.util.stream.Collectors;
 @Tag(name = "Product", description = "상품 관리 API")
 public class ProductController {
 
-    private final ProductFacade productFacade;
+    private final GetProductDetailUseCase getProductDetailUseCase;
+    private final GetPopularProductsUseCase getPopularProductsUseCase;
 
-    public ProductController(ProductFacade productFacade) {
-        this.productFacade = productFacade;
+    public ProductController(GetProductDetailUseCase getProductDetailUseCase,
+                           GetPopularProductsUseCase getPopularProductsUseCase) {
+        this.getProductDetailUseCase = getProductDetailUseCase;
+        this.getPopularProductsUseCase = getPopularProductsUseCase;
     }
 
     @GetMapping("/{productId}")
@@ -42,7 +44,7 @@ public class ProductController {
         GetProductDetailUseCase.GetProductDetailCommand command = 
                 new GetProductDetailUseCase.GetProductDetailCommand(productId);
         
-        var productOpt = productFacade.getProductDetail(command);
+        var productOpt = getProductDetailUseCase.getProductDetail(command);
         
         if (productOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -74,7 +76,7 @@ public class ProductController {
                 new GetPopularProductsUseCase.GetPopularProductsCommand(5);
         
         GetPopularProductsUseCase.GetPopularProductsResult result = 
-                productFacade.getPopularProducts(command);
+                getPopularProductsUseCase.getPopularProducts(command);
         
         List<PopularProductStatsResponse> responses = result.getPopularProducts().stream()
                 .map(product -> new PopularProductStatsResponse(

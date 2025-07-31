@@ -1,5 +1,13 @@
 package kr.hhplus.be.server.order.domain;
 
+import kr.hhplus.be.server.user.domain.User;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,106 +15,54 @@ import java.util.List;
 
 /**
  * 주문 도메인 엔티티
- * 순수한 비즈니스 로직만 포함
+ * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Order {
 
     private Long id;
     private Long userId;
-    private List<OrderItem> orderItems;
+    
+    @Builder.Default
+    private List<OrderItem> orderItems = new ArrayList<>();
+    
     private BigDecimal totalAmount;
     private BigDecimal discountedAmount;
+    private BigDecimal discountAmount;     
     private Long userCouponId;
+    
+    @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
+    
     private LocalDateTime orderedAt;
+    private LocalDateTime updatedAt;
+    private User user;
+    
+    @Builder.Default
+    private List<OrderHistoryEvent> historyEvents = new ArrayList<>();
 
-    public Order() {
-        this.orderItems = new ArrayList<>();
-        this.status = OrderStatus.PENDING;
-    }
-
-    public Order(Long userId, List<OrderItem> orderItems, BigDecimal totalAmount, Long userCouponId) {
-        this.userId = userId;
-        this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
-        this.totalAmount = totalAmount;
-        this.userCouponId = userCouponId;
-        this.orderedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public List<OrderItem> getOrderItems() {
-        return orderItems;
-    }
-
-    public void setOrderItems(List<OrderItem> orderItems) {
-        this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public BigDecimal getDiscountedAmount() {
-        return discountedAmount;
-    }
-
-    public void setDiscountedAmount(BigDecimal discountedAmount) {
-        this.discountedAmount = discountedAmount;
-    }
-
-    public Long getUserCouponId() {
-        return userCouponId;
-    }
-
-    public void setUserCouponId(Long userCouponId) {
-        this.userCouponId = userCouponId;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getOrderedAt() {
-        return orderedAt;
-    }
-
-    public void setOrderedAt(LocalDateTime orderedAt) {
-        this.orderedAt = orderedAt;
-    }
-
+    // 비즈니스 로직 메서드들
     public void addOrderItem(OrderItem item) {
         this.orderItems.add(item);
+        item.setOrder(this);
+    }
+
+    public void addHistoryEvent(OrderHistoryEvent event) {
+        this.historyEvents.add(event);
     }
 
     public void complete() {
         this.status = OrderStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void cancel() {
         this.status = OrderStatus.CANCELLED;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean isCompleted() {
@@ -116,6 +72,33 @@ public class Order {
     public boolean isCancelled() {
         return status == OrderStatus.CANCELLED;
     }
+
+    public void calculateDiscountedAmount() {
+        if (totalAmount != null) {
+            if (discountAmount != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                this.discountedAmount = totalAmount.subtract(discountAmount);
+            } else {    
+                this.discountedAmount = totalAmount;
+            }
+        }
+    }
+
+    public BigDecimal getDiscountedAmount() {
+        if (discountedAmount == null) {
+            calculateDiscountedAmount();
+        }
+        return discountedAmount;
+    }
+
+    public Order(Long userId, List<OrderItem> orderItems, BigDecimal totalAmount, Long userCouponId, OrderStatus status, LocalDateTime orderedAt) {
+        this.userId = userId;
+        this.orderItems = orderItems;
+        this.totalAmount = totalAmount;
+        this.userCouponId = userCouponId;
+        this.status = status;
+        this.orderedAt = orderedAt;
+    }
+
 
     public enum OrderStatus {
         PENDING, COMPLETED, CANCELLED, FAILED
