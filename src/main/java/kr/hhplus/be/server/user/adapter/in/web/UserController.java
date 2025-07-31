@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.user.adapter.in.web;
 
 import kr.hhplus.be.server.user.application.port.in.GetUserUseCase;
-import kr.hhplus.be.server.user.adapter.in.dto.ErrorResponse;
+import kr.hhplus.be.server.shared.response.ErrorResponse;
 import kr.hhplus.be.server.user.adapter.in.dto.UserResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

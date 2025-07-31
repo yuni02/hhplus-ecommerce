@@ -79,5 +79,10 @@ public interface ChargeBalanceUseCase {
         public String getErrorMessage() {
             return errorMessage;
         }
+
+        public Object getChargeAmount() {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'getChargeAmount'");
+        }
     }
 } 

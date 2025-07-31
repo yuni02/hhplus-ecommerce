@@ -1,7 +1,8 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;    
+import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;
+import kr.hhplus.be.server.shared.response.ErrorResponse;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
 
 import org.springframework.http.ResponseEntity;
@@ -49,7 +50,7 @@ public class OrderController {
         CreateOrderUseCase.CreateOrderResult result = createOrderUseCase.createOrder(command);
 
         if (!result.isSuccess()) {
-            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
 
         // CreateOrderResult를 OrderResponse로 변환

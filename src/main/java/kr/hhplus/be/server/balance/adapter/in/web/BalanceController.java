@@ -3,6 +3,7 @@ package kr.hhplus.be.server.balance.adapter.in.web;
 import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceRequest;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.application.port.in.GetBalanceUseCase;
+import kr.hhplus.be.server.shared.response.ErrorResponse;
 import kr.hhplus.be.server.balance.adapter.in.dto.BalanceResponse;
 import kr.hhplus.be.server.balance.adapter.in.dto.ChargeBalanceResponse;   
 
@@ -33,7 +34,7 @@ public class BalanceController implements BalanceApiDocumentation {
         var balanceOpt = getBalanceUseCase.getBalance(command);
         
         if (balanceOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse("사용자를 찾을 수 없습니다."));
+            return ResponseEntity.badRequest().body(new ErrorResponse("사용자를 찾을 수 없습니다."));
         }
 
         GetBalanceUseCase.GetBalanceResult result = balanceOpt.get();
@@ -50,7 +51,7 @@ public class BalanceController implements BalanceApiDocumentation {
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceUseCase.chargeBalance(command);
         
         if (!result.isSuccess()) {
-            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
         
         ChargeBalanceResponse response = new ChargeBalanceResponse(

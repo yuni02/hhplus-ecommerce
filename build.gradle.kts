@@ -55,6 +55,9 @@ dependencies {
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	    implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
+    testImplementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
+
 }
 
 tasks.withType<JavaCompile> {

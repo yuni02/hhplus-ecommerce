@@ -10,7 +10,10 @@ spring:
       maximum-pool-size: 3
       connection-timeout: 10000
       max-lifetime: 60000
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://localhost:3306/hhplus?characterEncoding=UTF-8&serverTimezone=UTC
+    username: application
+    password: application
   jpa:
     open-in-view: false
     generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
@@ -43,14 +46,19 @@ logging:
     org.hibernate.stat: DEBUG               # Hibernate 통계 정보
     org.hibernate.engine.transaction.internal: DEBUG  # 트랜잭션 로깅
     kr.hhplus.be.server: DEBUG              # 애플리케이션 로깅
+    com.p6spy.engine.spy: DEBUG             # P6Spy 로깅
+    com.p6spy.engine: DEBUG                 # P6Spy 엔진 로깅
+    com.p6spy: DEBUG                        # P6Spy 전체 로깅
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
+# P6Spy 설정
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      multiline: true
+      logging: slf4j
+
 ---
 spring.config.activate.on-profile: local, test
-
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/hhplus?characterEncoding=UTF-8&serverTimezone=UTC
-    username: application
-    password: application

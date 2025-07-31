@@ -3,7 +3,8 @@ package kr.hhplus.be.server.coupon.adapter.in.web;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.adapter.in.dto.CouponResponse;
-import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;       
+import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;
+import kr.hhplus.be.server.shared.response.ErrorResponse;       
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,7 @@ public class CouponController implements CouponApiDocumentation {
         IssueCouponUseCase.IssueCouponResult result = issueCouponUseCase.issueCoupon(command);
         
         if (!result.isSuccess()) {
-            return ResponseEntity.badRequest().body(new kr.hhplus.be.server.shared.response.ErrorResponse(result.getErrorMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
         
         CouponResponse response = new CouponResponse(
