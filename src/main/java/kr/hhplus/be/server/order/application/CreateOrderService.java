@@ -113,7 +113,14 @@ public class CreateOrderService implements CreateOrderUseCase {
             return OrderValidationResult.failure("주문 상품이 없습니다.");
         }
         
-        // 2. 사용자 존재 확인
+        // 2. 주문 아이템 수량 검증
+        for (OrderItemCommand itemCommand : command.getOrderItems()) {
+            if (itemCommand.getQuantity() <= 0) {
+                return OrderValidationResult.failure("주문 수량은 1개 이상이어야 합니다.");
+            }
+        }
+        
+        // 3. 사용자 존재 확인
         if (!loadUserPort.existsById(command.getUserId())) {
             return OrderValidationResult.failure("사용자를 찾을 수 없습니다.");
         }
@@ -133,12 +140,12 @@ public class CreateOrderService implements CreateOrderUseCase {
                     .orElse(null);
             
             if (productInfo == null) {
-                return OrderItemsResult.failure("상품을 찾을 수 없습니다: " + itemCommand.getProductId());
+                return OrderItemsResult.failure("상품을 찾을 수 없습니다");
             }
 
             // 재고 확인
             if (productInfo.getStock() < itemCommand.getQuantity()) {
-                return OrderItemsResult.failure("재고가 부족합니다: " + productInfo.getStock());
+                return OrderItemsResult.failure("재고가 부족합니다");
             }
 
             // 주문 아이템 생성

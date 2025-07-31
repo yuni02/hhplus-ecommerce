@@ -69,8 +69,9 @@ class OrderControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.userId").value(userId))
-                .andExpect(jsonPath("$.totalPrice").value(20000))
-                .andExpect(jsonPath("$.discountedPrice").value(20000));
+                .andExpect(jsonPath("$.totalAmount").value(20000))
+                .andExpect(jsonPath("$.discountAmount").value(0))
+                .andExpect(jsonPath("$.discountedAmount").value(20000));
 
         verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
@@ -104,8 +105,9 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.userId").value(userId))
                 .andExpect(jsonPath("$.userCouponId").value(userCouponId))
-                .andExpect(jsonPath("$.totalPrice").value(20000))
-                .andExpect(jsonPath("$.discountedPrice").value(19000));
+                .andExpect(jsonPath("$.totalAmount").value(20000))
+                .andExpect(jsonPath("$.discountAmount").value(1000))
+                .andExpect(jsonPath("$.discountedAmount").value(19000));
 
         verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }

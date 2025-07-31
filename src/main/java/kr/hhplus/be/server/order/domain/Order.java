@@ -90,6 +90,16 @@ public class Order {
         return discountedAmount;
     }
 
+    public Order(Long userId, List<OrderItem> orderItems, BigDecimal totalAmount, Long userCouponId, OrderStatus status, LocalDateTime orderedAt) {
+        this.userId = userId;
+        this.orderItems = orderItems;
+        this.totalAmount = totalAmount;
+        this.userCouponId = userCouponId;
+        this.status = status;
+        this.orderedAt = orderedAt;
+    }
+
+
     public enum OrderStatus {
         PENDING, COMPLETED, CANCELLED, FAILED
     }

@@ -38,13 +38,25 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
 
     @Override
     public Balance saveBalance(Balance balance) {
-        BalanceEntity entity = mapToBalanceEntity(balance);
-        BalanceEntity savedEntity = balanceJpaRepository.save(entity);
-        return mapToBalance(savedEntity);
+        // 기존 잔액이 있는지 확인
+        Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
+        
+        BalanceEntity entity;
+        if (existingEntity.isPresent()) {
+            // 기존 엔티티 업데이트
+            entity = existingEntity.get();
+            entity.updateAmount(balance.getAmount());
+            entity = balanceJpaRepository.save(entity);
+        } else {
+            // 새로운 엔티티 생성
+            entity = mapToBalanceEntity(balance);
+            entity = balanceJpaRepository.save(entity);
+        }
+        
+        return mapToBalance(entity);
     }
 
     @Override
-    @Transactional
     public BalanceTransaction saveBalanceTransaction(BalanceTransaction transaction) {
         BalanceTransactionEntity entity = mapToBalanceTransactionEntity(transaction);
         BalanceTransactionEntity savedEntity = balanceTransactionJpaRepository.save(entity);

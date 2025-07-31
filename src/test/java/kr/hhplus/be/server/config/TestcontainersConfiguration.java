@@ -9,7 +9,7 @@ import org.testcontainers.utility.DockerImageName;
  * 테스트 전용 Testcontainers 설정
  * 메인 애플리케이션에서는 로드되지 않음
  */
-// @Configuration
+@Configuration
 class TestcontainersConfiguration {
 
 	public static final MySQLContainer<?> MYSQL_CONTAINER;

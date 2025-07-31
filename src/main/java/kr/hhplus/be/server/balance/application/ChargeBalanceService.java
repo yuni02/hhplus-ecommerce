@@ -47,7 +47,7 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
 
             // 3. 기존 잔액 조회 또는 새로 생성
             Balance balance = loadBalancePort.loadActiveBalanceByUserId(command.getUserId())
-                    .orElse(Balance.builder().userId(command.getUserId()).build());
+                    .orElseGet(() -> Balance.builder().userId(command.getUserId()).build());
 
             // 4. 잔액 충전 (도메인 로직)
             balance.charge(command.getAmount());
