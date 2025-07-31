@@ -65,7 +65,7 @@ dependencies {
 tasks.withType<JavaCompile> {
 	options.compilerArgs.add("-parameters")
 	options.isFork = true
-	options.forkOptions.jvmArgs.add("-Dspring.profiles.active=dev")
+	options.forkOptions.jvmArgs?.add("-Dspring.profiles.active=dev")
 }
 
 tasks.withType<Test> {
