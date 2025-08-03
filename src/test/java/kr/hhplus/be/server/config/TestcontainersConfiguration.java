@@ -1,7 +1,9 @@
 package kr.hhplus.be.server.config;
 
 import jakarta.annotation.PreDestroy;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -10,6 +12,8 @@ import org.testcontainers.utility.DockerImageName;
  * 메인 애플리케이션에서는 로드되지 않음
  */
 @Configuration
+@Profile("test")
+@ConditionalOnProperty(name = "spring.profiles.active", havingValue = "test")
 class TestcontainersConfiguration {
 
 	public static final MySQLContainer<?> MYSQL_CONTAINER;
