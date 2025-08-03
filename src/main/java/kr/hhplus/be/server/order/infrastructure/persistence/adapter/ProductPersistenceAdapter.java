@@ -34,8 +34,8 @@ public class ProductPersistenceAdapter implements LoadProductPort {
         return new LoadProductPort.ProductInfo(
                 entity.getId(),
                 entity.getName(),
-                entity.getCurrentPrice(),
-                entity.getStock()
+                entity.getPrice(),
+                entity.getStockQuantity()
         );
     }
 }

@@ -73,8 +73,6 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
             .userCouponId(order.getUserCouponId())
             .status(order.getStatus().name())
             .orderedAt(order.getOrderedAt())
-            .createdAt(order.getOrderedAt())
-            .updatedAt(order.getUpdatedAt())
             .build();
         return entity;
     }
@@ -99,17 +97,9 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      */
     private OrderHistoryEventEntity mapToOrderHistoryEventEntity(OrderHistoryEvent event, Long orderId) {
         OrderHistoryEventEntity entity = OrderHistoryEventEntity.builder()
-            .id(event.getId())
             .orderId(orderId)
             .eventType(event.getEventType().name())
             .occurredAt(event.getOccurredAt())
-            .cancelReason(event.getCancelReason())
-            .refundAmount(event.getRefundAmount())
-            .paymentMethod(event.getPaymentMethod())
-            .totalAmount(event.getTotalAmount())
-            .discountAmount(event.getDiscountAmount())
-            .discountedAmount(event.getDiscountedAmount())  
-            .createdAt(event.getCreatedAt())
             .build();
         return entity;
     }
@@ -169,13 +159,6 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         event.setOrderId(entity.getOrderId());
         event.setEventType(OrderHistoryEvent.OrderEventType.valueOf(entity.getEventType())); // string을 enum으로 변환
         event.setOccurredAt(entity.getOccurredAt());
-        event.setCancelReason(entity.getCancelReason());
-        event.setRefundAmount(entity.getRefundAmount());
-        event.setPaymentMethod(entity.getPaymentMethod());
-        event.setTotalAmount(entity.getTotalAmount());
-        event.setDiscountAmount(entity.getDiscountAmount());
-        event.setDiscountedAmount(entity.getDiscountedAmount());  
-        event.setCreatedAt(entity.getCreatedAt());
         return event;
     }
 }

@@ -40,7 +40,7 @@ public class UserPersistenceAdapter implements LoadUserPort {
         return new LoadUserPort.UserInfo(
                 entity.getId(),
                 entity.getUserId(),
-                entity.getUsername(),
+                entity.getName(),
                 entity.getStatus()
         );
     }

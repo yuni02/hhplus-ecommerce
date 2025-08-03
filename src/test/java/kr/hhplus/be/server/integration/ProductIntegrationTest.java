@@ -45,8 +45,8 @@ class ProductIntegrationTest {
         testProduct = ProductEntity.builder()
                 .name("테스트 상품")
                 .description("테스트 상품 설명")
-                .currentPrice(new BigDecimal("10000"))
-                .stock(100)
+                .price(new BigDecimal("10000"))
+                .stockQuantity(100)
                 .status("ACTIVE")
                 .build();
         testProduct = productJpaRepository.save(testProduct);

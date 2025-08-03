@@ -31,11 +31,13 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
                 return false;
             }
             
-            boolean success = product.deductStock(quantity);
-            if (success) {
-                productJpaRepository.save(product);
+            if (!product.hasStock(quantity)) {
+                return false;
             }
-            return success;
+            
+            product.decreaseStock(quantity);
+            productJpaRepository.save(product);
+            return true;
             
         } catch (Exception e) {
             return false;
@@ -53,7 +55,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
                 return false;
             }
             
-            product.restoreStock(quantity);
+            product.increaseStock(quantity);
             productJpaRepository.save(product);
             return true;
             

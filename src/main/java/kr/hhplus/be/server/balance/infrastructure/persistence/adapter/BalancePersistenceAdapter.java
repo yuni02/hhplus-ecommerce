@@ -79,12 +79,9 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      */
     private BalanceEntity mapToBalanceEntity(Balance balance) {
         return BalanceEntity.builder()
-                .id(balance.getId())
                 .userId(balance.getUserId())
                 .amount(balance.getAmount())
                 .status(balance.getStatus().name())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
     }
 
@@ -110,15 +107,12 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      */
     private BalanceTransactionEntity mapToBalanceTransactionEntity(BalanceTransaction transaction) {
         return BalanceTransactionEntity.builder()
-                .id(transaction.getId())
                 .userId(transaction.getUserId())
                 .amount(transaction.getAmount())
                 .type(transaction.getType().name())
                 .status(transaction.getStatus().name())
                 .description(transaction.getDescription())
                 .referenceId(transaction.getReferenceId())
-                .createdAt(transaction.getCreatedAt())
-                .updatedAt(transaction.getUpdatedAt())
                 .build();
     }
 }

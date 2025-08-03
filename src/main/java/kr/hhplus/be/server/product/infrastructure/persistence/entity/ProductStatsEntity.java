@@ -1,183 +1,66 @@
 package kr.hhplus.be.server.product.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * ProductStats 인프라스트럭처 엔티티
- * Product 도메인 전용 JPA 매핑 엔티티
- * 외래키 제약조건 없이 느슨한 결합으로 설계
+ * 상품 통계 전용 엔티티
+ * 상품 통계 도메인 전용 JPA 매핑 엔티티
  */
 @Entity
 @Table(name = "product_stats")
-@IdClass(ProductStatsId.class)
-@Builder
+@EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ProductStatsEntity {
 
-    @Id
-    @Column(name = "product_id")
-    private Long productId;
+    @EmbeddedId
+    private ProductStatsId id;
 
-    @Id
-    @Column(name = "date")
-    private LocalDate date;
+    @Column(name = "total_sales", precision = 15, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal totalSales = BigDecimal.ZERO;
 
-    @Column(name = "quantity_sold", nullable = false)
-    private Integer recentSalesCount; // 최근 3일간 판매량
+    @Column(name = "total_quantity", nullable = false)
+    @Builder.Default
+    private Integer totalQuantity = 0;
 
-    @Column(name = "revenue", nullable = false)
-    private BigDecimal recentSalesAmount; // 최근 3일간 판매액
+    @Column(name = "order_count", nullable = false)
+    @Builder.Default
+    private Integer orderCount = 0;
 
-    @Column(name = "total_sales_count")
-    private Integer totalSalesCount; // 전체 판매량
-
-    @Column(name = "total_sales_amount")
-    private BigDecimal totalSalesAmount; // 전체 판매액
-
-    @Column(name = "product_rank")
-    private Integer rank; // 인기 순위
-
-    @Column(name = "conversion_rate")
-    private BigDecimal conversionRate; // 전환율
-
-    @Column(name = "last_order_date")
-    private LocalDateTime lastOrderDate; // 마지막 주문일
-
-    @Column(name = "aggregation_date")
-    private LocalDateTime aggregationDate; // 집계일
-
-    @Column(name = "created_at", nullable = false)
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // 느슨한 관계 - 외래키 제약조건 없음
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", insertable = false, updatable = false)
-    private ProductEntity product;
-
-
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    // 비즈니스 메서드들
+    public void updateStats(BigDecimal sales, Integer quantity, Integer orderCount) {
+        this.totalSales = sales;
+        this.totalQuantity = quantity;
+        this.orderCount = orderCount;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public Integer getRecentSalesCount() {
-        return recentSalesCount;
-    }
-
-    public void setRecentSalesCount(Integer recentSalesCount) {
-        this.recentSalesCount = recentSalesCount;
-    }
-
-    public BigDecimal getRecentSalesAmount() {
-        return recentSalesAmount;
-    }
-
-    public void setRecentSalesAmount(BigDecimal recentSalesAmount) {
-        this.recentSalesAmount = recentSalesAmount;
-    }
-
-    public Integer getTotalSalesCount() {
-        return totalSalesCount;
-    }
-
-    public void setTotalSalesCount(Integer totalSalesCount) {
-        this.totalSalesCount = totalSalesCount;
-    }
-
-    public BigDecimal getTotalSalesAmount() {
-        return totalSalesAmount;
-    }
-
-    public void setTotalSalesAmount(BigDecimal totalSalesAmount) {
-        this.totalSalesAmount = totalSalesAmount;
-    }
-
-    public Integer getRank() {
-        return rank;
-    }
-
-    public void setRank(Integer rank) {
-        this.rank = rank;
-    }
-
-    public BigDecimal getConversionRate() {
-        return conversionRate;
-    }
-
-    public void setConversionRate(BigDecimal conversionRate) {
-        this.conversionRate = conversionRate;
-    }
-
-    public LocalDateTime getLastOrderDate() {
-        return lastOrderDate;
-    }
-
-    public void setLastOrderDate(LocalDateTime lastOrderDate) {
-        this.lastOrderDate = lastOrderDate;
-    }
-
-    public LocalDateTime getAggregationDate() {
-        return aggregationDate;
-    }
-
-    public void setAggregationDate(LocalDateTime aggregationDate) {
-        this.aggregationDate = aggregationDate;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public ProductEntity getProduct() {
-        return product;
-    }
-
-    public void setProduct(ProductEntity product) {
-        this.product = product;
+    public void incrementStats(BigDecimal sales, Integer quantity) {
+        this.totalSales = this.totalSales.add(sales);
+        this.totalQuantity += quantity;
+        this.orderCount++;
     }
 }

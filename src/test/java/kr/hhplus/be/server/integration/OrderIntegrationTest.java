@@ -66,7 +66,7 @@ class OrderIntegrationTest {
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
                 .userId(1L)  // userId 설정
-                .username("testuser")
+                .name("testuser")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
@@ -75,8 +75,8 @@ class OrderIntegrationTest {
         testProduct = ProductEntity.builder()
                 .name("테스트 상품")
                 .description("테스트 상품 설명")
-                .currentPrice(new BigDecimal("10000"))
-                .stock(100)
+                .price(new BigDecimal("10000"))
+                .stockQuantity(100)
                 .status("ACTIVE")
                 .build();
         testProduct = productJpaRepository.saveAndFlush(testProduct);

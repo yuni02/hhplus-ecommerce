@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,13 +11,10 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Order 인프라스트럭처 엔티티
- * Order 도메인 전용 JPA 매핑 엔티티
- * 외래키 제약조건 없이 느슨한 결합으로 설계
+ * 주문 전용 엔티티
+ * 주문 도메인 전용 JPA 매핑 엔티티
  */
 @Entity
 @Table(name = "orders")
@@ -25,80 +23,42 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class OrderEntity extends BaseEntity {
 
     @Column(name = "user_id", nullable = false)
-    private Long userId; // 외래키 제약조건 없음
+    private Long userId;
 
-    @Column(name = "total_amount", nullable = false)
+    @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "discounted_amount")
+    @Column(name = "discounted_amount", precision = 15, scale = 2)
     private BigDecimal discountedAmount;
 
-    @Column(name = "discount_amount", nullable = false)        
+    @Column(name = "discount_amount", precision = 15, scale = 2)
     private BigDecimal discountAmount;
 
-    @Column(name = "status", nullable = false, length = 20)
-    @Builder.Default
-    private String status = "PENDING"; // enum 대신 varchar
-
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
-
     @Column(name = "user_coupon_id")
-    private Long userCouponId; // 외래키 제약조건 없음
+    private Long userCouponId;
 
-    @Column(name = "ordered_at", nullable = false)
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
+    private String status = "PENDING";
+
+    @Column(name = "ordered_at")
     private LocalDateTime orderedAt;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    // 느슨한 관계 - 외래키 제약조건 없음
-    @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<OrderItemEntity> orderItems = new ArrayList<>();
-
-    @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<OrderHistoryEventEntity> historyEvents = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (orderedAt == null) {
-            orderedAt = LocalDateTime.now();
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // 필요한 경우에만 public setter 제공
+    // 비즈니스 메서드들
     public void updateStatus(String status) {
         this.status = status;
-        this.updatedAt = LocalDateTime.now();
     }
 
-    public void addOrderItem(OrderItemEntity orderItem) {
-        this.orderItems.add(orderItem);
-        orderItem.setOrderId(this.id);
+    public void setOrderedAt(LocalDateTime orderedAt) {
+        this.orderedAt = orderedAt;
     }
 
-    public void addHistoryEvent(OrderHistoryEventEntity historyEvent) {
-        this.historyEvents.add(historyEvent);
-        historyEvent.setOrderId(this.id);
+    public void updateAmounts(BigDecimal totalAmount, BigDecimal discountedAmount, BigDecimal discountAmount) {
+        this.totalAmount = totalAmount;
+        this.discountedAmount = discountedAmount;
+        this.discountAmount = discountAmount;
     }
 }

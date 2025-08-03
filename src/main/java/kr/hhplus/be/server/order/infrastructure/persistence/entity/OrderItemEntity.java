@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +12,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 /**
- * OrderItem 인프라스트럭처 엔티티
- * Order 도메인 전용 JPA 매핑 엔티티
- * 외래키 제약조건 없이 느슨한 결합으로 설계
+ * 주문 아이템 전용 엔티티
+ * 주문 아이템 도메인 전용 JPA 매핑 엔티티
  */
 @Entity
 @Table(name = "order_items")
@@ -22,18 +22,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItemEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class OrderItemEntity extends BaseEntity {
 
     @Column(name = "order_id", nullable = false)
-    private Long orderId; // 외래키 제약조건 없음
+    private Long orderId;
 
     @Column(name = "product_id", nullable = false)
-    private Long productId; // 외래키 제약조건 없음
+    private Long productId;
 
     @Column(name = "product_name", nullable = false)
     private String productName;
@@ -41,30 +36,20 @@ public class OrderItemEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false)
+    @Column(name = "unit_price", precision = 15, scale = 2, nullable = false)
     private BigDecimal unitPrice;
 
-    @Column(name = "total_price", nullable = false)
+    @Column(name = "total_price", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalPrice;
 
-    // 필요한 경우에만 public setter 제공
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
-    }
-
+    // 비즈니스 메서드들
     public void updateQuantity(Integer quantity) {
         this.quantity = quantity;
-        calculateTotalPrice();
+        this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 
     public void updateUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
-        calculateTotalPrice();
-    }
-
-    private void calculateTotalPrice() {
-        if (quantity != null && unitPrice != null) {
-            this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        }
+        this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
     }
 }

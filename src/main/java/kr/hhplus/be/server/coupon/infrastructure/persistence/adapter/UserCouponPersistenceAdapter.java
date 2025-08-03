@@ -69,7 +69,6 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
 
     private UserCoupon mapToUserCoupon(UserCouponEntity entity) {
         return UserCoupon.builder()
-                .id(entity.getId())
                 .userId(entity.getUserId())
                 .couponId(entity.getCouponId())
                 .discountAmount(entity.getDiscountAmount())
@@ -77,23 +76,19 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
                 .issuedAt(entity.getIssuedAt())
                 .usedAt(entity.getUsedAt())
                 .orderId(entity.getOrderId())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 
     private UserCouponEntity mapToUserCouponEntity(UserCoupon userCoupon) {
-        UserCouponEntity entity = UserCouponEntity.create(
-                userCoupon.getUserId(),
-                userCoupon.getCouponId(),
-                userCoupon.getDiscountAmount(),
-                userCoupon.getStatus().name(),
-                userCoupon.getIssuedAt(),
-                userCoupon.getUsedAt(),
-                userCoupon.getOrderId(),
-                userCoupon.getCreatedAt(),
-                userCoupon.getUpdatedAt()
-        );
+        UserCouponEntity entity = UserCouponEntity.builder()
+                .userId(userCoupon.getUserId())
+                .couponId(userCoupon.getCouponId())
+                .discountAmount(userCoupon.getDiscountAmount())
+                .status(userCoupon.getStatus().name())
+                .issuedAt(userCoupon.getIssuedAt())
+                .usedAt(userCoupon.getUsedAt())
+                .orderId(userCoupon.getOrderId())
+                .build();
         
         // id가 있으면 설정 (UPDATE를 위해)
         if (userCoupon.getId() != null) {

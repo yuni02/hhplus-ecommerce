@@ -63,7 +63,8 @@ class CouponIntegrationTest {
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
                 .userId(1L)
-                .username("testuser")
+                .name("testuser")
+                .email("test@example.com")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
@@ -184,7 +185,7 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 실패 - 쿠폰 소진")
     void 쿠폰_발급_실패_쿠폰_소진() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId(); 
         Long couponId = testCoupon.getId();
 
         // 쿠폰을 최대 발급 수량까지 발급

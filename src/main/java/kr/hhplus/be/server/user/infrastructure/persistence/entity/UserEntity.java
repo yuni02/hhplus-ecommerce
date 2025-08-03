@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.user.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,56 +9,46 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 /**
- * User 인프라스트럭처 엔티티
- * 사용자 정보만 담당 (잔액은 별도 테이블로 분리)
+ * 사용자 전용 엔티티
+ * 사용자 도메인 전용 JPA 매핑 엔티티
  */
 @Entity
 @Table(name = "users")
 @Getter
-@Setter(AccessLevel.PRIVATE)
+@Setter(AccessLevel.PRIVATE) // setter는 private으로 제한
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserEntity {
+public class UserEntity extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
-
-    @Column(name = "user_id")
+    @Column(name = "user_id", unique = true, nullable = false)
     private Long userId;
 
-    @Column(name = "username", unique = true, nullable = false)
-    private String username;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-    @Column(name = "status", length = 20)
+    @Column(name = "email", unique = true, nullable = false)
+    private String email;
+
+    @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
     private String status = "ACTIVE";
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // 사용자 상태 업데이트 메서드
+    // 비즈니스 메서드들
     public void updateStatus(String status) {
         this.status = status;
-        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
+    public void updateUserId(Long userId) {
+        this.userId = userId;
     }
 }

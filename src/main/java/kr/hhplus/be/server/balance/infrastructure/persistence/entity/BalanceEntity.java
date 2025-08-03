@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +10,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * 잔액 전용 엔티티
@@ -22,12 +22,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BalanceEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class BalanceEntity extends BaseEntity {
 
     @Column(name = "user_id", unique = true, nullable = false)
     private Long userId;
@@ -40,36 +35,17 @@ public class BalanceEntity {
     @Builder.Default
     private String status = "ACTIVE";
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Version
     @Column(name = "version")
     private Long version;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
     // 잔액 관련 비즈니스 메서드들
     public void updateAmount(BigDecimal amount) {
         this.amount = amount;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void updateStatus(String status) {
         this.status = status;
-        this.updatedAt = LocalDateTime.now();
     }
 
     // 잔액 차감 비즈니스 메서드
@@ -87,7 +63,6 @@ public class BalanceEntity {
         
         BigDecimal oldAmount = this.amount;
         this.amount = this.amount.subtract(amount);
-        this.updatedAt = LocalDateTime.now();
         
         System.out.println("DEBUG: 잔액 차감 완료 - 이전: " + oldAmount + ", 차감: " + amount + ", 이후: " + this.amount);
         return true;
@@ -99,6 +74,5 @@ public class BalanceEntity {
             throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
         }
         this.amount = this.amount.add(amount);
-        this.updatedAt = LocalDateTime.now();
     }
 }

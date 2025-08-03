@@ -61,8 +61,9 @@ class BalanceIntegrationTest {
 
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
-                .userId(1L)  // userId 설정
-                .username("testuser")
+                .userId(1L)
+                .name("testuser")
+                .email("test@example.com")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
