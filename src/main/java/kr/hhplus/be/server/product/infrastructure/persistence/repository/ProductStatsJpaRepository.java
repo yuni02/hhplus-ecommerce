@@ -20,37 +20,42 @@ public interface ProductStatsJpaRepository extends JpaRepository<ProductStatsEnt
     /**
      * 상품 ID와 날짜로 통계 조회
      */
-    Optional<ProductStatsEntity> findByProductIdAndDate(Long productId, LocalDate date);
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.productId = :productId AND ps.id.date = :date")
+    Optional<ProductStatsEntity> findByProductIdAndDate(@Param("productId") Long productId, @Param("date") LocalDate date);
 
     /**
      * 특정 날짜의 모든 상품 통계 조회
      */
-    List<ProductStatsEntity> findByDate(LocalDate date);
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.date = :date")
+    List<ProductStatsEntity> findByDate(@Param("date") LocalDate date);
 
     /**
      * 상품 ID로 모든 통계 조회
      */
-    List<ProductStatsEntity> findByProductId(Long productId);
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.productId = :productId")
+    List<ProductStatsEntity> findByProductId(@Param("productId") Long productId);
 
     /**
      * 날짜 범위로 상품 통계 조회
      */
-    List<ProductStatsEntity> findByDateBetween(LocalDate startDate, LocalDate endDate);
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.date BETWEEN :startDate AND :endDate")
+    List<ProductStatsEntity> findByDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
      * 최근 판매량 기준으로 인기 상품 조회
      */
-    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.date = :date ORDER BY ps.recentSalesCount DESC")
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.date = :date ORDER BY ps.totalQuantity DESC")
     List<ProductStatsEntity> findTopProductsByRecentSales(@Param("date") LocalDate date);
 
     /**
      * 전체 판매액 기준으로 인기 상품 조회
      */
-    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.date = :date ORDER BY ps.totalSalesAmount DESC")
+    @Query("SELECT ps FROM ProductStatsEntity ps WHERE ps.id.date = :date ORDER BY ps.totalSales DESC")
     List<ProductStatsEntity> findTopProductsByTotalSales(@Param("date") LocalDate date);
 
     /**
      * 특정 날짜의 통계 삭제
      */
-    void deleteByDate(LocalDate date);
+    @Query("DELETE FROM ProductStatsEntity ps WHERE ps.id.date = :date")
+    void deleteByDate(@Param("date") LocalDate date);
 }

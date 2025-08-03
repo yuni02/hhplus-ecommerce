@@ -30,18 +30,19 @@ create table coupons
 
 create table order_history_events
 (
-    discount_amount   int          null,
-    discounted_amount int          not null,
-    refund_amount     int          null,
-    total_amount      int          not null,
-    created_at        datetime(6)  not null,
     id                bigint auto_increment
         primary key,
-    occurred_at       datetime(6)  not null,
     order_id          bigint       not null,
     event_type        varchar(50)  not null,
-    payment_method    varchar(50)  null,
-    cancel_reason     varchar(255) null
+    total_amount      decimal(15,2) not null,
+    discount_amount   decimal(15,2),
+    discounted_amount decimal(15,2) not null,
+    payment_method    varchar(50),
+    refund_amount     decimal(15,2),
+    cancel_reason     varchar(255),
+    occurred_at       datetime(6)  not null,
+    created_at        datetime(6)  not null,
+    updated_at        datetime(6)  not null
 );
 
 create table order_items

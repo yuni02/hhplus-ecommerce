@@ -19,11 +19,6 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     List<ProductEntity> findByNameContaining(String name);
 
     /**
-     * 카테고리별 상품 조회
-     */
-    List<ProductEntity> findByCategory(String category);
-
-    /**
      * 활성 상태의 상품 조회
      */
     List<ProductEntity> findByStatus(String status);
@@ -31,10 +26,10 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     /**
      * 재고가 있는 상품 조회
      */
-    List<ProductEntity> findByStockGreaterThan(Integer stock);
+    List<ProductEntity> findByStockQuantityGreaterThan(Integer stockQuantity);
 
     /**
      * 가격 범위로 상품 조회
      */
-    List<ProductEntity> findByCurrentPriceBetween(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
+    List<ProductEntity> findByPriceBetween(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
 }

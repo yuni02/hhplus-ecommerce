@@ -43,11 +43,15 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
      */
     private LoadProductPort.ProductInfo mapToProductInfo(ProductEntity entity) {
         return new LoadProductPort.ProductInfo(
+                entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
                 entity.getPrice().intValue(),   // 현재 가격 설정
                 entity.getStockQuantity(),
-                entity.getStatus()
+                entity.getStatus(),
+                "GENERAL", // category - 기본값 설정
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 

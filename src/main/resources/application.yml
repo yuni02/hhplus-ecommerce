@@ -19,7 +19,7 @@ spring:
     generate-ddl: true  # JPA가 DDL을 생성하도록 활성화
     show-sql: true      # 실행되는 SQL 출력
     hibernate:
-      ddl-auto: validate  # 기존 테이블 구조 검증 (데이터 유지)
+      ddl-auto: validate  # 스키마 검증만 수행
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC

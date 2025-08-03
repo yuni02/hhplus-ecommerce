@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -30,8 +31,23 @@ public class OrderHistoryEventEntity extends BaseEntity {
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType;
 
-    @Column(name = "event_data", columnDefinition = "TEXT")
-    private String eventData;
+    @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
+    private BigDecimal totalAmount;
+
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    private BigDecimal discountAmount;
+
+    @Column(name = "discounted_amount", precision = 15, scale = 2, nullable = false)
+    private BigDecimal discountedAmount;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
+    @Column(name = "refund_amount", precision = 15, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "cancel_reason", length = 255)
+    private String cancelReason;
 
     @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt;
