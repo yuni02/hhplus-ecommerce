@@ -52,4 +52,11 @@ public class OrderItem {
             this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
     }
+
+    public BigDecimal getTotalPrice() {
+        if (totalPrice == null && quantity != null && unitPrice != null) {
+            calculateTotalPrice();
+        }
+        return totalPrice;
+    }
 } 

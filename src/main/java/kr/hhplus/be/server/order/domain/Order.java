@@ -57,6 +57,7 @@ public class Order {
 
     public void complete() {
         this.status = OrderStatus.COMPLETED;
+        this.orderedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 

@@ -9,7 +9,6 @@ import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceTran
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceTransactionJpaRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

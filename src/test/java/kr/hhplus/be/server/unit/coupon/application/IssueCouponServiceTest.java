@@ -53,6 +53,7 @@ class IssueCouponServiceTest {
             couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE");
 
         UserCoupon savedUserCoupon = UserCoupon.builder()
+            .id(1L)  // id 추가
             .userId(userId)
             .couponId(couponId)
             .discountAmount(1000)
