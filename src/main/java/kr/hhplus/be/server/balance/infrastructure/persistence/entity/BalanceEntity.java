@@ -2,6 +2,7 @@ package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.shared.domain.BaseEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,12 @@ import java.math.BigDecimal;
 @Builder
 public class BalanceEntity extends BaseEntity {
 
-    @Column(name = "user_id", unique = true, nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id", 
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private UserEntity user;
+
+    @Column(name = "user_id", unique = true, nullable = false, insertable = false, updatable = false)
     private Long userId;
 
     @Column(name = "amount", precision = 15, scale = 2, nullable = false)

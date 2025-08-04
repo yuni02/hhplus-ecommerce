@@ -25,7 +25,12 @@ import java.time.LocalDateTime;
 @Builder
 public class OrderHistoryEventEntity extends BaseEntity {
 
-    @Column(name = "order_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private OrderEntity order;
+
+    @Column(name = "order_id", nullable = false, insertable = false, updatable = false)
     private Long orderId;
 
     @Column(name = "event_type", nullable = false, length = 50)

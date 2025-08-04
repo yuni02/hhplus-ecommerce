@@ -2,6 +2,8 @@ package kr.hhplus.be.server.coupon.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.shared.domain.BaseEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,11 +26,21 @@ import java.time.LocalDateTime;
 @Builder
 public class UserCouponEntity extends BaseEntity {
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId; // 외래키 제약조건 없음
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private UserEntity user;
 
-    @Column(name = "coupon_id", nullable = false)
-    private Long couponId; // 외래키 제약조건 없음
+    @Column(name = "user_id", nullable = false, insertable = false, updatable = false)
+    private Long userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private CouponEntity coupon;
+
+    @Column(name = "coupon_id", nullable = false, insertable = false, updatable = false)
+    private Long couponId;
 
     @Column(name = "discount_amount", nullable = false)
     private Integer discountAmount; // 할인 금액
@@ -50,8 +62,13 @@ public class UserCouponEntity extends BaseEntity {
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 
-    @Column(name = "order_id")
-    private Long orderId; // 사용된 주문 ID - 외래키 제약조건 없음
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private OrderEntity order;
+
+    @Column(name = "order_id", insertable = false, updatable = false)
+    private Long orderId;
 
     // 비즈니스 메서드들
     public void use(Long orderId) {

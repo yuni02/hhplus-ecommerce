@@ -130,21 +130,21 @@ erDiagram
         DATETIME updated_at "NOT NULL (감사 필드)"
     }
 
-    %% 논리적 관계 정의 (물리적 FK 제약조건 없음)
-    USER ||--o{ BALANCE : "user_id"
-    USER ||--o{ USER_BALANCE_TX : "user_id"
-    USER ||--o{ ORDER : "user_id"
-    USER ||--o{ USER_COUPON : "user_id"
+    %% 외래키 관계 정의 (Entity 레벨에서 NO_CONSTRAINT로 논리적 관계만)
+    USER ||--o{ BALANCE : "has"
+    USER ||--o{ USER_BALANCE_TX : "owns"
+    USER ||--o{ ORDER : "places"
+    USER ||--o{ USER_COUPON : "issues"
     
-    COUPON ||--o{ USER_COUPON : "coupon_id"
-    USER_COUPON ||--o{ ORDER : "user_coupon_id"
+    COUPON ||--o{ USER_COUPON : "issued_as"
+    USER_COUPON ||--o| ORDER : "used_in"
     
-    ORDER ||--o{ ORDER_ITEM : "order_id"
-    ORDER ||--o{ ORDER_HISTORY_EVENT : "order_id"
-    ORDER ||--o{ USER_BALANCE_TX : "related_order_id"
+    ORDER ||--o{ ORDER_ITEM : "contains"
+    ORDER ||--o{ ORDER_HISTORY_EVENT : "generates"
+    ORDER ||--o{ USER_BALANCE_TX : "creates"
     
-    PRODUCT ||--o{ ORDER_ITEM : "product_id"
-    PRODUCT ||--o{ PRODUCT_STATS : "product_id"
+    PRODUCT ||--o{ ORDER_ITEM : "sold_as"
+    PRODUCT ||--|| PRODUCT_STATS : "aggregated_in"
 
 ```
 

@@ -143,9 +143,45 @@ CREATE TABLE product_stats (
     last_order_date DATETIME(6),
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
-    PRIMARY KEY (date, product_id),
-    CONSTRAINT FKqawohfr96evam9fw5pt69rata FOREIGN KEY (product_id) REFERENCES products (id)
+    PRIMARY KEY (date, product_id)
+#     CONSTRAINT FK_product_stats_product FOREIGN KEY (product_id) REFERENCES products (id)
 );
+
+-- 외래키 제약조건 추가 (논리적 관계만, 물리적 제약조건은 Entity에서 NO_CONSTRAINT로 비활성화)
+-- 주석으로만 표시하여 논리적 관계를 문서화
+
+-- balances.user_id → users.user_id (1:1)
+-- ALTER TABLE balances ADD CONSTRAINT FK_balances_user FOREIGN KEY (user_id) REFERENCES users (user_id);
+
+-- user_balance_tx.user_id → users.user_id (N:1)
+-- ALTER TABLE user_balance_tx ADD CONSTRAINT FK_user_balance_tx_user FOREIGN KEY (user_id) REFERENCES users (user_id);
+
+-- user_balance_tx.related_order_id → orders.id (N:1)
+-- ALTER TABLE user_balance_tx ADD CONSTRAINT FK_user_balance_tx_order FOREIGN KEY (related_order_id) REFERENCES orders (id);
+
+-- orders.user_id → users.user_id (N:1)
+-- ALTER TABLE orders ADD CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users (user_id);
+
+-- orders.user_coupon_id → user_coupons.id (N:1)
+-- ALTER TABLE orders ADD CONSTRAINT FK_orders_user_coupon FOREIGN KEY (user_coupon_id) REFERENCES user_coupons (id);
+
+-- order_items.order_id → orders.id (N:1)
+-- ALTER TABLE order_items ADD CONSTRAINT FK_order_items_order FOREIGN KEY (order_id) REFERENCES orders (id);
+
+-- order_items.product_id → products.id (N:1)
+-- ALTER TABLE order_items ADD CONSTRAINT FK_order_items_product FOREIGN KEY (product_id) REFERENCES products (id);
+
+-- order_history_events.order_id → orders.id (N:1)
+-- ALTER TABLE order_history_events ADD CONSTRAINT FK_order_history_events_order FOREIGN KEY (order_id) REFERENCES orders (id);
+
+-- user_coupons.user_id → users.user_id (N:1)
+-- ALTER TABLE user_coupons ADD CONSTRAINT FK_user_coupons_user FOREIGN KEY (user_id) REFERENCES users (user_id);
+
+-- user_coupons.coupon_id → coupons.id (N:1)
+-- ALTER TABLE user_coupons ADD CONSTRAINT FK_user_coupons_coupon FOREIGN KEY (coupon_id) REFERENCES coupons (id);
+
+-- user_coupons.order_id → orders.id (N:1)
+-- ALTER TABLE user_coupons ADD CONSTRAINT FK_user_coupons_order FOREIGN KEY (order_id) REFERENCES orders (id);
 
 -- 데이터 삽입 프로시저들
 

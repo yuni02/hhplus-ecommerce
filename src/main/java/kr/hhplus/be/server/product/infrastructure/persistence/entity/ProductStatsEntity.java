@@ -31,6 +31,12 @@ public class ProductStatsEntity {
     @EmbeddedId
     private ProductStatsId id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("productId")
+    @JoinColumn(name = "product_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private ProductEntity product;
+
     @Column(name = "total_sales", precision = 15, scale = 2, nullable = false)
     @Builder.Default
     private BigDecimal totalSales = BigDecimal.ZERO;

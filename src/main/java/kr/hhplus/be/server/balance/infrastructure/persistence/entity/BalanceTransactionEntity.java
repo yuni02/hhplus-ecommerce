@@ -2,6 +2,8 @@ package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.shared.domain.BaseEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +27,12 @@ import java.time.LocalDateTime;
 @Builder
 public class BalanceTransactionEntity extends BaseEntity {
 
-    @Column(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private UserEntity user;
+
+    @Column(name = "user_id", nullable = false, insertable = false, updatable = false)
     private Long userId;
 
     @Column(name = "amount", nullable = false)
@@ -41,6 +48,11 @@ public class BalanceTransactionEntity extends BaseEntity {
     @Column(name = "memo")
     private String description;
 
-    @Column(name = "related_order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_order_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private OrderEntity relatedOrder;
+
+    @Column(name = "related_order_id", insertable = false, updatable = false)
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
 }

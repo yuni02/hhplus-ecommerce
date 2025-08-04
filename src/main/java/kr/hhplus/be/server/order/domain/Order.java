@@ -46,10 +46,6 @@ public class Order {
     private List<OrderHistoryEvent> historyEvents = new ArrayList<>();
 
     // 비즈니스 로직 메서드들
-    public void addOrderItem(OrderItem item) {
-        this.orderItems.add(item);
-        item.setOrder(this);
-    }
 
     public void addHistoryEvent(OrderHistoryEvent event) {
         this.historyEvents.add(event);

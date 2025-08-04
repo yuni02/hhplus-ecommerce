@@ -2,6 +2,7 @@ package kr.hhplus.be.server.order.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.shared.domain.BaseEntity;
+import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,10 +25,20 @@ import java.math.BigDecimal;
 @Builder
 public class OrderItemEntity extends BaseEntity {
 
-    @Column(name = "order_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private OrderEntity order;
+
+    @Column(name = "order_id", nullable = false, insertable = false, updatable = false)
     private Long orderId;
 
-    @Column(name = "product_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private ProductEntity product;
+
+    @Column(name = "product_id", nullable = false, insertable = false, updatable = false)
     private Long productId;
 
     @Column(name = "product_name", nullable = false)
