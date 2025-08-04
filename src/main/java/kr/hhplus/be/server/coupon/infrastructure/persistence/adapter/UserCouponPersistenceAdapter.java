@@ -69,6 +69,7 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
 
     private UserCoupon mapToUserCoupon(UserCouponEntity entity) {
         return UserCoupon.builder()
+                .id(entity.getId())
                 .userId(entity.getUserId())
                 .couponId(entity.getCouponId())
                 .discountAmount(entity.getDiscountAmount())

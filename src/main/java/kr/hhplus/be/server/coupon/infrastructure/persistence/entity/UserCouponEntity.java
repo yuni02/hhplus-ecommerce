@@ -40,6 +40,13 @@ public class UserCouponEntity extends BaseEntity {
     @Column(name = "issued_at", nullable = false)
     private LocalDateTime issuedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        if (issuedAt == null) {
+            issuedAt = LocalDateTime.now();
+        }
+    }
+
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 

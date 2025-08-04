@@ -4,15 +4,10 @@ import kr.hhplus.be.server.coupon.application.IssueCouponService;
 import kr.hhplus.be.server.coupon.application.GetUserCouponsService;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
-import kr.hhplus.be.server.coupon.domain.UserCoupon;
-import kr.hhplus.be.server.coupon.infrastructure.persistence.adapter.CouponPersistenceAdapter;
-import kr.hhplus.be.server.coupon.infrastructure.persistence.adapter.UserCouponPersistenceAdapter;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
-import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.infrastructure.persistence.adapter.UserPersistenceAdapter;
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,16 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
 @DisplayName("Coupon 도메인 통합테스트")
 class CouponIntegrationTest {
@@ -93,7 +85,7 @@ class CouponIntegrationTest {
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getUserCouponId()).isNotNull();
+        assertThat(result.getId()).isNotNull();
         assertThat(result.getCouponId()).isEqualTo(couponId);
         assertThat(result.getCouponName()).isEqualTo("테스트 쿠폰");
         assertThat(result.getDiscountAmount()).isEqualTo(1000);

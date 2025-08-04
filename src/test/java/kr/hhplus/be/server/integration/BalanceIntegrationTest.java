@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -30,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
 @DisplayName("Balance 도메인 통합테스트")
 class BalanceIntegrationTest {
@@ -73,7 +71,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 시 사용자의 잔액이 증가하고 이력이 기록된다")
     void 잔액_충전_검증() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal originalAmount = new BigDecimal("5000.00");
         BigDecimal chargeAmount = new BigDecimal("1000.00");
 
@@ -114,7 +112,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 조회 성공")
     void 잔액_조회_성공() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal balanceAmount = new BigDecimal("10000.00");
 
         BalanceEntity balanceEntity = BalanceEntity.builder()
@@ -152,7 +150,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 실패 - 잘못된 금액")
     void 잔액_충전_실패_잘못된_금액() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal invalidAmount = new BigDecimal("-1000");
 
         // when
@@ -184,7 +182,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 시 기존 잔액이 없으면 새로 생성된다")
     void 잔액_충전_새로운_잔액_생성() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal chargeAmount = new BigDecimal("5000.00");
 
         // when

@@ -5,9 +5,9 @@
     user_id    bigint                          not null,
     amount     decimal(15, 2) default 0.00     not null,
     status     varchar(20)    default 'ACTIVE' not null,
+    version    bigint         default 0        not null,
     created_at timestamp                       not null,
     updated_at timestamp                       not null,
-    version    bigint         default 0        not null,
     constraint user_id
         unique (user_id)
 );
@@ -47,14 +47,16 @@ create table order_history_events
 
 create table order_items
 (
-    quantity     int            not null,
-    total_price  decimal(38, 2) not null,
-    unit_price   decimal(38, 2) not null,
     id           bigint auto_increment
         primary key,
     order_id     bigint         not null,
     product_id   bigint         not null,
-    product_name varchar(255)   not null
+    product_name varchar(255)   not null,
+    quantity     int            not null,
+    unit_price   decimal(15,2)  not null,
+    total_price  decimal(15,2)  not null,
+    created_at   datetime(6)    not null,
+    updated_at   datetime(6)    not null
 );
 
 create table orders
@@ -75,14 +77,13 @@ create table orders
 
 create table products
 (
-    current_price decimal(38, 2) not null,
-    stock         int            not null,
+    price         decimal(38, 2) not null,
+    stock_quantity int            not null,
     created_at    datetime(6)    not null,
     id            bigint auto_increment
         primary key,
     updated_at    datetime(6)    not null,
     status        varchar(20)    not null,
-    category      varchar(255)   null,
     description   varchar(255)   null,
     name          varchar(255)   not null
 );
@@ -141,11 +142,12 @@ create table users
     id         bigint auto_increment
         primary key,
     updated_at datetime(6)  not null,
-    user_id    bigint       null,
-    status     varchar(20)  null,
-    username   varchar(255) not null,
+    user_id    bigint       not null,
+    name       varchar(255) not null,
+    email      varchar(255) null,
+    status     varchar(20)  not null default 'ACTIVE',
     constraint UKr43af9ap4edm43mmtq01oddj6
-        unique (username)
+        unique (user_id)
 );
 
 create index idx_userid_status

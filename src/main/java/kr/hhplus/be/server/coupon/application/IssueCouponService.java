@@ -62,10 +62,12 @@ public class IssueCouponService implements IssueCouponUseCase {
             }
 
             // 6. 사용자 쿠폰 생성
+            LocalDateTime now = LocalDateTime.now();
             UserCoupon userCoupon = UserCoupon.builder()
                     .userId(command.getUserId())
                     .couponId(command.getCouponId())
                     .discountAmount(couponInfo.getDiscountAmount())
+                    .issuedAt(now)
                     .build();
             
             UserCoupon savedUserCoupon = saveUserCouponPort.saveUserCoupon(userCoupon);
@@ -74,6 +76,7 @@ public class IssueCouponService implements IssueCouponUseCase {
                     savedUserCoupon.getId(),
                     savedUserCoupon.getCouponId(),
                     couponInfo.getName(),
+
                     couponInfo.getDiscountAmount(),
                     savedUserCoupon.getStatus().name(),
                     LocalDateTime.now()

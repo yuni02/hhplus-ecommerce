@@ -70,7 +70,7 @@ class IssueCouponServiceTest {
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getUserCouponId()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getCouponId()).isEqualTo(couponId);
         assertThat(result.getCouponName()).isEqualTo("신규 가입 쿠폰");
         assertThat(result.getDiscountAmount()).isEqualTo(1000);

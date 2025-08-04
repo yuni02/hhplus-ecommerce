@@ -38,7 +38,7 @@ public interface IssueCouponUseCase {
      */
     class IssueCouponResult {
         private final boolean success;
-        private final Long userCouponId;
+        private final Long id;
         private final Long couponId;
         private final String couponName;
         private final Integer discountAmount;
@@ -49,7 +49,7 @@ public interface IssueCouponUseCase {
         private IssueCouponResult(boolean success, Long userCouponId, Long couponId, String couponName,
                                 Integer discountAmount, String status, LocalDateTime issuedAt, String errorMessage) {
             this.success = success;
-            this.userCouponId = userCouponId;
+            this.id = userCouponId;
             this.couponId = couponId;
             this.couponName = couponName;
             this.discountAmount = discountAmount;
@@ -71,8 +71,8 @@ public interface IssueCouponUseCase {
             return success;
         }
         
-        public Long getUserCouponId() {
-            return userCouponId;
+        public Long getId() {
+            return id;
         }
         
         public Long getCouponId() {
