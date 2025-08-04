@@ -1,155 +1,140 @@
- create table balances
+-- 외래키 관계로 인한 순서를 고려하여 테이블 삭제
+DROP TABLE IF EXISTS user_coupons;
+DROP TABLE IF EXISTS user_balance_tx;
+DROP TABLE IF EXISTS product_stats;
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS order_history_events;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS coupons;
+DROP TABLE IF EXISTS balances;
+
+-- 테이블 생성
+CREATE TABLE balances
 (
-    id         bigint auto_increment
-        primary key,
-    user_id    bigint                          not null,
-    amount     decimal(15, 2) default 0.00     not null,
-    status     varchar(20)    default 'ACTIVE' not null,
-    version    bigint         default 0        not null,
-    created_at timestamp                       not null,
-    updated_at timestamp                       not null,
-    constraint user_id
-        unique (user_id)
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id    BIGINT                          NOT NULL,
+    amount     DECIMAL(15, 2) DEFAULT 0.00     NOT NULL,
+    status     VARCHAR(20)    DEFAULT 'ACTIVE' NOT NULL,
+    version    BIGINT         DEFAULT 0        NOT NULL,
+    created_at TIMESTAMP                       NOT NULL,
+    updated_at TIMESTAMP                       NOT NULL,
+    CONSTRAINT user_id UNIQUE (user_id)
 );
 
-create table coupons
+CREATE TABLE coupons
 (
-    discount_amount decimal(38, 2) not null,
-    issued_count    int            not null,
-    total_quantity  int            not null,
-    created_at      datetime(6)    not null,
-    id              bigint auto_increment
-        primary key,
-    updated_at      datetime(6)    not null,
-    valid_from      datetime(6)    null,
-    valid_to        datetime(6)    null,
-    status          varchar(20)    not null,
-    description     varchar(255)   null,
-    name            varchar(255)   not null
+    discount_amount DECIMAL(38, 2) NOT NULL,
+    issued_count    INT            NOT NULL,
+    total_quantity  INT            NOT NULL,
+    created_at      DATETIME(6)    NOT NULL,
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    updated_at      DATETIME(6)    NOT NULL,
+    valid_from      DATETIME(6)    NULL,
+    valid_to        DATETIME(6)    NULL,
+    status          VARCHAR(20)    NOT NULL,
+    description     VARCHAR(255)   NULL,
+    name            VARCHAR(255)   NOT NULL
 );
 
-create table order_history_events
+CREATE TABLE products
 (
-    id                bigint auto_increment
-        primary key,
-    order_id          bigint       not null,
-    event_type        varchar(50)  not null,
-    total_amount      decimal(15,2) not null,
-    discount_amount   decimal(15,2),
-    discounted_amount decimal(15,2) not null,
-    payment_method    varchar(50),
-    refund_amount     decimal(15,2),
-    cancel_reason     varchar(255),
-    occurred_at       datetime(6)  not null,
-    created_at        datetime(6)  not null,
-    updated_at        datetime(6)  not null
+    price          DECIMAL(38, 2) NOT NULL,
+    stock_quantity INT            NOT NULL,
+    created_at     DATETIME(6)    NOT NULL,
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    updated_at     DATETIME(6)    NOT NULL,
+    status         VARCHAR(20)    NOT NULL,
+    description    VARCHAR(255)   NULL,
+    name           VARCHAR(255)   NOT NULL
 );
 
-create table order_items
+CREATE TABLE orders
 (
-    id           bigint auto_increment
-        primary key,
-    order_id     bigint         not null,
-    product_id   bigint         not null,
-    product_name varchar(255)   not null,
-    quantity     int            not null,
-    unit_price   decimal(15,2)  not null,
-    total_price  decimal(15,2)  not null,
-    created_at   datetime(6)    not null,
-    updated_at   datetime(6)    not null
+    discounted_amount DECIMAL(38, 2) NULL,
+    discount_amount   DECIMAL(38, 2) NOT NULL,
+    total_amount      DECIMAL(38, 2) NOT NULL,
+    created_at        DATETIME(6)    NOT NULL,
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ordered_at        DATETIME(6)    NOT NULL,
+    updated_at        DATETIME(6)    NOT NULL,
+    user_coupon_id    BIGINT         NULL,
+    user_id           BIGINT         NOT NULL,
+    status            VARCHAR(20)    NOT NULL,
+    payment_method    VARCHAR(50)    NULL
 );
 
-create table orders
+CREATE TABLE order_history_events
 (
-    discounted_amount decimal(38, 2) null,
-    discount_amount   decimal(38, 2) not null,
-    total_amount      decimal(38, 2) not null,
-    created_at        datetime(6)    not null,
-    id                bigint auto_increment
-        primary key,
-    ordered_at        datetime(6)    not null,
-    updated_at        datetime(6)    not null,
-    user_coupon_id    bigint         null,
-    user_id           bigint         not null,
-    status            varchar(20)    not null,
-    payment_method    varchar(50)    null
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id          BIGINT        NOT NULL,
+    event_type        VARCHAR(50)   NOT NULL,
+    total_amount      DECIMAL(15,2) NOT NULL,
+    discount_amount   DECIMAL(15,2),
+    discounted_amount DECIMAL(15,2) NOT NULL,
+    payment_method    VARCHAR(50),
+    refund_amount     DECIMAL(15,2),
+    cancel_reason     VARCHAR(255),
+    occurred_at       DATETIME(6)   NOT NULL,
+    created_at        DATETIME(6)   NOT NULL,
+    updated_at        DATETIME(6)   NOT NULL
 );
 
-create table products
+CREATE TABLE order_items
 (
-    price         decimal(38, 2) not null,
-    stock_quantity int            not null,
-    created_at    datetime(6)    not null,
-    id            bigint auto_increment
-        primary key,
-    updated_at    datetime(6)    not null,
-    status        varchar(20)    not null,
-    description   varchar(255)   null,
-    name          varchar(255)   not null
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id     BIGINT         NOT NULL,
+    product_id   BIGINT         NOT NULL,
+    product_name VARCHAR(255)   NOT NULL,
+    quantity     INT            NOT NULL,
+    unit_price   DECIMAL(15,2)  NOT NULL,
+    total_price  DECIMAL(15,2)  NOT NULL,
+    created_at   DATETIME(6)    NOT NULL,
+    updated_at   DATETIME(6)    NOT NULL
 );
 
-create table product_stats
+CREATE TABLE product_stats
 (
-    conversion_rate    decimal(38, 2) null,
-    date               date           not null,
-    product_rank       int            null,
-    quantity_sold      int            not null,
-    revenue            decimal(38, 2) not null,
-    total_sales_amount decimal(38, 2) null,
-    total_sales_count  int            null,
-    aggregation_date   datetime(6)    null,
-    created_at         datetime(6)    not null,
-    last_order_date    datetime(6)    null,
-    product_id         bigint         not null,
-    updated_at         datetime(6)    not null,
-    primary key (date, product_id),
-    constraint FKqawohfr96evam9fw5pt69rata
-        foreign key (product_id) references products (id)
+    conversion_rate    DECIMAL(38, 2) NULL,
+    date               DATE           NOT NULL,
+    product_rank       INT            NULL,
+    quantity_sold      INT            NOT NULL,
+    revenue            DECIMAL(38, 2) NOT NULL,
+    total_sales_amount DECIMAL(38, 2) NULL,
+    total_sales_count  INT            NULL,
+    aggregation_date   DATETIME(6)    NULL,
+    created_at         DATETIME(6)    NOT NULL,
+    last_order_date    DATETIME(6)    NULL,
+    product_id         BIGINT         NOT NULL,
+    updated_at         DATETIME(6)    NOT NULL,
+    PRIMARY KEY (date, product_id),
+    CONSTRAINT FKqawohfr96evam9fw5pt69rata
+        FOREIGN KEY (product_id) REFERENCES products (id)
 );
 
-create table user_balance_tx
+CREATE TABLE user_balance_tx
 (
-    amount           decimal(38, 2) not null,
-    created_at       datetime(6)    not null,
-    id               bigint auto_increment
-        primary key,
-    related_order_id bigint         null,
-    updated_at       datetime(6)    not null,
-    user_id          bigint         not null,
-    status           varchar(20)    not null,
-    tx_type          varchar(20)    not null,
-    memo             varchar(255)   null
+    amount           DECIMAL(38, 2) NOT NULL,
+    created_at       DATETIME(6)    NOT NULL,
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    related_order_id BIGINT         NULL,
+    updated_at       DATETIME(6)    NOT NULL,
+    user_id          BIGINT         NOT NULL,
+    status           VARCHAR(20)    NOT NULL,
+    tx_type          VARCHAR(20)    NOT NULL,
+    memo             VARCHAR(255)   NULL
 );
 
-create table user_coupons
+CREATE TABLE user_coupons
 (
-    discount_amount int         not null,
-    coupon_id       bigint      not null,
-    created_at      datetime(6) not null,
-    id              bigint auto_increment
-        primary key,
-    issued_at       datetime(6) not null,
-    order_id        bigint      null,
-    updated_at      datetime(6) not null,
-    used_at         datetime(6) null,
-    user_id         bigint      not null,
-    status          varchar(20) not null
+    discount_amount INT         NOT NULL,
+    coupon_id       BIGINT      NOT NULL,
+    created_at      DATETIME(6) NOT NULL,
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    issued_at       DATETIME(6) NOT NULL,
+    order_id        BIGINT      NULL,
+    updated_at      DATETIME(6) NOT NULL,
+    used_at         DATETIME(6) NULL,
+    user_id         BIGINT      NOT NULL,
+    status          VARCHAR(20) NOT NULL
 );
-
-create table users
-(
-    created_at datetime(6)  not null,
-    id         bigint auto_increment
-        primary key,
-    updated_at datetime(6)  not null,
-    user_id    bigint       not null,
-    name       varchar(255) not null,
-    email      varchar(255) null,
-    status     varchar(20)  not null default 'ACTIVE',
-    constraint UKr43af9ap4edm43mmtq01oddj6
-        unique (user_id)
-);
-
-create index idx_userid_status
-    on users (user_id, status);
-
