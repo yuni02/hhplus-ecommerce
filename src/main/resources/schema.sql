@@ -144,7 +144,7 @@ CREATE TABLE product_stats (
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
     PRIMARY KEY (date, product_id)
-#     CONSTRAINT FK_product_stats_product FOREIGN KEY (product_id) REFERENCES products (id)
+    -- CONSTRAINT FK_product_stats_product FOREIGN KEY (product_id) REFERENCES products (id)
 );
 
 -- 외래키 제약조건 추가 (논리적 관계만, 물리적 제약조건은 Entity에서 NO_CONSTRAINT로 비활성화)
@@ -183,100 +183,100 @@ CREATE TABLE product_stats (
 -- user_coupons.order_id → orders.id (N:1)
 -- ALTER TABLE user_coupons ADD CONSTRAINT FK_user_coupons_order FOREIGN KEY (order_id) REFERENCES orders (id);
 
--- 데이터 삽입 프로시저들
+-- 데이터 삽입 프로시저들 (Spring Boot SQL 스크립트 실행 시 DELIMITER 문제로 주석 처리)
 
 -- users 테이블 대량 데이터 삽입 프로시저
-DELIMITER //
-CREATE PROCEDURE InsertUsersBulk()
-BEGIN
-    DECLARE i INT DEFAULT 1;
-    WHILE i <= 10000 DO
-        INSERT INTO users (user_id, name, email, status, created_at, updated_at) 
-        VALUES (
-            i,
-            CONCAT('User_', i),
-            CONCAT('user', i, '@example.com'),
-            'ACTIVE',
-            NOW(),
-            NOW()
-        );
-        SET i = i + 1;
-    END WHILE;
-END //
-DELIMITER ;
+-- DELIMITER //
+-- CREATE PROCEDURE InsertUsersBulk()
+-- BEGIN
+--     DECLARE i INT DEFAULT 1;
+--     WHILE i <= 10000 DO
+--         INSERT INTO users (user_id, name, email, status, created_at, updated_at) 
+--         VALUES (
+--             i,
+--             CONCAT('User_', i),
+--             CONCAT('user', i, '@example.com'),
+--             'ACTIVE',
+--             NOW(),
+--             NOW()
+--         );
+--         SET i = i + 1;
+--     END WHILE;
+-- END //
+-- DELIMITER ;
 
 -- coupons 테이블 대량 데이터 삽입 프로시저
-DELIMITER //
-CREATE PROCEDURE InsertCouponsBulk()
-BEGIN
-    DECLARE i INT DEFAULT 1;
-    WHILE i <= 10000 DO
-        INSERT INTO coupons (name, description, discount_amount, total_quantity, issued_count, status, valid_from, valid_to, created_at, updated_at) 
-        VALUES (
-            CONCAT('쿠폰_', i),
-            CONCAT('할인 쿠폰 ', i, '번'),
-            CASE 
-                WHEN i % 5 = 0 THEN 10000.00
-                WHEN i % 4 = 0 THEN 5000.00
-                WHEN i % 3 = 0 THEN 3000.00
-                WHEN i % 2 = 0 THEN 2000.00
-                ELSE 1000.00
-            END,
-            CASE 
-                WHEN i % 10 = 0 THEN 1000
-                WHEN i % 5 = 0 THEN 500
-                ELSE 100
-            END,
-            0,
-            'ACTIVE',
-            DATE_ADD(NOW(), INTERVAL -30 DAY),
-            DATE_ADD(NOW(), INTERVAL 30 DAY),
-            NOW(),
-            NOW()
-        );
-        SET i = i + 1;
-    END WHILE;
-END //
-DELIMITER ;
+-- DELIMITER //
+-- CREATE PROCEDURE InsertCouponsBulk()
+-- BEGIN
+--     DECLARE i INT DEFAULT 1;
+--     WHILE i <= 10000 DO
+--         INSERT INTO coupons (name, description, discount_amount, total_quantity, issued_count, status, valid_from, valid_to, created_at, updated_at) 
+--         VALUES (
+--             CONCAT('쿠폰_', i),
+--             CONCAT('할인 쿠폰 ', i, '번'),
+--             CASE 
+--                 WHEN i % 5 = 0 THEN 10000.00
+--                 WHEN i % 4 = 0 THEN 5000.00
+--                 WHEN i % 3 = 0 THEN 3000.00
+--                 WHEN i % 2 = 0 THEN 2000.00
+--                 ELSE 1000.00
+--             END,
+--             CASE 
+--                 WHEN i % 10 = 0 THEN 1000
+--                 WHEN i % 5 = 0 THEN 500
+--                 ELSE 100
+--             END,
+--             0,
+--             'ACTIVE',
+--             DATE_ADD(NOW(), INTERVAL -30 DAY),
+--             DATE_ADD(NOW(), INTERVAL 30 DAY),
+--             NOW(),
+--             NOW()
+--         );
+--         SET i = i + 1;
+--     END WHILE;
+-- END //
+-- DELIMITER ;
 
 -- products 테이블 대량 데이터 삽입 프로시저
-DELIMITER //
-CREATE PROCEDURE InsertProductsBulk()
-BEGIN
-    DECLARE i INT DEFAULT 1;
-    WHILE i <= 10000 DO
-        INSERT INTO products (name, description, price, stock_quantity, status, created_at, updated_at) 
-        VALUES (
-            CONCAT('상품_', i),
-            CONCAT('상품 ', i, '번 설명입니다.'),
-            CASE 
-                WHEN i % 10 = 0 THEN 100000.00
-                WHEN i % 5 = 0 THEN 50000.00
-                WHEN i % 3 = 0 THEN 30000.00
-                WHEN i % 2 = 0 THEN 10000.00
-                ELSE 5000.00
-            END,
-            CASE 
-                WHEN i % 20 = 0 THEN 1000
-                WHEN i % 10 = 0 THEN 500
-                WHEN i % 5 = 0 THEN 100
-                ELSE 50
-            END,
-            'ACTIVE',
-            NOW(),
-            NOW()
-        );
-        SET i = i + 1;
-    END WHILE;
-END //
-DELIMITER ;
+-- DELIMITER //
+-- CREATE PROCEDURE InsertProductsBulk()
+-- BEGIN
+--     DECLARE i INT DEFAULT 1;
+--     WHILE i <= 10000 DO
+--         INSERT INTO products (name, description, price, stock_quantity, status, created_at, updated_at) 
+--         VALUES (
+--             CONCAT('상품_', i),
+--             CONCAT('상품 ', i, '번 설명입니다.'),
+--             CASE 
+--                 WHEN i % 10 = 0 THEN 100000.00
+--                 WHEN i % 5 = 0 THEN 50000.00
+--                 WHEN i % 3 = 0 THEN 30000.00
+--                 WHEN i % 2 = 0 THEN 10000.00
+--                 ELSE 5000.00
+--             END,
+--             CASE 
+--                 WHEN i % 20 = 0 THEN 1000
+--                 WHEN i % 10 = 0 THEN 500
+--                 WHEN i % 5 = 0 THEN 100
+--                 ELSE 50
+--             END,
+--             'ACTIVE',
+--             NOW(),
+--             NOW()
+--         );
+--         SET i = i + 1;
+--     END WHILE;
+-- END //
+-- DELIMITER ;
 
 -- 프로시저 실행
-CALL InsertUsersBulk();
-CALL InsertCouponsBulk();
-CALL InsertProductsBulk();
+-- CALL InsertUsersBulk();
+-- CALL InsertCouponsBulk();
+-- CALL InsertProductsBulk();
 
 -- 프로시저 삭제
-DROP PROCEDURE IF EXISTS InsertUsersBulk;
-DROP PROCEDURE IF EXISTS InsertCouponsBulk;
-DROP PROCEDURE IF EXISTS InsertProductsBulk;
+-- DROP PROCEDURE IF EXISTS InsertUsersBulk;
+-- DROP PROCEDURE IF EXISTS InsertCouponsBulk;
+-- DROP PROCEDURE IF EXISTS InsertProductsBulk;
