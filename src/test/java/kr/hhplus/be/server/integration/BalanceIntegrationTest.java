@@ -569,7 +569,7 @@ class BalanceIntegrationTest {
                 try {
                     ChargeBalanceUseCase.ChargeBalanceCommand request = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
                     // 고급 재시도 로직 사용 (리플렉션으로 접근)
-                    ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalanceWithAdvancedRetry(request);
+                    ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(request); 
                     
                     if (result.isSuccess()) {
                         successCount.incrementAndGet();
@@ -617,30 +617,40 @@ class BalanceIntegrationTest {
     
 
     
+
+    
     @Test
-    @DisplayName("충전과 결제 동시성 테스트 - 하이브리드 락 전략")
-    void 충전과_결제_동시성_테스트_하이브리드() throws InterruptedException {
+    @DisplayName("잔액 충전과 결제 동시성 테스트")
+    void 잔액_충전과_결제_동시성_테스트() throws InterruptedException {
         // Given
         Long userId = testUser.getUserId();
-        BigDecimal chargeAmount = new BigDecimal("1000");
-        BigDecimal paymentAmount = new BigDecimal("300");
+        BigDecimal chargeAmount = new BigDecimal("1000.00");
+        BigDecimal paymentAmount = new BigDecimal("300.00");
         int threadCount = 20; // 충전 10개, 결제 10개
         ExecutorService executorService = Executors.newFixedThreadPool(10);
-        CountDownLatch latch = new CountDownLatch(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1); // 시작 신호
+        CountDownLatch readyLatch = new CountDownLatch(threadCount); // 준비 완료 신호
+        CountDownLatch finishLatch = new CountDownLatch(threadCount); // 완료 신호
         AtomicInteger chargeSuccessCount = new AtomicInteger(0);
         AtomicInteger paymentSuccessCount = new AtomicInteger(0);
         AtomicInteger chargeFailureCount = new AtomicInteger(0);
         AtomicInteger paymentFailureCount = new AtomicInteger(0);
         
         // 초기 잔액 설정
-        ChargeBalanceUseCase.ChargeBalanceCommand initialCharge = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, new BigDecimal("5000"));
+        ChargeBalanceUseCase.ChargeBalanceCommand initialCharge = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, new BigDecimal("5000.00"));
         chargeBalanceService.chargeBalance(initialCharge);
         
-        // When - 충전과 결제 동시 요청
+        // When - 모든 스레드가 준비된 후 동시 시작
         for (int i = 0; i < threadCount; i++) {
             final int index = i;
             executorService.submit(() -> {
                 try {
+                    // 준비 완료 신호
+                    readyLatch.countDown();
+                    
+                    // 시작 신호 대기 (모든 스레드가 준비될 때까지)
+                    startLatch.await();
+                    
                     if (index % 2 == 0) {
                         // 충전 요청 (ChargeBalanceService 사용)
                         ChargeBalanceUseCase.ChargeBalanceCommand chargeRequest = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
@@ -673,18 +683,25 @@ class BalanceIntegrationTest {
                     }
                     System.err.println("Thread execution failed: " + e.getMessage());
                 } finally {
-                    latch.countDown();
+                    finishLatch.countDown();
                 }
             });
         }
         
+        // 모든 스레드가 준비될 때까지 대기
+        readyLatch.await();
+        System.out.println("모든 스레드가 준비되었습니다. 동시 시작!");
+        
+        // 시작 신호 전송 (모든 스레드가 동시에 시작)
+        startLatch.countDown();
+        
         // 모든 스레드가 완료될 때까지 대기
-        boolean completed = latch.await(30, TimeUnit.SECONDS);
+        boolean completed = finishLatch.await(30, TimeUnit.SECONDS);
         
         // Then
         assertThat(completed).isTrue();
         
-        System.out.println("=== 충전과 결제 동시성 테스트 (하이브리드 락) 결과 ===");
+        System.out.println("=== 잔액 충전과 결제 동시성 테스트 결과 ===");
         System.out.println("충전 성공: " + chargeSuccessCount.get() + ", 실패: " + chargeFailureCount.get());
         System.out.println("결제 성공: " + paymentSuccessCount.get() + ", 실패: " + paymentFailureCount.get());
         System.out.println("총 요청 수: " + threadCount);
@@ -697,8 +714,8 @@ class BalanceIntegrationTest {
         GetBalanceUseCase.GetBalanceResult finalBalance = finalBalanceResult.get();
         assertThat(finalBalance.getUserId()).isEqualTo(userId);
         
-        // 예상 잔액: 초기 5000 + (충전 성공 수 * 1000) - (결제 성공 수 * 300)
-        BigDecimal expectedBalance = new BigDecimal("5000")
+        // 예상 잔액: 초기 5000.00 + (충전 성공 수 * 1000.00) - (결제 성공 수 * 300.00)
+        BigDecimal expectedBalance = new BigDecimal("5000.00")
                 .add(new BigDecimal(chargeSuccessCount.get()).multiply(chargeAmount))
                 .subtract(new BigDecimal(paymentSuccessCount.get()).multiply(paymentAmount));
         
@@ -711,23 +728,31 @@ class BalanceIntegrationTest {
     }
     
     @Test
-    @DisplayName("대용량 동시성 테스트 - 하이브리드 락 전략")
-    void 대용량_동시성_테스트() throws InterruptedException {
+    @DisplayName("대용량 잔액 충전 동시성 테스트")
+    void 대용량_잔액_충전_동시성_테스트() throws InterruptedException {
         // Given
         Long userId = testUser.getUserId();
-        BigDecimal chargeAmount = new BigDecimal("100");
+        BigDecimal chargeAmount = new BigDecimal("100.00");
         int threadCount = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(32);
-        CountDownLatch latch = new CountDownLatch(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1); // 시작 신호
+        CountDownLatch readyLatch = new CountDownLatch(threadCount); // 준비 완료 신호
+        CountDownLatch finishLatch = new CountDownLatch(threadCount); // 완료 신호
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
         
-        // When - 100개의 동시 잔액 충전 요청
+        // When - 모든 스레드가 준비된 후 동시 시작
         long startTime = System.currentTimeMillis();
         
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
+                    // 준비 완료 신호
+                    readyLatch.countDown();
+                    
+                    // 시작 신호 대기 (모든 스레드가 준비될 때까지)
+                    startLatch.await();
+                    
                     ChargeBalanceUseCase.ChargeBalanceCommand request = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
                     ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(request);
                     
@@ -740,19 +765,26 @@ class BalanceIntegrationTest {
                     failureCount.incrementAndGet();
                     System.err.println("Thread execution failed: " + e.getMessage());
                 } finally {
-                    latch.countDown();
+                    finishLatch.countDown();
                 }
             });
         }
         
+        // 모든 스레드가 준비될 때까지 대기
+        readyLatch.await();
+        System.out.println("모든 스레드가 준비되었습니다. 동시 시작!");
+        
+        // 시작 신호 전송 (모든 스레드가 동시에 시작)
+        startLatch.countDown();
+        
         // 모든 스레드가 완료될 때까지 대기
-        boolean completed = latch.await(30, TimeUnit.SECONDS);
+        boolean completed = finishLatch.await(30, TimeUnit.SECONDS);
         long endTime = System.currentTimeMillis();
         
         // Then
         assertThat(completed).isTrue();
         
-        System.out.println("=== 대용량 동시성 테스트 결과 ===");
+        System.out.println("=== 대용량 잔액 충전 동시성 테스트 결과 ===");
         System.out.println("성공한 요청 수: " + successCount.get());
         System.out.println("실패한 요청 수: " + failureCount.get());
         System.out.println("총 요청 수: " + threadCount);
@@ -770,7 +802,7 @@ class BalanceIntegrationTest {
         GetBalanceUseCase.GetBalanceResult finalBalance = finalBalanceResult.get();
         assertThat(finalBalance.getUserId()).isEqualTo(userId);
         
-        // 예상 잔액: 성공한 요청 수 * 100원
+        // 예상 잔액: 성공한 요청 수 * 100.00원
         BigDecimal expectedBalance = new BigDecimal(successCount.get()).multiply(chargeAmount);
         assertThat(finalBalance.getBalance()).isEqualTo(expectedBalance);
         
