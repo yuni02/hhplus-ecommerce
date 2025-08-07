@@ -72,7 +72,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
 
         Order savedOrder = Order.builder()
             .id(1L)
@@ -123,7 +123,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), userCouponId);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
 
         UseCouponUseCase.UseCouponResult couponResult = 
             UseCouponUseCase.UseCouponResult.success(BigDecimal.valueOf(18000), 2000);
@@ -228,7 +228,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100); // 재고 100개
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE"); // 재고 100개
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
@@ -257,7 +257,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
@@ -289,7 +289,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), userCouponId);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
 
         UseCouponUseCase.UseCouponResult couponResult = 
             UseCouponUseCase.UseCouponResult.failure("쿠폰을 사용할 수 없습니다.");
@@ -326,7 +326,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
@@ -361,9 +361,9 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItem1, orderItem2), null);
 
         LoadProductPort.ProductInfo product1 = new LoadProductPort.ProductInfo(
-            1L, "상품A", BigDecimal.valueOf(10000), 100);
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
         LoadProductPort.ProductInfo product2 = new LoadProductPort.ProductInfo(
-            2L, "상품B", BigDecimal.valueOf(15000), 50);
+            2L, "상품B", "상품B 설명", 50, BigDecimal.valueOf(15000), "ACTIVE");
 
         Order savedOrder = Order.builder()
             .id(1L)

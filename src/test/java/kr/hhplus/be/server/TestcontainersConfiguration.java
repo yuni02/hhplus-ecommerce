@@ -11,24 +11,31 @@ import org.testcontainers.utility.DockerImageName;
 @Configuration
 public class TestcontainersConfiguration {
 
-    public static final MySQLContainer<?> MYSQL_CONTAINER;
+    private static MySQLContainer<?> mysqlContainer;
+    private static final Object lock = new Object();
 
-    static {
-        MYSQL_CONTAINER = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
-                .withDatabaseName("hhplus")
-                .withUsername("test")
-                .withPassword("test");
-        MYSQL_CONTAINER.start();
-
-        System.setProperty("spring.datasource.url", MYSQL_CONTAINER.getJdbcUrl() + "?characterEncoding=UTF-8&serverTimezone=UTC");
-        System.setProperty("spring.datasource.username", MYSQL_CONTAINER.getUsername());
-        System.setProperty("spring.datasource.password", MYSQL_CONTAINER.getPassword());
+    @Bean
+    @ServiceConnection
+    public MySQLContainer<?> mysqlContainer() {
+        synchronized (lock) {
+            if (mysqlContainer == null) {
+                mysqlContainer = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
+                        .withDatabaseName("hhplus")
+                        .withUsername("test")
+                        .withPassword("test")
+                        .withReuse(true);
+                mysqlContainer.start();
+            }
+        }
+        return mysqlContainer;
     }
 
     @PreDestroy
     public void preDestroy() {
-        if (MYSQL_CONTAINER.isRunning()) {
-            MYSQL_CONTAINER.stop();
+        synchronized (lock) {
+            if (mysqlContainer != null && mysqlContainer.isRunning()) {
+                mysqlContainer.stop();
+            }
         }
     }
 }

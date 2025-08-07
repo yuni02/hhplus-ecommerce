@@ -78,8 +78,8 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     @Override
     @Transactional
     public Balance saveBalanceWithConcurrencyControl(Balance balance) {
-        // Pessimistic Lock으로 잔액 조회
-        Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatusWithLock(balance.getUserId(), "ACTIVE");
+        // 낙관적 락으로 잔액 조회 (비관적 락 제거)
+        Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
         
         BalanceEntity entity;
         if (existingEntity.isPresent()) {

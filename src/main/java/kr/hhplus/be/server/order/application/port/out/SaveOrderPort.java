@@ -11,4 +11,5 @@ public interface SaveOrderPort {
      * 주문 저장
      */
     Order saveOrder(Order order);
+
 } 

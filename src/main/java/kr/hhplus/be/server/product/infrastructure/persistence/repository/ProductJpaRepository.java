@@ -2,9 +2,14 @@ package kr.hhplus.be.server.product.infrastructure.persistence.repository;
 
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Product 엔티티 JPA Repository
@@ -32,4 +37,11 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
      * 가격 범위로 상품 조회
      */
     List<ProductEntity> findByPriceBetween(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
+
+    /**
+     * 재고 차감을 위한 비관적 락 조회
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM ProductEntity p WHERE p.id = :productId")
+    Optional<ProductEntity> findByIdWithLock(@Param("productId") Long productId);
 }

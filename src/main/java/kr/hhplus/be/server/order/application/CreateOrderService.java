@@ -53,7 +53,7 @@ public class CreateOrderService implements CreateOrderUseCase {
     public CreateOrderResult createOrder(CreateOrderCommand command) {
         List<OrderItem> createdOrderItems = null;
         boolean stockDeducted = false;
-        
+
         try {
             // 1. 주문 검증
             OrderValidationResult validationResult = validateOrder(command);
@@ -61,31 +61,31 @@ public class CreateOrderService implements CreateOrderUseCase {
                 return CreateOrderResult.failure(validationResult.getErrorMessage());
             }
 
-            // 2. 주문 아이템 생성 및 재고 차감
-            OrderItemsResult itemsResult = createOrderItems(command);
+            // 2. 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
+            OrderItemsResult itemsResult = createOrderItemsWithPessimisticLock(command);
             if (!itemsResult.isSuccess()) {
                 return CreateOrderResult.failure(itemsResult.getErrorMessage());
             }
             createdOrderItems = itemsResult.getOrderItems();
             stockDeducted = true; // 재고 차감 완료 표시
 
-            // 3. 쿠폰 할인 적용
-            CouponDiscountResult discountResult = applyCouponDiscount(command, itemsResult.getTotalAmount());
+            // 3. 쿠폰 할인 적용 (비관적 락 적용)
+            CouponDiscountResult discountResult = applyCouponDiscountWithPessimisticLock(command, itemsResult.getTotalAmount());
             if (!discountResult.isSuccess()) {
                 // 쿠폰 할인 실패 시 재고 복구
-                restoreStock(createdOrderItems);
+                restoreStockWithPessimisticLock(createdOrderItems);
                 return CreateOrderResult.failure(discountResult.getErrorMessage());
             }
 
-            // 4. 잔액 차감
-            if (!deductBalancePort.deductBalance(command.getUserId(), discountResult.getDiscountedAmount())) {
+            // 4. 잔액 차감 (비관적 락 적용)
+            if (!deductBalancePort.deductBalanceWithPessimisticLock(command.getUserId(), discountResult.getDiscountedAmount())) {
                 // 잔액 부족 시 재고 복구
-                restoreStock(createdOrderItems);
+                restoreStockWithPessimisticLock(createdOrderItems);
                 return CreateOrderResult.failure("잔액이 부족합니다.");
             }
 
             // 5. 주문 생성 및 저장
-            Order order = createAndSaveOrder(command, createdOrderItems, 
+            Order order = createAndSaveOrder(command, createdOrderItems,
                                            itemsResult.getTotalAmount(), discountResult);
 
             // 6. 결과 반환
@@ -94,7 +94,7 @@ public class CreateOrderService implements CreateOrderUseCase {
         } catch (Exception e) {
             // 예외 발생 시 재고 복구
             if (stockDeducted && createdOrderItems != null) {
-                restoreStock(createdOrderItems);
+                restoreStockWithPessimisticLock(createdOrderItems);
             }
             return CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
@@ -128,56 +128,50 @@ public class CreateOrderService implements CreateOrderUseCase {
     }
 
     /**
-     * 주문 아이템 생성 및 재고 차감
+     * 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
      */
-    private OrderItemsResult createOrderItems(CreateOrderCommand command) {
+    private OrderItemsResult createOrderItemsWithPessimisticLock(CreateOrderCommand command) {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-
+    
         for (OrderItemCommand itemCommand : command.getOrderItems()) {
-            // 상품 조회
+            // 1. 상품 조회 + 재고 차감을 한 번에 처리 (비관적 락)
+            if (!updateProductStockPort.deductStockWithPessimisticLock(itemCommand.getProductId(), itemCommand.getQuantity())) {
+                return OrderItemsResult.failure("재고가 부족하거나 상품을 찾을 수 없습니다");
+            }
+            
+            // 2. 상품 정보 조회 (재고 차감 후)
             LoadProductPort.ProductInfo productInfo = loadProductPort.loadProductById(itemCommand.getProductId())
                     .orElse(null);
             
             if (productInfo == null) {
                 return OrderItemsResult.failure("상품을 찾을 수 없습니다");
             }
-
-            // 재고 확인
-            if (productInfo.getStock() < itemCommand.getQuantity()) {
-                return OrderItemsResult.failure("재고가 부족합니다");
-            }
-
-            // 주문 아이템 생성
+    
+            // 3. 주문 아이템 생성
             OrderItem orderItem = createOrderItem(
                     productInfo.getId(),
                     productInfo.getName(),
                     itemCommand.getQuantity(),
                     productInfo.getCurrentPrice()
             );
-
+    
             orderItems.add(orderItem);
             
-            // null 체크 추가
             if (orderItem.getTotalPrice() != null) {
                 totalAmount = totalAmount.add(orderItem.getTotalPrice());
             } else {
                 return OrderItemsResult.failure("주문 아이템 가격 계산에 실패했습니다.");
             }
-
-            // 재고 차감
-            if (!updateProductStockPort.deductStock(itemCommand.getProductId(), itemCommand.getQuantity())) {
-                return OrderItemsResult.failure("재고 차감에 실패했습니다: " + productInfo.getName());
-            }
         }
-
+    
         return OrderItemsResult.success(orderItems, totalAmount);
     }
 
     /**
-     * 쿠폰 할인 적용
+     * 쿠폰 할인 적용 (비관적 락 적용)
      */
-    private CouponDiscountResult applyCouponDiscount(CreateOrderCommand command, BigDecimal totalAmount) {
+    private CouponDiscountResult applyCouponDiscountWithPessimisticLock(CreateOrderCommand command, BigDecimal totalAmount) {
         if (command.getUserCouponId() == null) {
             return CouponDiscountResult.success(totalAmount, 0);
         }
@@ -185,7 +179,7 @@ public class CreateOrderService implements CreateOrderUseCase {
         UseCouponUseCase.UseCouponCommand couponCommand = 
             new UseCouponUseCase.UseCouponCommand(command.getUserId(), command.getUserCouponId(), totalAmount);
         
-        UseCouponUseCase.UseCouponResult couponResult = useCouponUseCase.useCoupon(couponCommand);
+        UseCouponUseCase.UseCouponResult couponResult = useCouponUseCase.useCouponWithPessimisticLock(couponCommand);
         
         if (!couponResult.isSuccess()) {
             return CouponDiscountResult.failure(couponResult.getErrorMessage());
@@ -216,12 +210,15 @@ public class CreateOrderService implements CreateOrderUseCase {
         order.calculateDiscountedAmount();   
         order.complete();
 
-        // 주문 아이템에 orderId 설정
+        // Order 저장 (OrderPersistenceAdapter에서 OrderItem들도 함께 처리)
+        Order savedOrder = saveOrderPort.saveOrder(order);
+        
+        // OrderItem들의 orderId 업데이트
         for (OrderItem item : orderItems) {
-            item.setOrderId(order.getId());
+            item.setOrderId(savedOrder.getId());
         }
-
-        return saveOrderPort.saveOrder(order);
+        
+        return savedOrder;
     }
 
     /**
@@ -262,6 +259,7 @@ public class CreateOrderService implements CreateOrderUseCase {
             .productName(productName)
             .quantity(quantity)
             .unitPrice(unitPrice)
+            .orderId(null) // 임시로 null 설정, Order 저장 후 업데이트됨
             .build();
         
         // totalPrice 계산
@@ -271,18 +269,11 @@ public class CreateOrderService implements CreateOrderUseCase {
     }
 
     /**
-     * 재고 복구 메서드
+     * 재고 복구 (비관적 락 적용)
      */
-    private void restoreStock(List<OrderItem> orderItems) {
-        try {
-            for (OrderItem item : orderItems) {
-                // 재고 복구 (차감된 수량만큼 다시 증가)
-                updateProductStockPort.restoreStock(item.getProductId(), item.getQuantity());
-            }
-        } catch (Exception e) {
-            // 재고 복구 실패 시 로그 기록 (운영팀 알림 필요)
-            System.err.println("재고 복구 실패: " + e.getMessage());
-            // TODO: 운영팀 알림 로직 추가
+    private void restoreStockWithPessimisticLock(List<OrderItem> orderItems) {
+        for (OrderItem item : orderItems) {
+            updateProductStockPort.restoreStockWithPessimisticLock(item.getProductId(), item.getQuantity());
         }
     }
 

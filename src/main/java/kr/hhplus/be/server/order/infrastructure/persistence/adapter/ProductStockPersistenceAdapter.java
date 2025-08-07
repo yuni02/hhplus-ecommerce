@@ -24,7 +24,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
     @Transactional
     public boolean deductStock(Long productId, Integer quantity) {
         try {
-            ProductEntity product = productJpaRepository.findById(productId)
+            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
                     .orElse(null);
             
             if (product == null) {
@@ -48,7 +48,53 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
     @Transactional
     public boolean restoreStock(Long productId, Integer quantity) {
         try {
-            ProductEntity product = productJpaRepository.findById(productId)
+            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
+                    .orElse(null);
+            
+            if (product == null) {
+                return false;
+            }
+            
+            product.increaseStock(quantity);
+            productJpaRepository.save(product);
+            return true;
+            
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deductStockWithPessimisticLock(Long productId, Integer quantity) {
+        try {
+            // 비관적 락으로 상품 조회
+            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
+                    .orElse(null);
+            
+            if (product == null) {
+                return false;
+            }
+            
+            if (!product.hasStock(quantity)) {
+                return false;
+            }
+            
+            product.decreaseStock(quantity);
+            productJpaRepository.save(product);
+            return true;
+            
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean restoreStockWithPessimisticLock(Long productId, Integer quantity) {
+        try {
+            // 비관적 락으로 상품 조회
+            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
                     .orElse(null);
             
             if (product == null) {

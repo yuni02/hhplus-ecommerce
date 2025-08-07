@@ -18,6 +18,11 @@ public interface LoadUserCouponPort {
     java.util.Optional<kr.hhplus.be.server.coupon.domain.UserCoupon> loadUserCoupon(Long userCouponId);
     
     /**
+     * 사용자 쿠폰 ID로 개별 쿠폰 조회 (비관적 락 적용)
+     */
+    java.util.Optional<kr.hhplus.be.server.coupon.domain.UserCoupon> loadUserCouponWithLock(Long userCouponId);
+    
+    /**
      * 사용자 쿠폰 정보
      */
     class UserCouponInfo {
