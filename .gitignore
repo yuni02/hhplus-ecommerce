@@ -4,7 +4,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-.claude/
+
 ### STS ###
 .apt_generated
 .classpath
@@ -43,3 +43,6 @@ out/
 .springBeans/workspace/.metadata/
 
 data
+
+## Claude ##
+.claude/
