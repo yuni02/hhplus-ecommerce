@@ -72,8 +72,8 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     private LoadUserCouponPort.UserCouponInfo toUserCouponInfo(UserCouponEntity entity) {
         return new LoadUserCouponPort.UserCouponInfo(
                 entity.getId(),
-                entity.getUserId(),
-                entity.getCouponId(),
+                entity.getUser() != null ? entity.getUser().getUserId() : null,
+                entity.getCoupon() != null ? entity.getCoupon().getId() : null,
                 entity.getStatus(),
                 entity.getIssuedAt() != null ? entity.getIssuedAt().toString() : null,
                 entity.getUsedAt() != null ? entity.getUsedAt().toString() : null,
@@ -84,8 +84,8 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     private UserCoupon mapToUserCoupon(UserCouponEntity entity) {
         return UserCoupon.builder()
                 .id(entity.getId())
-                .userId(entity.getUserId())
-                .couponId(entity.getCouponId())
+                .userId(entity.getUser() != null ? entity.getUser().getUserId() : null)
+                .couponId(entity.getCoupon() != null ? entity.getCoupon().getId() : null)
                 .discountAmount(entity.getDiscountAmount())
                 .status(UserCoupon.UserCouponStatus.valueOf(entity.getStatus()))
                 .issuedAt(entity.getIssuedAt())

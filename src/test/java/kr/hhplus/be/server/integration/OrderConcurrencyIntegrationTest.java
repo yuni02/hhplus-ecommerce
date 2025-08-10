@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.integration;
 
+import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
+import kr.hhplus.be.server.order.application.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
@@ -24,11 +26,9 @@ import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,8 +69,15 @@ public class OrderConcurrencyIntegrationTest {
     @Autowired
     private OrderJpaRepository orderJpaRepository;
 
+    @Autowired
+    private CreateOrderService createOrderService;
+
     private List<UserEntity> testUsers;
     private List<ProductEntity> testProducts;
+    private ProductEntity testProduct;
+    private UserEntity testUser;
+    private BalanceEntity testBalance;
+
     private Long testCouponId;
 
     @BeforeEach
@@ -101,6 +108,17 @@ public class OrderConcurrencyIntegrationTest {
             testUsers.add(savedUser);
         }
 
+
+        // 테스트용 사용자 생성
+        testUser = UserEntity.builder()
+                .userId(1L)  // userId 설정
+                .name("testuser")
+                .email("test@example.com")
+                .status("ACTIVE")
+                .build();
+        testUser = userJpaRepository.saveAndFlush(testUser);
+
+
         // 테스트용 상품들 생성 (재고 1개씩)
         testProducts = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
@@ -125,6 +143,26 @@ public class OrderConcurrencyIntegrationTest {
                 .build();
         var savedCoupon = couponJpaRepository.saveAndFlush(coupon);
         testCouponId = savedCoupon.getId();
+
+
+        // 테스트용 상품 생성
+        testProduct = ProductEntity.builder()
+                .name("테스트 상품")
+                .description("테스트 상품 설명")
+                .price(new BigDecimal("10000"))
+                .stockQuantity(100)
+                .status("ACTIVE")
+                .build();
+        testProduct = productJpaRepository.saveAndFlush(testProduct);
+
+
+        // 테스트용 잔액 생성
+        testBalance = BalanceEntity.builder()
+                .user(testUser)  // UserEntity 참조 설정
+                .amount(new BigDecimal("50000"))
+                .status("ACTIVE")
+                .build();
+        balanceJpaRepository.saveAndFlush(testBalance);
     }
 
     @Test
@@ -470,5 +508,120 @@ public class OrderConcurrencyIntegrationTest {
         if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
             executorService.shutdownNow();
         }
+    }
+
+
+    @Test
+    @DisplayName("동시 주문 시 재고 차감 동시성 제어 테스트")
+    void 동시_주문_재고_차감_동시성_테스트() throws Exception {
+        // given
+        int threadCount = 10;
+        int quantityPerOrder = 1;
+        int totalExpectedOrders = Math.min(threadCount, testProduct.getStockQuantity());
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        // when - 동시에 여러 주문 요청
+        CompletableFuture<Void>[] futures = new CompletableFuture[threadCount];
+
+        for (int i = 0; i < threadCount; i++) {
+            final int index = i;
+            futures[i] = CompletableFuture.runAsync(() -> {
+                try {
+                    CreateOrderUseCase.OrderItemCommand orderItem =
+                            new CreateOrderUseCase.OrderItemCommand(testProduct.getId(), quantityPerOrder);
+                    CreateOrderUseCase.CreateOrderCommand command =
+                            new CreateOrderUseCase.CreateOrderCommand(testUser.getUserId(), Arrays.asList(orderItem), null);
+
+                    CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
+
+                    if (result.isSuccess()) {
+                        successCount.incrementAndGet();
+                    } else {
+                        failCount.incrementAndGet();
+                        System.out.println("Thread " + index + " 실패: " + result.getErrorMessage());
+                    }
+                } catch (Exception e) {
+                    failCount.incrementAndGet();
+                    System.out.println("Thread " + index + " 예외: " + e.getMessage());
+                }
+            }, executorService);
+        }
+
+        CompletableFuture.allOf(futures).join();
+        executorService.shutdown();
+
+        // then
+        System.out.println("성공: " + successCount.get() + ", 실패: " + failCount.get());
+
+        // 성공한 주문은 사용 가능한 재고 범위 내에서만 이루어져야 함
+        assertThat(successCount.get()).isLessThanOrEqualTo(totalExpectedOrders);
+        assertThat(successCount.get() + failCount.get()).isEqualTo(threadCount);
+
+        // 남은 재고 확인
+        ProductEntity updatedProduct = productJpaRepository.findById(testProduct.getId()).get();
+        int expectedRemainingStock = testProduct.getStockQuantity() - successCount.get();
+        assertThat(updatedProduct.getStockQuantity()).isEqualTo(expectedRemainingStock);
+    }
+
+    @Test
+    @DisplayName("동시 결제 시 잔액 차감 동시성 제어 테스트")
+    void 동시_결제_잔액_차감_동시성_테스트() throws Exception {
+        // given
+        // 각 주문당 10,000원 * 1개 = 10,000원
+        // 잔액 50,000원이므로 최대 5개 주문만 성공해야 함
+        int threadCount = 10;
+        int quantityPerOrder = 1;
+        int maxSuccessfulOrders = 5; // 50,000 / 10,000 = 5
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        // when - 동시에 여러 결제 요청
+        CompletableFuture<Void>[] futures = new CompletableFuture[threadCount];
+
+        for (int i = 0; i < threadCount; i++) {
+            final int index = i;
+            futures[i] = CompletableFuture.runAsync(() -> {
+                try {
+                    CreateOrderUseCase.OrderItemCommand orderItem =
+                            new CreateOrderUseCase.OrderItemCommand(testProduct.getId(), quantityPerOrder);
+                    CreateOrderUseCase.CreateOrderCommand command =
+                            new CreateOrderUseCase.CreateOrderCommand(testUser.getUserId(), Arrays.asList(orderItem), null);
+                    System.out.println("command : "+ command);
+                    CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
+
+                    if (result.isSuccess()) {
+                        successCount.incrementAndGet();
+                        System.out.println("Thread " + index + " 성공");
+                    } else {
+                        failCount.incrementAndGet();
+                        System.out.println("Thread " + index + " 실패: " + result.getErrorMessage());
+                    }
+                } catch (Exception e) {
+                    failCount.incrementAndGet();
+                    System.out.println("Thread " + index + " 예외: " + e.getMessage());
+                }
+            }, executorService);
+        }
+
+        CompletableFuture.allOf(futures).join();
+        executorService.shutdown();
+
+        // then
+        System.out.println("성공: " + successCount.get() + ", 실패: " + failCount.get());
+
+        // 성공한 주문은 잔액 범위 내에서만 이루어져야 함
+        assertThat(successCount.get()).isLessThanOrEqualTo(maxSuccessfulOrders);
+        assertThat(successCount.get() + failCount.get()).isEqualTo(threadCount);
+
+        // 남은 잔액 확인
+        BalanceEntity updatedBalance = balanceJpaRepository.findByUserIdAndStatus(testUser.getUserId(), "ACTIVE").get();
+        BigDecimal expectedRemainingBalance = testBalance.getAmount()
+                .subtract(new BigDecimal("10000").multiply(new BigDecimal(successCount.get())));
+        assertThat(updatedBalance.getAmount()).isEqualByComparingTo(expectedRemainingBalance);
     }
 }

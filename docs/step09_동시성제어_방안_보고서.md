@@ -2,7 +2,7 @@
 
 ## 요약
 
-주문/결제 API의 동시성 문제를 해결하기 위해 **비관적 락(Pessimistic Lock)**을 적용했습니다:
+주문/결제 API의 동시성 문제를 해결하기 위해 **비관적 락과 낙관적 락을 혼합한 전략**을 적용했습니다:
 
 ### **구현된 동시성 제어**
 
@@ -11,16 +11,16 @@
    - `ProductStockPersistenceAdapter`에 비관적 락 메서드 구현
    - `findByIdWithLock()` 메서드로 `SELECT ... FOR UPDATE` 적용
 
-2. **잔액 차감 동시성 제어**
-   - `BalanceEntity`에 이미 `@Version` 필드 존재
-   - `BalancePersistenceAdapter`에 비관적 락 메서드 구현
-   - `findByUserIdAndStatusWithLock()` 메서드로 비관적 락 적용
+2. **잔액 차감 동시성 제어** (낙관적 락)
+   - `BalanceEntity`에 `@Version` 필드 활용한 낙관적 락
+   - `OptimisticLockingFailureException` 재시도 메커니즘
+   - 최대 3회 재시도로 동시성 충돌 해결
 
-3. **잔액 충전 동시성 제어**
-   - `BalanceEntity`에 `@Version` 필드 활용
-   - `ChargeBalanceService`에서 비관적 락 적용
-   - `findByUserIdAndStatusWithLock()` 메서드로 동시 충전 방지
-   - 충전 금액을 원자적으로 증가시키는 `addBalance()` 메서드 구현
+3. **잔액 충전 동시성 제어** (낙관적 락)
+   - `BalanceEntity`에 `@Version` 필드 활용한 낙관적 락
+   - `ChargeBalanceService`에서 `@Retryable` 어노테이션 적용
+   - `OptimisticLockingFailureException` 발생 시 지수 백오프로 재시도
+   - 최대 5회 재시도로 동시성 충돌 해결
 
 4. **선착순 쿠폰 발급 동시성 제어**
    - `CouponEntity`에 `@Version` 필드 활용
@@ -35,8 +35,8 @@
    - `findByIdWithLock()` 메서드로 쿠폰 중복 사용 방지
 
 6. **주문 서비스 동시성 제어**
-   - `CreateOrderService`에서 모든 비관적 락 메서드 사용
-   - 재고 차감 → 쿠폰 사용 → 잔액 차감 순서로 처리
+   - `CreateOrderService`에서 혼합 락 전략 사용
+   - 재고 차감(비관적 락) → 쿠폰 사용(비관적 락) → 잔액 차감(낙관적 락) 순서로 처리
    - 실패 시 재고 복구 로직 포함
 
 ### **선착순 쿠폰 발급 동시성 제어 상세**
@@ -109,56 +109,108 @@ private boolean canIssueCoupon(LoadCouponPort.CouponInfo couponInfo) {
 }
 ```
 
-### **잔액 충전 동시성 제어 상세**
+### **잔액 충전 동시성 제어 상세** (낙관적 락)
 
 #### **문제 상황**
 ```
 사용자 잔액: 10,000원
-동시 충전: 100명의 사용자가 각각 5,000원씩 충전
-예상 결과: 10,000원 + 5,000원 = 15,000원
-실제 결과: 10,000원 + 5,000원 = 15,000원 (정상)
+동시 충전/결제: 충전 +5,000원과 결제 -3,000원이 동시 발생
+예상 결과: 10,000원 + 5,000원 - 3,000원 = 12,000원
+실제 결과: 낙관적 락 + 재시도로 순차 처리되어 12,000원 (정상)
 ```
 
 #### **구현 방법**
 ```java
 // ChargeBalanceService.java
-@Transactional(isolation = Isolation.READ_COMMITTED, timeout = 5)
+@Transactional
+@Retryable(
+    value = {OptimisticLockingFailureException.class},
+    maxAttempts = 5,
+    backoff = @Backoff(delay = 50, multiplier = 1.5)
+)
 public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
-    // 1. 잔액 조회 (비관적 락 적용)
-    Balance balance = loadBalancePort.loadBalanceWithLock(command.getUserId());
+    // 1. 낙관적 락으로 잔액 조회
+    Balance balance = loadBalancePort.loadActiveBalanceByUserId(command.getUserId())
+            .orElseGet(() -> Balance.builder().userId(command.getUserId()).build());
+
+    // 2. 잔액 충전 (도메인 로직)
+    balance.charge(command.getAmount());
     
-    // 2. 원자적 잔액 증가
-    balance.addBalance(command.getAmount());
-    
-    // 3. 잔액 저장
-    saveBalancePort.saveBalance(balance);
-    
+    // 3. 낙관적 락으로 저장 (동시성 제어)
+    Balance savedBalance = loadBalancePort.saveBalanceWithConcurrencyControl(balance);
+
     // 4. 거래 내역 생성
-    BalanceTransaction transaction = createTransaction(command);
-    saveBalanceTransactionPort.saveTransaction(transaction);
+    BalanceTransaction transaction = BalanceTransaction.create(
+            command.getUserId(), 
+            command.getAmount(), 
+            BalanceTransaction.TransactionType.CHARGE,
+            "잔액 충전"
+    );
+    
+    return ChargeBalanceResult.success(command.getUserId(), savedBalance.getAmount(), transaction.getId());
 }
 ```
 
-#### **비관적 락 적용**
+#### **낙관적 락 적용**
 ```java
 // BalancePersistenceAdapter.java
-@Lock(LockModeType.PESSIMISTIC_WRITE)
-@Query("SELECT b FROM BalanceEntity b WHERE b.userId = :userId AND b.status = :status")
-Optional<BalanceEntity> findByUserIdAndStatusWithLock(
-    @Param("userId") Long userId, 
-    @Param("status") String status
-);
+@Transactional
+public Balance saveBalanceWithConcurrencyControl(Balance balance) {
+    // 낙관적 락으로 잔액 조회
+    Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
+    
+    BalanceEntity entity;
+    if (existingEntity.isPresent()) {
+        // 기존 엔티티 업데이트 (Optimistic Lock으로 동시성 제어)
+        entity = existingEntity.get();
+        entity.updateAmount(balance.getAmount());
+        entity = balanceJpaRepository.save(entity); // @Version 필드로 충돌 감지
+    } else {
+        // 새로운 엔티티 생성
+        entity = mapToBalanceEntity(balance);
+        entity = balanceJpaRepository.save(entity);
+    }
+    
+    return mapToBalance(entity);
+}
 ```
 
-#### **원자적 잔액 증가**
+#### **재시도 메커니즘**
 ```java
-// Balance.java (도메인)
-public void addBalance(BigDecimal amount) {
-    if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-        throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+// BalancePersistenceAdapter.java (잔액 차감용)
+public boolean deductBalance(Long userId, BigDecimal amount) {
+    int maxRetries = 3;
+    int retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+        try {
+            // 낙관적 락 사용
+            BalanceEntity balance = balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE").orElse(null);
+            
+            if (balance == null) return false;
+            
+            boolean success = balance.deductAmount(amount);
+            if (success) {
+                balanceJpaRepository.save(balance);
+                return true;
+            } else {
+                return false;
+            }
+            
+        } catch (OptimisticLockingFailureException e) {
+            retryCount++;
+            if (retryCount >= maxRetries) return false;
+            
+            try {
+                Thread.sleep(50 * retryCount); // 지수 백오프
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
     }
-    this.amount = this.amount.add(amount);
-    this.updatedAt = LocalDateTime.now();
+    
+    return false;
 }
 ```
 

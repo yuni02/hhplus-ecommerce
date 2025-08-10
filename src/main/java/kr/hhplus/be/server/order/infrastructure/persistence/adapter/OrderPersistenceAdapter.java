@@ -143,7 +143,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
                            List<OrderHistoryEventEntity> historyEventEntities) {
         Order order = new Order();
         order.setId(orderEntity.getId());
-        order.setUserId(orderEntity.getUserId());
+        order.setUserId(orderEntity.getUser() != null ? orderEntity.getUser().getUserId() : null);
         order.setTotalAmount(orderEntity.getTotalAmount());
         order.setDiscountedAmount(orderEntity.getDiscountedAmount());
         order.setDiscountAmount(orderEntity.getDiscountAmount());

@@ -79,7 +79,7 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 성공")
     void 쿠폰_발급_성공() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // when
@@ -110,7 +110,7 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 실패 - 존재하지 않는 쿠폰")
     void 쿠폰_발급_실패_존재하지_않는_쿠폰() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long nonExistentCouponId = 9999L;
 
         // when
@@ -142,7 +142,7 @@ class CouponIntegrationTest {
     @DisplayName("사용자 쿠폰 목록 조회 성공")
     void 사용자_쿠폰_목록_조회_성공() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // 쿠폰 발급
@@ -180,14 +180,14 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 실패 - 쿠폰 소진")
     void 쿠폰_발급_실패_쿠폰_소진() {
         // given
-        Long userId = testUser.getUserId(); 
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // 쿠폰을 최대 발급 수량까지 발급
         for (int i = 0; i < 100; i++) {
             UserCouponEntity userCoupon = UserCouponEntity.builder()
-                    .userId(userId)
-                    .couponId(couponId)
+                    .user(testUser)  // user 관계 설정
+                    .coupon(testCoupon)  // coupon 관계 설정
                     .discountAmount(1000)
                     .status("AVAILABLE")
                     .build();

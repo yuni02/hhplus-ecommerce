@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +67,8 @@ class BalanceConcurrencyTest {
     @Autowired
     private DeductBalancePort deductBalancePort; // 잔액 차감 포트
 
+    private UserEntity testUser;
+
     private List<UserEntity> testUsers; // 테스트용 사용자 목록
     private Random random = new Random(); // 랜덤 생성기
 
@@ -87,6 +90,16 @@ class BalanceConcurrencyTest {
                     .build();
             testUsers.add(userJpaRepository.saveAndFlush(user));
         }
+
+
+        // 테스트용 사용자 생성
+        testUser = UserEntity.builder()
+                .userId(1L)
+                .name("testuser")
+                .email("test@example.com")
+                .status("ACTIVE")
+                .build();
+        testUser = userJpaRepository.saveAndFlush(testUser);
     }
 
     @Test
@@ -348,5 +361,158 @@ class BalanceConcurrencyTest {
         assertThat(finalBalance.getBalance()).isEqualTo(expectedBalance);
         
         executorService.shutdown();
+    }
+
+
+    @Test
+    @DisplayName("동시 잔액 충전 테스트 - 동시성 제어")
+    void concurrentChargeBalanceTest() throws InterruptedException {
+        // Given
+        Long userId = testUser.getUserId();
+        BigDecimal initialAmount = new BigDecimal("10000.00");
+        BigDecimal chargeAmount1 = new BigDecimal("5000.00");
+        BigDecimal chargeAmount2 = new BigDecimal("3000.00");
+
+        // 초기 잔액 설정
+        ChargeBalanceUseCase.ChargeBalanceCommand initialRequest = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, initialAmount);
+        ChargeBalanceUseCase.ChargeBalanceResult initialResponse = chargeBalanceService.chargeBalance(initialRequest);
+        assertThat(initialResponse.isSuccess()).isTrue();
+
+        // When - 진짜 동시에 두 개의 충전 요청 실행
+        CountDownLatch startLatch = new CountDownLatch(1); // 시작 신호
+        CountDownLatch readyLatch = new CountDownLatch(2); // 준비 완료 신호
+        CountDownLatch finishLatch = new CountDownLatch(2); // 완료 신호
+        AtomicReference<ChargeBalanceUseCase.ChargeBalanceResult> response1 = new AtomicReference<>();
+        AtomicReference<ChargeBalanceUseCase.ChargeBalanceResult> response2 = new AtomicReference<>();
+
+        Thread thread1 = new Thread(() -> {
+            try {
+                readyLatch.countDown(); // 준비 완료 신호
+                startLatch.await(); // 시작 신호 대기
+
+                ChargeBalanceUseCase.ChargeBalanceCommand request1 = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount1);
+                response1.set(chargeBalanceService.chargeBalance(request1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                finishLatch.countDown();
+            }
+        });
+
+        Thread thread2 = new Thread(() -> {
+            try {
+                readyLatch.countDown(); // 준비 완료 신호
+                startLatch.await(); // 시작 신호 대기
+
+                ChargeBalanceUseCase.ChargeBalanceCommand request2 = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount2);
+                response2.set(chargeBalanceService.chargeBalance(request2));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                finishLatch.countDown();
+            }
+        });
+
+        thread1.start();
+        thread2.start();
+
+        // 모든 스레드가 준비될 때까지 대기
+        readyLatch.await();
+        System.out.println("모든 스레드가 준비되었습니다. 동시 시작!");
+
+        // 시작 신호 전송 (모든 스레드가 동시에 시작)
+        startLatch.countDown();
+
+        finishLatch.await(5, TimeUnit.SECONDS);
+
+        // Then - 두 요청 모두 성공해야 함
+        assertThat(response1.get().isSuccess()).isTrue();
+        assertThat(response2.get().isSuccess()).isTrue();
+
+        // 최종 잔액 확인 (10000.00 + 5000.00 + 3000.00 = 18000.00)
+        GetBalanceUseCase.GetBalanceCommand finalBalanceCommand = new GetBalanceUseCase.GetBalanceCommand(userId);
+        Optional<GetBalanceUseCase.GetBalanceResult> finalBalanceResult = getBalanceService.getBalance(finalBalanceCommand);
+        assertThat(finalBalanceResult).isPresent();
+
+        GetBalanceUseCase.GetBalanceResult finalBalance = finalBalanceResult.get();
+        assertThat(finalBalance.getUserId()).isEqualTo(userId);
+        assertThat(finalBalance.getBalance()).isEqualTo(new BigDecimal("18000.00"));
+    }
+
+    @Test
+    @DisplayName("동시 잔액 충전과 결제 테스트")
+    void concurrentChargeAndPaymentTest() throws InterruptedException {
+        // Given
+        Long userId = testUser.getUserId();
+        BigDecimal initialAmount = new BigDecimal("10000.00");
+        BigDecimal chargeAmount = new BigDecimal("5000.00");
+        BigDecimal paymentAmount = new BigDecimal("3000.00");
+
+        // 초기 잔액 설정
+        ChargeBalanceUseCase.ChargeBalanceCommand initialRequest = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, initialAmount);
+        ChargeBalanceUseCase.ChargeBalanceResult initialResponse = chargeBalanceService.chargeBalance(initialRequest);
+        assertThat(initialResponse.isSuccess()).isTrue();
+
+        // When - 진짜 동시에 충전과 결제 요청 실행
+        CountDownLatch startLatch = new CountDownLatch(1); // 시작 신호
+        CountDownLatch readyLatch = new CountDownLatch(2); // 준비 완료 신호
+        CountDownLatch finishLatch = new CountDownLatch(2); // 완료 신호
+        AtomicReference<ChargeBalanceUseCase.ChargeBalanceResult> chargeResponse = new AtomicReference<>();
+        AtomicReference<Boolean> paymentSuccess = new AtomicReference<>(false);
+
+        Thread chargeThread = new Thread(() -> {
+            try {
+                readyLatch.countDown(); // 준비 완료 신호
+                startLatch.await(); // 시작 신호 대기
+
+                ChargeBalanceUseCase.ChargeBalanceCommand chargeRequest = new ChargeBalanceUseCase.ChargeBalanceCommand(userId, chargeAmount);
+                chargeResponse.set(chargeBalanceService.chargeBalance(chargeRequest));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                finishLatch.countDown();
+            }
+        });
+
+        Thread paymentThread = new Thread(() -> {
+            try {
+                readyLatch.countDown(); // 준비 완료 신호
+                startLatch.await(); // 시작 신호 대기
+
+                // 실제 결제 요청 (DeductBalancePort 사용)
+                boolean success = deductBalancePort.deductBalance(userId, paymentAmount);
+                paymentSuccess.set(success);
+            } catch (Exception e) {
+                System.err.println("Payment failed: " + e.getMessage());
+            } finally {
+                finishLatch.countDown();
+            }
+        });
+
+        chargeThread.start();
+        paymentThread.start();
+
+        // 모든 스레드가 준비될 때까지 대기
+        readyLatch.await();
+        System.out.println("모든 스레드가 준비되었습니다. 동시 시작!");
+
+        // 시작 신호 전송 (모든 스레드가 동시에 시작)
+        startLatch.countDown();
+
+        finishLatch.await(5, TimeUnit.SECONDS);
+
+        // Then
+        assertThat(chargeResponse.get().isSuccess()).isTrue();
+        assertThat(paymentSuccess.get()).isTrue(); // 결제도 성공해야 함
+
+        // 최종 잔액 확인 (충전과 결제 모두 성공한 경우)
+        GetBalanceUseCase.GetBalanceCommand finalBalanceCommand = new GetBalanceUseCase.GetBalanceCommand(userId);
+        Optional<GetBalanceUseCase.GetBalanceResult> finalBalanceResult = getBalanceService.getBalance(finalBalanceCommand);
+        assertThat(finalBalanceResult).isPresent();
+
+        GetBalanceUseCase.GetBalanceResult finalBalance = finalBalanceResult.get();
+        assertThat(finalBalance.getUserId()).isEqualTo(userId);
+        // 10000.00 + 5000.00 - 3000.00 = 12000.00
+        assertThat(finalBalance.getBalance()).isEqualByComparingTo(new BigDecimal("12000.00"));
     }
 }
