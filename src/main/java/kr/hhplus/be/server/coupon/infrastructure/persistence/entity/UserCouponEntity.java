@@ -36,7 +36,7 @@ public class UserCouponEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id", referencedColumnName = "id",
-                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+            foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private CouponEntity coupon;
 
     @Column(name = "coupon_id", nullable = false, insertable = false, updatable = false)

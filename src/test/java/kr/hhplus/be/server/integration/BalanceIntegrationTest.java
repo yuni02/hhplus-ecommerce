@@ -95,7 +95,7 @@ class BalanceIntegrationTest {
 
         // 기존 잔액 생성
         BalanceEntity balanceEntity = BalanceEntity.builder()
-                .userId(userId)
+                .user(testUser)
                 .amount(originalAmount)
                 .status("ACTIVE")
                 .build();
@@ -134,7 +134,7 @@ class BalanceIntegrationTest {
         BigDecimal balanceAmount = new BigDecimal("10000.00");
 
         BalanceEntity balanceEntity = BalanceEntity.builder()
-                .userId(userId)
+                .user(testUser)
                 .amount(balanceAmount)
                 .status("ACTIVE")
                 .build();
