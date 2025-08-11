@@ -9,7 +9,6 @@ import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
-import kr.hhplus.be.server.shared.service.DistributedLockService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,52 +31,45 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final DeductBalancePort deductBalancePort;
     private final SaveOrderPort saveOrderPort;
     private final UseCouponUseCase useCouponUseCase;
-    private final DistributedLockService distributedLockService;
+    
+
 
     public CreateOrderService(LoadUserPort loadUserPort,
                              LoadProductPort loadProductPort,
                              UpdateProductStockPort updateProductStockPort,
                              DeductBalancePort deductBalancePort,
                              SaveOrderPort saveOrderPort,
-                             UseCouponUseCase useCouponUseCase,
-                             DistributedLockService distributedLockService) {
+                             UseCouponUseCase useCouponUseCase) {
         this.loadUserPort = loadUserPort;
         this.loadProductPort = loadProductPort;
         this.updateProductStockPort = updateProductStockPort;
         this.deductBalancePort = deductBalancePort;
         this.saveOrderPort = saveOrderPort;
         this.useCouponUseCase = useCouponUseCase;
-        this.distributedLockService = distributedLockService;
     }
 
     @Override
     @Transactional
     public CreateOrderResult createOrder(CreateOrderCommand command) {
-        String lockKey = DistributedLockService.LockKeyGenerator.orderLock(command.getUserId());
-        boolean lockAcquired = false;
-        
-        try {
-            // 1. 분산락 획득 (사용자별 주문 락)
-            lockAcquired = distributedLockService.acquireLock(lockKey, 30); // 30초 타임아웃
-            if (!lockAcquired) {
-                return CreateOrderResult.failure("주문 처리 중입니다. 잠시 후 다시 시도해주세요.");
-            }
+        List<OrderItem> createdOrderItems = null;
+        boolean stockDeducted = false;
 
-            // 2. 주문 검증
+        try {
+            // 1. 주문 검증
             OrderValidationResult validationResult = validateOrder(command);
             if (!validationResult.isValid()) {
                 return CreateOrderResult.failure(validationResult.getErrorMessage());
             }
 
-            // 3. 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
+            // 2. 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
             OrderItemsResult itemsResult = createOrderItemsWithPessimisticLock(command);
             if (!itemsResult.isSuccess()) {
                 return CreateOrderResult.failure(itemsResult.getErrorMessage());
             }
-            List<OrderItem> createdOrderItems = itemsResult.getOrderItems();
-            boolean stockDeducted = true;
+            createdOrderItems = itemsResult.getOrderItems();
+            stockDeducted = true; // 재고 차감 완료 표시
 
-            // 4. 쿠폰 할인 적용 (비관적 락 적용)
+            // 3. 쿠폰 할인 적용 (비관적 락 적용)
             CouponDiscountResult discountResult = applyCouponDiscountWithPessimisticLock(command, itemsResult.getTotalAmount());
             if (!discountResult.isSuccess()) {
                 // 쿠폰 할인 실패 시 재고 복구
@@ -85,27 +77,26 @@ public class CreateOrderService implements CreateOrderUseCase {
                 return CreateOrderResult.failure(discountResult.getErrorMessage());
             }
 
-            // 5. 잔액 차감 (비관적 락 적용)
+            // 4. 잔액 차감 (비관적 락 적용)
             if (!deductBalancePort.deductBalanceWithPessimisticLock(command.getUserId(), discountResult.getDiscountedAmount())) {
                 // 잔액 부족 시 재고 복구
                 restoreStockWithPessimisticLock(createdOrderItems);
                 return CreateOrderResult.failure("잔액이 부족합니다.");
             }
 
-            // 6. 주문 생성 및 저장
+            // 5. 주문 생성 및 저장
             Order order = createAndSaveOrder(command, createdOrderItems,
                                            itemsResult.getTotalAmount(), discountResult);
 
-            // 7. 결과 반환
+            // 6. 결과 반환
             return createOrderResult(order, createdOrderItems);
 
         } catch (Exception e) {
-            return CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: " + e.getMessage());
-        } finally {
-            // 8. 분산락 해제
-            if (lockAcquired) {
-                distributedLockService.releaseLock(lockKey);
+            // 예외 발생 시 재고 복구
+            if (stockDeducted && createdOrderItems != null) {
+                restoreStockWithPessimisticLock(createdOrderItems);
             }
+            return CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 

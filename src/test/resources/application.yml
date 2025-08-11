@@ -1,42 +1,14 @@
 spring:
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 10000
-      max-lifetime: 60000
-      idle-timeout: 30000
-      leak-detection-threshold: 60000
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: 
   jpa:
+    open-in-view: false
+    generate-ddl: false
+    show-sql: false
     hibernate:
       ddl-auto: none
-    show-sql: false
     properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-        lock:
-          timeout: 5000
+      hibernate.timezone.default_storage: NORMALIZE_UTC
+      hibernate.jdbc.time_zone: UTC
   sql:
     init:
       mode: always
-  redis:
-    host: localhost
-    port: 6379
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: -1ms
-
-logging:
-  level:
-    kr.hhplus.be.server: DEBUG
-    org.springframework.data.redis: DEBUG
-    com.zaxxer.hikari: debug
+      platform: mysql

@@ -7,12 +7,9 @@ spring:
     name: HangHaePlusDataSource
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 3
+      maximum-pool-size: 3
       connection-timeout: 10000
       max-lifetime: 60000
-      idle-timeout: 30000
-      leak-detection-threshold: 60000
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
@@ -23,22 +20,6 @@ spring:
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-  sql:
-    init:
-      mode: always
-  redis:
-    host: localhost
-    port: 6379
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: -1ms
 
 ---
 spring.config.activate.on-profile: local, test
@@ -51,8 +32,3 @@ spring:
 
 springdoc:
   use-fqn: true
-
-logging:
-  level:
-    kr.hhplus.be.server: DEBUG
-    org.springframework.data.redis: DEBUG
