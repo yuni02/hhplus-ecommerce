@@ -1,20 +1,20 @@
 package kr.hhplus.be.server.balance.application;
 
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
-import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
+import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
+import kr.hhplus.be.server.shared.service.DistributedLockService;
 
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,6 +26,7 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
     private final LoadUserPort loadUserPort;
     private final LoadBalancePort loadBalancePort;
     private final SaveBalanceTransactionPort saveBalanceTransactionPort;
+    private final DistributedLockService distributedLockService;
     
     // 재시도 설정
     private static final int MAX_RETRY_ATTEMPTS = 5;
@@ -34,21 +35,36 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
 
     public ChargeBalanceService(LoadUserPort loadUserPort, 
                                LoadBalancePort loadBalancePort,
-                               SaveBalanceTransactionPort saveBalanceTransactionPort) {
+                               SaveBalanceTransactionPort saveBalanceTransactionPort,
+                               DistributedLockService distributedLockService) {
         this.loadUserPort = loadUserPort;
         this.loadBalancePort = loadBalancePort;
         this.saveBalanceTransactionPort = saveBalanceTransactionPort;
+        this.distributedLockService = distributedLockService;
     }
 
     @Override
     @Transactional
-    @Retryable(
-        value = {OptimisticLockingFailureException.class},
-        maxAttempts = 5,
-        backoff = @Backoff(delay = 50, multiplier = 1.5)
-    )
     public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
-        return chargeBalanceWithOptimisticLock(command, 0);
+        String lockKey = DistributedLockService.LockKeyGenerator.balanceLock(command.getUserId());
+        boolean lockAcquired = false;
+        
+        try {
+            // 1. 분산락 획득 (사용자별 잔액 락)
+            lockAcquired = distributedLockService.acquireLock(lockKey, 20); // 20초 타임아웃
+            if (!lockAcquired) {
+                return ChargeBalanceResult.failure("잔액 충전 처리 중입니다. 잠시 후 다시 시도해주세요.");
+            }
+
+            // 2. 낙관적 락으로 잔액 충전 수행
+            return chargeBalanceWithOptimisticLock(command, 0);
+            
+        } finally {
+            // 3. 분산락 해제
+            if (lockAcquired) {
+                distributedLockService.releaseLock(lockKey);
+            }
+        }
     }
     
     /**
@@ -58,7 +74,7 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
     private ChargeBalanceResult chargeBalanceWithOptimisticLock(ChargeBalanceCommand command, int attempt) {
         try {
             return performChargeBalanceWithOptimisticLock(command);
-        } catch (OptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException e) {
             // 낙관적 락 실패 시 재시도
             if (attempt < MAX_RETRY_ATTEMPTS) {
                 System.out.println("낙관적 락 충돌 발생. 재시도 " + (attempt + 1) + "/" + MAX_RETRY_ATTEMPTS);

@@ -7,6 +7,7 @@ import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
+import kr.hhplus.be.server.shared.service.DistributedLockService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,11 +35,14 @@ class ChargeBalanceServiceTest {
     @Mock
     private SaveBalanceTransactionPort saveBalanceTransactionPort;
 
+    @Mock
+    private DistributedLockService distributedLockService;
+
     private ChargeBalanceService chargeBalanceService;
 
     @BeforeEach
     void setUp() {
-        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort);
+        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort, distributedLockService);
     }
 
     @Test
@@ -62,7 +66,7 @@ class ChargeBalanceServiceTest {
 
         when(loadUserPort.existsByUserId(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
-        when(loadBalancePort.saveBalance(any(Balance.class))).thenReturn(savedBalance);
+        when(loadBalancePort.saveBalanceWithConcurrencyControl(any(Balance.class))).thenReturn(savedBalance);
         when(saveBalanceTransactionPort.saveBalanceTransaction(any(BalanceTransaction.class)))
             .thenReturn(savedTransaction);
 
@@ -77,7 +81,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort).loadActiveBalanceByUserId(userId);
-        verify(loadBalancePort).saveBalance(any(Balance.class));
+        verify(loadBalancePort).saveBalanceWithConcurrencyControl(any(Balance.class));
         verify(saveBalanceTransactionPort).saveBalanceTransaction(any(BalanceTransaction.class));
     }
 
@@ -101,7 +105,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
-        verify(loadBalancePort, never()).saveBalance(any());
+        verify(loadBalancePort, never()).saveBalanceWithConcurrencyControl(any());
         verify(saveBalanceTransactionPort, never()).saveBalanceTransaction(any());
     }
 } 
