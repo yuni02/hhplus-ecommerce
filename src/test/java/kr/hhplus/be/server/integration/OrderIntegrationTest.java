@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.integration;
 
+import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.order.application.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
@@ -17,18 +18,22 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 @DisplayName("Order 도메인 통합테스트")
 class OrderIntegrationTest {
 
@@ -66,24 +71,28 @@ class OrderIntegrationTest {
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
                 .userId(1L)  // userId 설정
-                .username("testuser")
+                .name("testuser")
+                .email("test@example.com")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
+        
+        // 디버깅: 저장된 사용자 정보 확인
+        System.out.println("DEBUG: 저장된 testUser - id: " + testUser.getId() + ", userId: " + testUser.getUserId());
 
         // 테스트용 상품 생성
         testProduct = ProductEntity.builder()
                 .name("테스트 상품")
                 .description("테스트 상품 설명")
-                .currentPrice(new BigDecimal("10000"))
-                .stock(100)
+                .price(new BigDecimal("10000"))
+                .stockQuantity(100)
                 .status("ACTIVE")
                 .build();
         testProduct = productJpaRepository.saveAndFlush(testProduct);
 
         // 테스트용 잔액 생성
         testBalance = BalanceEntity.builder()
-                .userId(testUser.getUserId())  // userId 필드 사용
+                .user(testUser)  // UserEntity 참조 설정
                 .amount(new BigDecimal("50000"))
                 .status("ACTIVE")
                 .build();
@@ -91,12 +100,17 @@ class OrderIntegrationTest {
     }
 
     @Test
-    @DisplayName("주문 생성 성공")
+    @DisplayName("주문 " +
+            "생성 성공")
     void 주문_생성_성공() {
         // given
-        Long userId = testUser.getUserId();
+        // userId 필드가 null이면 대신 id 필드 사용
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long productId = testProduct.getId();
         Integer quantity = 2;
+        
+        // 디버깅: 테스트에서 사용할 값들 확인
+        System.out.println("DEBUG: 테스트 시작 - userId: " + userId + " (getUserId: " + testUser.getUserId() + ", getId: " + testUser.getId() + "), productId: " + productId);
 
         CreateOrderUseCase.OrderItemCommand orderItem = new CreateOrderUseCase.OrderItemCommand(productId, quantity);
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(userId, Arrays.asList(orderItem), null);
@@ -159,4 +173,5 @@ class OrderIntegrationTest {
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getErrorMessage()).contains("잔액이 부족합니다");
     }
+
 } 

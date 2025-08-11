@@ -4,8 +4,12 @@ import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.UpdateUserCouponPort;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
+import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
+import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +25,13 @@ import java.util.stream.Collectors;
 public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUserCouponPort, UpdateUserCouponPort {
 
     private final UserCouponJpaRepository userCouponJpaRepository;
+    private final CouponJpaRepository couponJpaRepository;
+    private final UserJpaRepository userJpaRepository;
 
-    public UserCouponPersistenceAdapter(UserCouponJpaRepository userCouponJpaRepository) {
+    public UserCouponPersistenceAdapter(UserCouponJpaRepository userCouponJpaRepository, CouponJpaRepository couponJpaRepository, UserJpaRepository userJpaRepository) {
         this.userCouponJpaRepository = userCouponJpaRepository;
+        this.couponJpaRepository = couponJpaRepository;
+        this.userJpaRepository = userJpaRepository;
     }
 
     @Override
@@ -37,6 +45,12 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     @Override
     public Optional<UserCoupon> loadUserCoupon(Long userCouponId) {
         return userCouponJpaRepository.findById(userCouponId)
+                .map(this::mapToUserCoupon);
+    }
+
+    @Override
+    public Optional<UserCoupon> loadUserCouponWithLock(Long userCouponId) {
+        return userCouponJpaRepository.findByIdWithLock(userCouponId)
                 .map(this::mapToUserCoupon);
     }
 
@@ -58,8 +72,8 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     private LoadUserCouponPort.UserCouponInfo toUserCouponInfo(UserCouponEntity entity) {
         return new LoadUserCouponPort.UserCouponInfo(
                 entity.getId(),
-                entity.getUserId(),
-                entity.getCouponId(),
+                entity.getUser() != null ? entity.getUser().getUserId() : null,
+                entity.getCoupon() != null ? entity.getCoupon().getId() : null,
                 entity.getStatus(),
                 entity.getIssuedAt() != null ? entity.getIssuedAt().toString() : null,
                 entity.getUsedAt() != null ? entity.getUsedAt().toString() : null,
@@ -70,30 +84,38 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
     private UserCoupon mapToUserCoupon(UserCouponEntity entity) {
         return UserCoupon.builder()
                 .id(entity.getId())
-                .userId(entity.getUserId())
-                .couponId(entity.getCouponId())
+                .userId(entity.getUser() != null ? entity.getUser().getUserId() : null)
+                .couponId(entity.getCoupon() != null ? entity.getCoupon().getId() : null)
                 .discountAmount(entity.getDiscountAmount())
                 .status(UserCoupon.UserCouponStatus.valueOf(entity.getStatus()))
                 .issuedAt(entity.getIssuedAt())
                 .usedAt(entity.getUsedAt())
                 .orderId(entity.getOrderId())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 
     private UserCouponEntity mapToUserCouponEntity(UserCoupon userCoupon) {
-        UserCouponEntity entity = UserCouponEntity.create(
-                userCoupon.getUserId(),
-                userCoupon.getCouponId(),
-                userCoupon.getDiscountAmount(),
-                userCoupon.getStatus().name(),
-                userCoupon.getIssuedAt(),
-                userCoupon.getUsedAt(),
-                userCoupon.getOrderId(),
-                userCoupon.getCreatedAt(),
-                userCoupon.getUpdatedAt()
-        );
+        // CouponEntity 조회 (coupon_id를 통해)
+        CouponEntity couponEntity = null;
+        if (userCoupon.getCouponId() != null) {
+            couponEntity = couponJpaRepository.findById(userCoupon.getCouponId()).orElse(null);
+        }
+        
+        // UserEntity 조회 (user_id를 통해)
+        UserEntity userEntity = null;
+        if (userCoupon.getUserId() != null) {
+            userEntity = userJpaRepository.findByUserIdAndStatus(userCoupon.getUserId(), "ACTIVE").orElse(null);
+        }
+        
+        UserCouponEntity entity = UserCouponEntity.builder()
+                .user(userEntity)  // user 관계 설정
+                .coupon(couponEntity)  // coupon 관계 설정
+                .discountAmount(userCoupon.getDiscountAmount())
+                .status(userCoupon.getStatus().name())
+                .issuedAt(userCoupon.getIssuedAt())
+                .usedAt(userCoupon.getUsedAt())
+                .orderId(userCoupon.getOrderId())
+                .build();
         
         // id가 있으면 설정 (UPDATE를 위해)
         if (userCoupon.getId() != null) {

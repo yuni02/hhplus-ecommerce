@@ -63,20 +63,22 @@ Clean Architecture와 Hexagonal Architecture(포트-어댑터 패턴)를 적용�
 src/main/java/kr/hhplus/be/server/
 ├── balance/                    # 잔액 관리 도메인
 │   ├── adapter/
-│   │   ├── in/                # Incoming Adapters
-│   │   │   ├── dto/           # Request & Response DTOs
-│   │   │   ├── web/           # Controllers
-│   │   │   └── docs/          # API Documentation Constants
-│   │   └── out/               # Outgoing Adapters
-│   │       └── persistence/   # Persistence Adapters
+│   │   └── in/                # Incoming Adapters
+│   │       ├── dto/           # Request & Response DTOs
+│   │       ├── web/           # Controllers
+│   │       └── docs/          # API Documentation Constants
 │   ├── application/           # Application Layer
 │   │   ├── port/              # Port Interfaces
 │   │   │   ├── in/            # Incoming Ports (Use Cases)
 │   │   │   └── out/           # Outgoing Ports
-│   │   ├── response/          # Response DTOs
 │   │   └── *.java             # Application Services
-│   └── domain/                # Domain Layer
-│       └── entities/          # Domain Entities
+│   ├── domain/                # Domain Layer
+│   │   └── *.java             # Domain Entities
+│   └── infrastructure/        # Infrastructure Layer
+│       └── persistence/       # Persistence Adapters
+│           ├── adapter/        # Persistence Adapters
+│           ├── entity/         # JPA Entities
+│           └── repository/     # JPA Repositories
 ├── coupon/                    # 쿠폰 관리 도메인
 ├── order/                     # 주문 관리 도메인
 ├── product/                   # 상품 관리 도메인
@@ -142,7 +144,7 @@ public class BalanceController implements BalanceApiDocumentation {
 }
 ```
 
-### 2. Application Service (핵심 비즈니스 로직)
+### 3. Application Service (핵심 비즈니스 로직)
 ```java
 @Service
 public class GetBalanceService implements GetBalanceUseCase {
@@ -152,7 +154,7 @@ public class GetBalanceService implements GetBalanceUseCase {
     @Override
     public Optional<GetBalanceResult> getBalance(GetBalanceCommand command) {
         // 1. 사용자 존재 확인
-        if (!loadUserPort.existsById(command.getUserId())) {
+        if (!loadUserPort.existsByUserId(command.getUserId())) {
             return Optional.empty();
         }
         // 2. 잔액 조회
@@ -162,7 +164,7 @@ public class GetBalanceService implements GetBalanceUseCase {
 }
 ```
 
-### 3. Use Case (Incoming Port)
+### 4. Use Case (Incoming Port)
 ```java
 public interface GetBalanceUseCase {
     Optional<GetBalanceResult> getBalance(GetBalanceCommand command);
@@ -178,7 +180,7 @@ public interface GetBalanceUseCase {
 }
 ```
 
-### 4. Port (Outgoing)
+### 5. Port (Outgoing)
 ```java
 public interface LoadBalancePort {
     Optional<Balance> loadActiveBalanceByUserId(Long userId);
@@ -186,25 +188,27 @@ public interface LoadBalancePort {
 }
 ```
 
-### 5. Persistence Adapter (Outgoing Adapter)
+### 6. Persistence Adapter (Outgoing Adapter)
 ```java
 @Component
 public class BalancePersistenceAdapter implements LoadBalancePort {
-    private final Map<Long, Balance> balances = new ConcurrentHashMap<>();
+    private final BalanceJpaRepository balanceJpaRepository;
     
     @Override
     public Optional<Balance> loadActiveBalanceByUserId(Long userId) {
-        // 실제 데이터 접근 로직
+        return balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
+                .map(this::mapToBalance);
     }
 }
 ```
 
-### 6. Domain Entity
+### 7. Domain Entity
 ```java
 public class Balance {
     private Long id;
     private Long userId;
     private BigDecimal amount;
+    private BalanceStatus status;
     
     public void charge(BigDecimal amount) {
         // 도메인 비즈니스 로직

@@ -1,21 +1,25 @@
 package kr.hhplus.be.server.integration;
 
+import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.product.application.UpdateProductStatsService;
 import kr.hhplus.be.server.product.application.port.in.UpdateProductStatsUseCase;
+import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
+import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 @DisplayName("ProductStats 도메인 통합테스트")
 class ProductStatsIntegrationTest {
 

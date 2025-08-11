@@ -1,18 +1,14 @@
 package kr.hhplus.be.server.integration;
 
+import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.coupon.application.IssueCouponService;
 import kr.hhplus.be.server.coupon.application.GetUserCouponsService;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
-import kr.hhplus.be.server.coupon.domain.UserCoupon;
-import kr.hhplus.be.server.coupon.infrastructure.persistence.adapter.CouponPersistenceAdapter;
-import kr.hhplus.be.server.coupon.infrastructure.persistence.adapter.UserCouponPersistenceAdapter;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
-import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.infrastructure.persistence.adapter.UserPersistenceAdapter;
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,18 +16,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 @DisplayName("Coupon 도메인 통합테스트")
 class CouponIntegrationTest {
 
@@ -63,7 +58,8 @@ class CouponIntegrationTest {
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
                 .userId(1L)
-                .username("testuser")
+                .name("testuser")
+                .email("test@example.com")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
@@ -83,7 +79,7 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 성공")
     void 쿠폰_발급_성공() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // when
@@ -92,7 +88,7 @@ class CouponIntegrationTest {
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getUserCouponId()).isNotNull();
+        assertThat(result.getId()).isNotNull();
         assertThat(result.getCouponId()).isEqualTo(couponId);
         assertThat(result.getCouponName()).isEqualTo("테스트 쿠폰");
         assertThat(result.getDiscountAmount()).isEqualTo(1000);
@@ -114,7 +110,7 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 실패 - 존재하지 않는 쿠폰")
     void 쿠폰_발급_실패_존재하지_않는_쿠폰() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long nonExistentCouponId = 9999L;
 
         // when
@@ -146,7 +142,7 @@ class CouponIntegrationTest {
     @DisplayName("사용자 쿠폰 목록 조회 성공")
     void 사용자_쿠폰_목록_조회_성공() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // 쿠폰 발급
@@ -184,14 +180,14 @@ class CouponIntegrationTest {
     @DisplayName("쿠폰 발급 실패 - 쿠폰 소진")
     void 쿠폰_발급_실패_쿠폰_소진() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
 
         // 쿠폰을 최대 발급 수량까지 발급
         for (int i = 0; i < 100; i++) {
             UserCouponEntity userCoupon = UserCouponEntity.builder()
-                    .userId(userId)
-                    .couponId(couponId)
+                    .user(testUser)  // user 관계 설정
+                    .coupon(testCoupon)  // coupon 관계 설정
                     .discountAmount(1000)
                     .status("AVAILABLE")
                     .build();

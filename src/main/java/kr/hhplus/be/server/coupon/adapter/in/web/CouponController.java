@@ -37,7 +37,7 @@ public class CouponController implements CouponApiDocumentation {
         }
         
         CouponResponse response = new CouponResponse(
-                result.getUserCouponId(),
+                result.getId(),
                 result.getCouponId(),
                 result.getCouponName(),
                 result.getDiscountAmount(),

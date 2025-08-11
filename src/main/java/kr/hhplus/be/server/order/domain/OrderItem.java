@@ -32,6 +32,7 @@ public class OrderItem {
     private Product product;
 
     // 비즈니스 로직 메서드들
+    // Note: 현재 사용되지 않는 메서드 (addOrderItem에서만 사용되었으나 해당 메서드 제거됨)
     public void setOrder(Order order) {
         this.order = order;
         if (order != null) {
@@ -51,5 +52,12 @@ public class OrderItem {
         if (quantity != null && unitPrice != null) {
             this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
+    }
+
+    public BigDecimal getTotalPrice() {
+        if (totalPrice == null && quantity != null && unitPrice != null) {
+            calculateTotalPrice();
+        }
+        return totalPrice;
     }
 } 

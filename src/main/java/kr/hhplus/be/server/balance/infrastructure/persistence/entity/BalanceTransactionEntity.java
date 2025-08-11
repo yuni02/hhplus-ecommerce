@@ -1,6 +1,9 @@
 package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +15,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * BalanceTransaction 인프라스트럭처 엔티티
- * BalanceTransaction 도메인 전용 JPA 매핑 엔티티
- * 외래키 제약조건 없이 느슨한 결합으로 설계
+ * 잔액 거래 내역 전용 엔티티
+ * INSERT ONLY 테이블로 설계 (감사 추적용)
  */
 @Entity
 @Table(name = "user_balance_tx")
@@ -23,14 +25,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BalanceTransactionEntity {
+public class BalanceTransactionEntity extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private UserEntity user;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, insertable = false, updatable = false)
     private Long userId;
 
     @Column(name = "amount", nullable = false)
@@ -46,23 +48,11 @@ public class BalanceTransactionEntity {
     @Column(name = "memo")
     private String description;
 
-    @Column(name = "related_order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_order_id", referencedColumnName = "id",
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private OrderEntity relatedOrder;
+
+    @Column(name = "related_order_id", insertable = false, updatable = false)
     private Long referenceId; // 주문 ID, 쿠폰 ID 등 참조
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

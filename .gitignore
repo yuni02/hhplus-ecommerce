@@ -43,3 +43,6 @@ out/
 .springBeans/workspace/.metadata/
 
 data
+
+## Claude ##
+.claude/

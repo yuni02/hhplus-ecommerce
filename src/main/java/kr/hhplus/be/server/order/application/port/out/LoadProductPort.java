@@ -9,9 +9,14 @@ import java.util.Optional;
 public interface LoadProductPort {
     
     /**
-     * 상품 조회
+     * 상품 ID로 조회
      */
     Optional<ProductInfo> loadProductById(Long productId);
+    
+    /**
+     * 상품 ID로 조회 (비관적 락 적용)
+     */
+    Optional<ProductInfo> loadProductByIdWithLock(Long productId);
     
     /**
      * 상품 정보
@@ -19,14 +24,19 @@ public interface LoadProductPort {
     class ProductInfo {
         private final Long id;
         private final String name;
-        private final BigDecimal currentPrice;
+        private final String description;
         private final Integer stock;
+        private final BigDecimal currentPrice;
+        private final String status;
         
-        public ProductInfo(Long id, String name, BigDecimal currentPrice, Integer stock) {
+        public ProductInfo(Long id, String name, String description, Integer stock, 
+                         BigDecimal currentPrice, String status) {
             this.id = id;
             this.name = name;
-            this.currentPrice = currentPrice;
+            this.description = description;
             this.stock = stock;
+            this.currentPrice = currentPrice;
+            this.status = status;
         }
         
         public Long getId() {
@@ -37,12 +47,20 @@ public interface LoadProductPort {
             return name;
         }
         
-        public BigDecimal getCurrentPrice() {
-            return currentPrice;
+        public String getDescription() {
+            return description;
         }
         
         public Integer getStock() {
             return stock;
+        }
+        
+        public BigDecimal getCurrentPrice() {
+            return currentPrice;
+        }
+        
+        public String getStatus() {
+            return status;
         }
     }
 } 

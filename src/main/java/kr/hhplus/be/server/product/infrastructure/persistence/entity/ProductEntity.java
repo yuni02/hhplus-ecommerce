@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.shared.domain.BaseEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,12 +10,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
- * Product 인프라스트럭처 엔티티
- * Product 도메인 전용 JPA 매핑 엔티티
- * 외래키 제약조건 없이 느슨한 결합으로 설계
+ * 상품 전용 엔티티
+ * 상품 도메인 전용 JPA 매핑 엔티티
  */
 @Entity
 @Table(name = "products")
@@ -23,79 +22,46 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class ProductEntity extends BaseEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "current_price", nullable = false)
-    private BigDecimal currentPrice;
+    @Column(name = "price", precision = 15, scale = 2, nullable = false)
+    private BigDecimal price;
 
-    @Column(name = "stock", nullable = false)
-    private Integer stock;
-
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "stock_quantity", nullable = false)
     @Builder.Default
-    private String status = "ACTIVE"; // enum 대신 varchar
+    private Integer stockQuantity = 0;
 
-    @Column(name = "category")
-    private String category;
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
+    private String status = "ACTIVE";
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // 필요한 경우에만 public setter 제공
-    public void updateStock(Integer stock) {
-        this.stock = stock;
-        this.updatedAt = LocalDateTime.now();
+    // 비즈니스 메서드들
+    public void updateStock(Integer quantity) {
+        this.stockQuantity = quantity;
     }
 
     public void updateStatus(String status) {
         this.status = status;
-        this.updatedAt = LocalDateTime.now();
     }
 
-    // 재고 차감 비즈니스 메서드
-    public boolean deductStock(Integer quantity) {
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");
-        }
-        if (this.stock < quantity) {
-            return false; // 재고 부족
-        }
-        this.stock -= quantity;
-        this.updatedAt = LocalDateTime.now();
-        return true;
+    public boolean hasStock(Integer quantity) {
+        return this.stockQuantity >= quantity;
     }
 
-    // 재고 복구 비즈니스 메서드
-    public void restoreStock(Integer quantity) {
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("복구 수량은 0보다 커야 합니다.");
+    public void decreaseStock(Integer quantity) {
+        if (this.stockQuantity < quantity) {
+            throw new IllegalStateException("재고가 부족합니다.");
         }
-        this.stock += quantity;
-        this.updatedAt = LocalDateTime.now();
+        this.stockQuantity -= quantity;
+    }
+
+    public void increaseStock(Integer quantity) {
+        this.stockQuantity += quantity;
     }
 }

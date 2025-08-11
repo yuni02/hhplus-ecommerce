@@ -53,6 +53,7 @@ class IssueCouponServiceTest {
             couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE");
 
         UserCoupon savedUserCoupon = UserCoupon.builder()
+            .id(1L)  // id 추가
             .userId(userId)
             .couponId(couponId)
             .discountAmount(1000)
@@ -69,7 +70,7 @@ class IssueCouponServiceTest {
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getUserCouponId()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getCouponId()).isEqualTo(couponId);
         assertThat(result.getCouponName()).isEqualTo("신규 가입 쿠폰");
         assertThat(result.getDiscountAmount()).isEqualTo(1000);

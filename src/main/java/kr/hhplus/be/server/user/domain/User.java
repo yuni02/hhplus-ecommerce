@@ -23,7 +23,7 @@ public class User {
 
     private Long id;
     private Long userId;
-    private String username;
+    private String name;                
     
     @Builder.Default
     private BigDecimal amount = BigDecimal.ZERO;

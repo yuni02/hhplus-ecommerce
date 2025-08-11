@@ -10,6 +10,10 @@ import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderHistoryE
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderJpaRepository;
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderItemJpaRepository;
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderHistoryEventJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
+import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +31,19 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
     private final OrderJpaRepository orderJpaRepository;
     private final OrderItemJpaRepository orderItemJpaRepository;
     private final OrderHistoryEventJpaRepository orderHistoryEventJpaRepository;
+    private final UserJpaRepository userJpaRepository;
+    private final ProductJpaRepository productJpaRepository;
 
     public OrderPersistenceAdapter(OrderJpaRepository orderJpaRepository,
                                   OrderItemJpaRepository orderItemJpaRepository,
-                                  OrderHistoryEventJpaRepository orderHistoryEventJpaRepository) {
+                                  OrderHistoryEventJpaRepository orderHistoryEventJpaRepository,
+                                  UserJpaRepository userJpaRepository,
+                                  ProductJpaRepository productJpaRepository) {
         this.orderJpaRepository = orderJpaRepository;
         this.orderItemJpaRepository = orderItemJpaRepository;
         this.orderHistoryEventJpaRepository = orderHistoryEventJpaRepository;
+        this.userJpaRepository = userJpaRepository;
+        this.productJpaRepository = productJpaRepository;
     }
 
     @Override
@@ -42,22 +52,31 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         // 1. Order 도메인 객체를 OrderEntity로 변환
         OrderEntity orderEntity = mapToOrderEntity(order);
         
-        // 2. Order 저장
-        OrderEntity savedOrderEntity = orderJpaRepository.save(orderEntity);
+        // 2. Order 저장 및 flush로 즉시 DB에 반영하여 ID 생성
+        OrderEntity savedOrderEntity = orderJpaRepository.saveAndFlush(orderEntity);
         
-        // 3. OrderItem들 저장
+        // 3. ID가 제대로 생성되었는지 확인
+        if (savedOrderEntity.getId() == null) {
+            throw new RuntimeException("Order 저장 후 ID가 생성되지 않았습니다.");
+        }
+        
+        // 4. OrderItem들 저장
         List<OrderItemEntity> orderItemEntities = order.getOrderItems().stream()
                 .map(item -> mapToOrderItemEntity(item, savedOrderEntity.getId()))
                 .collect(Collectors.toList());
-        orderItemJpaRepository.saveAll(orderItemEntities);
+        if (!orderItemEntities.isEmpty()) {
+            orderItemJpaRepository.saveAll(orderItemEntities);
+        }
         
-        // 4. OrderHistoryEvent들 저장
+        // 5. OrderHistoryEvent들 저장
         List<OrderHistoryEventEntity> historyEventEntities = order.getHistoryEvents().stream()
                 .map(event -> mapToOrderHistoryEventEntity(event, savedOrderEntity.getId()))
                 .collect(Collectors.toList());
-        orderHistoryEventJpaRepository.saveAll(historyEventEntities);
+        if (!historyEventEntities.isEmpty()) {
+            orderHistoryEventJpaRepository.saveAll(historyEventEntities);
+        }
         
-        // 5. 저장된 OrderEntity를 다시 Order 도메인 객체로 변환하여 반환
+        // 6. 저장된 OrderEntity를 다시 Order 도메인 객체로 변환하여 반환
         return mapToOrder(savedOrderEntity, orderItemEntities, historyEventEntities);
     }
 
@@ -65,16 +84,18 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      * Order 도메인 객체를 OrderEntity로 변환
      */
     private OrderEntity mapToOrderEntity(Order order) {
+        // UserEntity 조회 (ACTIVE 상태인 사용자)
+        UserEntity userEntity = userJpaRepository.findByUserIdAndStatus(order.getUserId(), "ACTIVE")
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + order.getUserId()));
+        
         OrderEntity entity = OrderEntity.builder()
-            .userId(order.getUserId())
+            .user(userEntity)  // user 관계 설정 (이를 통해 user_id 컬럼이 채워짐)
             .totalAmount(order.getTotalAmount())
             .discountedAmount(order.getDiscountedAmount())
             .discountAmount(order.getDiscountAmount())
             .userCouponId(order.getUserCouponId())
             .status(order.getStatus().name())
             .orderedAt(order.getOrderedAt())
-            .createdAt(order.getOrderedAt())
-            .updatedAt(order.getUpdatedAt())
             .build();
         return entity;
     }
@@ -83,14 +104,23 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      * OrderItem 도메인 객체를 OrderItemEntity로 변환
      */
     private OrderItemEntity mapToOrderItemEntity(OrderItem orderItem, Long orderId) {
+        // OrderEntity 조회 (order_id를 통해)
+        OrderEntity orderEntity = orderJpaRepository.findById(orderId).orElse(null);
+        
+        // ProductEntity 조회 (product_id를 통해)
+        ProductEntity productEntity = null;
+        if (orderItem.getProductId() != null) {
+            productEntity = productJpaRepository.findById(orderItem.getProductId()).orElse(null);
+        }
+        
         OrderItemEntity entity = OrderItemEntity.builder()
-            .orderId(orderId)
-            .productId(orderItem.getProductId())
-            .productName(orderItem.getProductName())
-            .quantity(orderItem.getQuantity())
-            .unitPrice(orderItem.getUnitPrice())
-            .totalPrice(orderItem.getTotalPrice())
-            .build();
+                .order(orderEntity)  // order 관계 설정
+                .product(productEntity)  // product 관계 설정
+                .productName(orderItem.getProductName())
+                .quantity(orderItem.getQuantity())
+                .unitPrice(orderItem.getUnitPrice())
+                .totalPrice(orderItem.getTotalPrice())
+                .build();
         return entity;
     }
 
@@ -99,17 +129,9 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      */
     private OrderHistoryEventEntity mapToOrderHistoryEventEntity(OrderHistoryEvent event, Long orderId) {
         OrderHistoryEventEntity entity = OrderHistoryEventEntity.builder()
-            .id(event.getId())
             .orderId(orderId)
             .eventType(event.getEventType().name())
             .occurredAt(event.getOccurredAt())
-            .cancelReason(event.getCancelReason())
-            .refundAmount(event.getRefundAmount())
-            .paymentMethod(event.getPaymentMethod())
-            .totalAmount(event.getTotalAmount())
-            .discountAmount(event.getDiscountAmount())
-            .discountedAmount(event.getDiscountedAmount())  
-            .createdAt(event.getCreatedAt())
             .build();
         return entity;
     }
@@ -121,7 +143,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
                            List<OrderHistoryEventEntity> historyEventEntities) {
         Order order = new Order();
         order.setId(orderEntity.getId());
-        order.setUserId(orderEntity.getUserId());
+        order.setUserId(orderEntity.getUser() != null ? orderEntity.getUser().getUserId() : null);
         order.setTotalAmount(orderEntity.getTotalAmount());
         order.setDiscountedAmount(orderEntity.getDiscountedAmount());
         order.setDiscountAmount(orderEntity.getDiscountAmount());
@@ -151,8 +173,8 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
     private OrderItem mapToOrderItem(OrderItemEntity entity) {
         OrderItem orderItem = new OrderItem();
         orderItem.setId(entity.getId());
-        orderItem.setOrderId(entity.getOrderId());
-        orderItem.setProductId(entity.getProductId());
+        orderItem.setOrderId(entity.getOrder().getId()); // OrderEntity의 ID를 사용
+        orderItem.setProductId(entity.getProduct().getId()); // ProductEntity의 ID를 사용
         orderItem.setProductName(entity.getProductName());
         orderItem.setQuantity(entity.getQuantity());
         orderItem.setUnitPrice(entity.getUnitPrice());
@@ -169,13 +191,6 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         event.setOrderId(entity.getOrderId());
         event.setEventType(OrderHistoryEvent.OrderEventType.valueOf(entity.getEventType())); // string을 enum으로 변환
         event.setOccurredAt(entity.getOccurredAt());
-        event.setCancelReason(entity.getCancelReason());
-        event.setRefundAmount(entity.getRefundAmount());
-        event.setPaymentMethod(entity.getPaymentMethod());
-        event.setTotalAmount(entity.getTotalAmount());
-        event.setDiscountAmount(entity.getDiscountAmount());
-        event.setDiscountedAmount(entity.getDiscountedAmount());  
-        event.setCreatedAt(entity.getCreatedAt());
         return event;
     }
 }

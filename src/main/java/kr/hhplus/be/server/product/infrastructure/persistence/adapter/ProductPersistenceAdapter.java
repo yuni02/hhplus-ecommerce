@@ -46,10 +46,10 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getCurrentPrice().intValue(),
-                entity.getStock(),
+                entity.getPrice().intValue(),   // 현재 가격 설정
+                entity.getStockQuantity(),
                 entity.getStatus(),
-                entity.getCategory(),
+                "GENERAL", // category - 기본값 설정
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

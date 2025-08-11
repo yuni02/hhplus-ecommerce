@@ -3,6 +3,7 @@ package kr.hhplus.be.server.product.infrastructure.persistence.adapter;
 import kr.hhplus.be.server.product.application.port.out.SaveProductStatsPort;
 import kr.hhplus.be.server.product.domain.ProductStats;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductStatsEntity;
+import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductStatsId;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductStatsJpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,33 +54,21 @@ public class SaveProductStatsPersistenceAdapter implements SaveProductStatsPort 
 
     private ProductStatsEntity mapToProductStatsEntity(ProductStats productStats) {
         return ProductStatsEntity.builder()
-            .productId(productStats.getProductId())
-            .date(productStats.getDate())
-            .recentSalesCount(productStats.getRecentSalesCount())
-            .recentSalesAmount(productStats.getRecentSalesAmount())
-            .totalSalesCount(productStats.getTotalSalesCount())
-            .totalSalesAmount(productStats.getTotalSalesAmount())
-            .rank(productStats.getRank())
-            .conversionRate(productStats.getConversionRate())
-            .lastOrderDate(productStats.getLastOrderDate())
-            .aggregationDate(productStats.getAggregationDate())
-            .createdAt(productStats.getCreatedAt())
-            .updatedAt(productStats.getUpdatedAt())
+            .id(new ProductStatsId(productStats.getProductId(), productStats.getDate()))
+            .totalSales(productStats.getTotalSalesAmount())
+            .totalQuantity(productStats.getTotalSalesCount())
+            .orderCount(productStats.getRecentSalesCount())
             .build();
     }
 
     private ProductStats mapToProductStats(ProductStatsEntity entity) {
         return ProductStats.builder()
-            .productId(entity.getProductId())
-            .date(entity.getDate())
-            .recentSalesCount(entity.getRecentSalesCount())
-            .recentSalesAmount(entity.getRecentSalesAmount())
-            .totalSalesCount(entity.getTotalSalesCount())
-            .totalSalesAmount(entity.getTotalSalesAmount())
-            .rank(entity.getRank())
-            .conversionRate(entity.getConversionRate())
-            .lastOrderDate(entity.getLastOrderDate())
-            .aggregationDate(entity.getAggregationDate())
+            .productId(entity.getId().getProductId())
+            .date(entity.getId().getDate())
+            .totalSalesCount(entity.getTotalQuantity())
+            .totalSalesAmount(entity.getTotalSales())
+            .recentSalesCount(entity.getOrderCount())
+            .recentSalesAmount(entity.getTotalSales()) // 임시로 totalSales 사용
             .createdAt(entity.getCreatedAt())
             .updatedAt(entity.getUpdatedAt())
             .build();

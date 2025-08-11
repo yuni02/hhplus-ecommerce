@@ -5,10 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +31,7 @@ public interface CouponJpaRepository extends JpaRepository<CouponEntity, Long> {
      * 발급 가능한 쿠폰 조회 (락 사용)
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value = "3000")})
     @Query("SELECT c FROM CouponEntity c WHERE c.id = :couponId")
     Optional<CouponEntity> findByIdWithLock(@Param("couponId") Long couponId);
 

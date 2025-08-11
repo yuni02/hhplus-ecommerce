@@ -34,6 +34,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.springframework.retry:spring-retry")
+	implementation("org.springframework:spring-aspects")
 
     // Lombok
 	compileOnly("org.projectlombok:lombok")
@@ -46,6 +48,10 @@ dependencies {
 
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")
+	implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
+	
+    // Test DB
+    testRuntimeOnly("com.h2database:h2")
 
     // DevTools (개발 시 자동 재시작)
     developmentOnly("org.springframework.boot:spring-boot-devtools")

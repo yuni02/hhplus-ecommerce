@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.integration;
 
+import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.product.application.GetProductDetailService;
 import kr.hhplus.be.server.product.application.GetPopularProductsService;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
@@ -11,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -20,8 +21,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 @DisplayName("Product 도메인 통합테스트")
 class ProductIntegrationTest {
 
@@ -45,8 +46,8 @@ class ProductIntegrationTest {
         testProduct = ProductEntity.builder()
                 .name("테스트 상품")
                 .description("테스트 상품 설명")
-                .currentPrice(new BigDecimal("10000"))
-                .stock(100)
+                .price(new BigDecimal("10000"))
+                .stockQuantity(100)
                 .status("ACTIVE")
                 .build();
         testProduct = productJpaRepository.save(testProduct);

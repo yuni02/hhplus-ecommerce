@@ -27,6 +27,12 @@ public class ProductPersistenceAdapter implements LoadProductPort {
                 .map(this::mapToProductInfo);
     }
 
+    @Override
+    public Optional<LoadProductPort.ProductInfo> loadProductByIdWithLock(Long productId) {
+        return productJpaRepository.findByIdWithLock(productId)
+                .map(this::mapToProductInfo);
+    }
+
     /**
      * ProductEntity를 ProductInfo로 변환
      */
@@ -34,8 +40,10 @@ public class ProductPersistenceAdapter implements LoadProductPort {
         return new LoadProductPort.ProductInfo(
                 entity.getId(),
                 entity.getName(),
-                entity.getCurrentPrice(),
-                entity.getStock()
+                entity.getDescription(),
+                entity.getStockQuantity(),
+                entity.getPrice(),
+                entity.getStatus()
         );
     }
 }

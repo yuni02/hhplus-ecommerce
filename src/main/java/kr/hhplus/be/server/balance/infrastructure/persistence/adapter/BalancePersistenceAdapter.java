@@ -8,6 +8,8 @@ import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEnti
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceTransactionEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceTransactionJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
+import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +25,14 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
 
     private final BalanceJpaRepository balanceJpaRepository;
     private final BalanceTransactionJpaRepository balanceTransactionJpaRepository;
+    private final UserJpaRepository userJpaRepository;
 
     public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository,
-                                   BalanceTransactionJpaRepository balanceTransactionJpaRepository) {
+                                   BalanceTransactionJpaRepository balanceTransactionJpaRepository,
+                                   UserJpaRepository userJpaRepository) {
         this.balanceJpaRepository = balanceJpaRepository;
         this.balanceTransactionJpaRepository = balanceTransactionJpaRepository;
+        this.userJpaRepository = userJpaRepository;
     }
 
     @Override
@@ -36,9 +41,20 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
                 .map(this::mapToBalance);
     }
 
+    /**
+     * 동시성 제어를 위한 잔액 조회 (Pessimistic Lock 사용)
+     */
     @Override
+    @Transactional
+    public Optional<Balance> loadActiveBalanceByUserIdWithLock(Long userId) {
+        return balanceJpaRepository.findByUserIdAndStatusWithLock(userId, "ACTIVE")
+                .map(this::mapToBalance);
+    }
+
+    @Override
+    @Transactional
     public Balance saveBalance(Balance balance) {
-        // 기존 잔액이 있는지 확인
+        // 기존 잔액이 있는지 확인 (락 없이)
         Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
         
         BalanceEntity entity;
@@ -56,7 +72,32 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
         return mapToBalance(entity);
     }
 
+    /**
+     * 동시성 제어를 위한 잔액 저장 (Optimistic Lock 사용)
+     */
     @Override
+    @Transactional
+    public Balance saveBalanceWithConcurrencyControl(Balance balance) {
+        // 낙관적 락으로 잔액 조회 (비관적 락 제거)
+        Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
+        
+        BalanceEntity entity;
+        if (existingEntity.isPresent()) {
+            // 기존 엔티티 업데이트 (Optimistic Lock으로 동시성 제어)
+            entity = existingEntity.get();
+            entity.updateAmount(balance.getAmount());
+            entity = balanceJpaRepository.save(entity);
+        } else {
+            // 새로운 엔티티 생성
+            entity = mapToBalanceEntity(balance);
+            entity = balanceJpaRepository.save(entity);
+        }
+        
+        return mapToBalance(entity);
+    }
+
+    @Override
+    @Transactional
     public BalanceTransaction saveBalanceTransaction(BalanceTransaction transaction) {
         BalanceTransactionEntity entity = mapToBalanceTransactionEntity(transaction);
         BalanceTransactionEntity savedEntity = balanceTransactionJpaRepository.save(entity);
@@ -79,13 +120,14 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      * Balance 도메인 객체를 BalanceEntity로 변환
      */
     private BalanceEntity mapToBalanceEntity(Balance balance) {
+        // UserEntity 조회
+        UserEntity userEntity = userJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE")
+                .orElseThrow(() -> new IllegalArgumentException("User not found with userId: " + balance.getUserId()));
+        
         return BalanceEntity.builder()
-                .id(balance.getId())
-                .userId(balance.getUserId())
+                .user(userEntity)  // user 관계를 통해 userId 설정
                 .amount(balance.getAmount())
                 .status(balance.getStatus().name())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
     }
 
@@ -110,16 +152,17 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      * BalanceTransaction 도메인 객체를 BalanceTransactionEntity로 변환
      */
     private BalanceTransactionEntity mapToBalanceTransactionEntity(BalanceTransaction transaction) {
+        // UserEntity 조회
+        UserEntity userEntity = userJpaRepository.findByUserIdAndStatus(transaction.getUserId(), "ACTIVE")
+                .orElseThrow(() -> new IllegalArgumentException("User not found with userId: " + transaction.getUserId()));
+        
         return BalanceTransactionEntity.builder()
-                .id(transaction.getId())
-                .userId(transaction.getUserId())
+                .user(userEntity)  // user 관계를 통해 userId 설정
                 .amount(transaction.getAmount())
                 .type(transaction.getType().name())
                 .status(transaction.getStatus().name())
                 .description(transaction.getDescription())
                 .referenceId(transaction.getReferenceId())
-                .createdAt(transaction.getCreatedAt())
-                .updatedAt(transaction.getUpdatedAt())
                 .build();
     }
 }

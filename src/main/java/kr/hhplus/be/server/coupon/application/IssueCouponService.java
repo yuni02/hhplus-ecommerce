@@ -7,6 +7,7 @@ import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ public class IssueCouponService implements IssueCouponUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public IssueCouponResult issueCoupon(IssueCouponCommand command) {
         try {
             // 1. 입력값 검증
@@ -62,10 +63,12 @@ public class IssueCouponService implements IssueCouponUseCase {
             }
 
             // 6. 사용자 쿠폰 생성
+            LocalDateTime now = LocalDateTime.now();
             UserCoupon userCoupon = UserCoupon.builder()
                     .userId(command.getUserId())
                     .couponId(command.getCouponId())
                     .discountAmount(couponInfo.getDiscountAmount())
+                    .issuedAt(now)
                     .build();
             
             UserCoupon savedUserCoupon = saveUserCouponPort.saveUserCoupon(userCoupon);
@@ -74,6 +77,7 @@ public class IssueCouponService implements IssueCouponUseCase {
                     savedUserCoupon.getId(),
                     savedUserCoupon.getCouponId(),
                     couponInfo.getName(),
+
                     couponInfo.getDiscountAmount(),
                     savedUserCoupon.getStatus().name(),
                     LocalDateTime.now()

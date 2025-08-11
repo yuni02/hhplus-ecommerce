@@ -21,17 +21,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.context.annotation.Import;
+import kr.hhplus.be.server.TestcontainersConfiguration;     
+import org.springframework.context.ApplicationContext;
+import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
+import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;          
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 @DisplayName("Balance 도메인 통합테스트")
 class BalanceIntegrationTest {
 
@@ -50,6 +56,15 @@ class BalanceIntegrationTest {
     @Autowired
     private UserJpaRepository userJpaRepository;
 
+    @Autowired
+    private ProductJpaRepository productJpaRepository;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+    
+    @Autowired
+    private DeductBalancePort deductBalancePort;
+
     private UserEntity testUser;
 
     @BeforeEach
@@ -58,11 +73,13 @@ class BalanceIntegrationTest {
         balanceTransactionJpaRepository.deleteAll();
         balanceJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
+        productJpaRepository.deleteAll();
 
         // 테스트용 사용자 생성
         testUser = UserEntity.builder()
-                .userId(1L)  // userId 설정
-                .username("testuser")
+                .userId(1L)
+                .name("testuser")
+                .email("test@example.com")
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);
@@ -72,13 +89,13 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 시 사용자의 잔액이 증가하고 이력이 기록된다")
     void 잔액_충전_검증() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal originalAmount = new BigDecimal("5000.00");
         BigDecimal chargeAmount = new BigDecimal("1000.00");
 
         // 기존 잔액 생성
         BalanceEntity balanceEntity = BalanceEntity.builder()
-                .userId(userId)
+                .user(testUser)
                 .amount(originalAmount)
                 .status("ACTIVE")
                 .build();
@@ -113,11 +130,11 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 조회 성공")
     void 잔액_조회_성공() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal balanceAmount = new BigDecimal("10000.00");
 
         BalanceEntity balanceEntity = BalanceEntity.builder()
-                .userId(userId)
+                .user(testUser)
                 .amount(balanceAmount)
                 .status("ACTIVE")
                 .build();
@@ -151,7 +168,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 실패 - 잘못된 금액")
     void 잔액_충전_실패_잘못된_금액() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal invalidAmount = new BigDecimal("-1000");
 
         // when
@@ -183,7 +200,7 @@ class BalanceIntegrationTest {
     @DisplayName("잔액 충전 시 기존 잔액이 없으면 새로 생성된다")
     void 잔액_충전_새로운_잔액_생성() {
         // given
-        Long userId = testUser.getId();
+        Long userId = testUser.getUserId();
         BigDecimal chargeAmount = new BigDecimal("5000.00");
 
         // when
@@ -199,4 +216,6 @@ class BalanceIntegrationTest {
         assertThat(newBalance).isPresent();
         assertThat(newBalance.get().getAmount()).isEqualTo(chargeAmount);
     }
+
+
 } 

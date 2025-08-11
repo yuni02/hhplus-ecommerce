@@ -2,16 +2,17 @@ package kr.hhplus.be.server.coupon.infrastructure.persistence.repository;
 
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * UserCoupon 엔티티 JPA Repository
- * Coupon 도메인 전용 데이터 접근 계층
+ * 사용자 쿠폰 Repository
  */
 @Repository
 public interface UserCouponJpaRepository extends JpaRepository<UserCouponEntity, Long> {
@@ -42,4 +43,11 @@ public interface UserCouponJpaRepository extends JpaRepository<UserCouponEntity,
      * 주문에 사용된 쿠폰 조회
      */
     Optional<UserCouponEntity> findByOrderId(Long orderId);
+
+    /**
+     * 사용자 쿠폰 ID로 개별 쿠폰 조회 (비관적 락 적용)
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT uc FROM UserCouponEntity uc WHERE uc.id = :userCouponId")
+    Optional<UserCouponEntity> findByIdWithLock(@Param("userCouponId") Long userCouponId);
 }

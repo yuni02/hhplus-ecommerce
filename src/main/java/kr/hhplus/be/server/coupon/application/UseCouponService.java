@@ -68,4 +68,47 @@ public class UseCouponService implements UseCouponUseCase {
             return UseCouponResult.failure("쿠폰 사용 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional
+    public UseCouponResult useCouponWithPessimisticLock(UseCouponCommand command) {
+        try {
+            // 1. 사용자 쿠폰 조회 (비관적 락 적용)
+            var userCouponOpt = loadUserCouponPort.loadUserCouponWithLock(command.getUserCouponId());
+            
+            if (userCouponOpt.isEmpty()) {
+                return UseCouponResult.failure("쿠폰을 찾을 수 없습니다.");
+            }
+
+            UserCoupon userCoupon = userCouponOpt.get();
+
+            // 2. 쿠폰 소유자 확인
+            if (!userCoupon.getUserId().equals(command.getUserId())) {
+                return UseCouponResult.failure("해당 쿠폰의 소유자가 아닙니다.");
+            }
+
+            // 3. 쿠폰 상태 확인
+            if (!userCoupon.isAvailable()) {
+                return UseCouponResult.failure("사용할 수 없는 쿠폰입니다.");
+            }
+
+            // 4. 할인 금액 계산
+            BigDecimal discountAmount = BigDecimal.valueOf(userCoupon.getDiscountAmount());
+            BigDecimal discountedAmount = command.getOrderAmount().subtract(discountAmount);
+
+            // 5. 최소 주문 금액 확인 (할인 후 금액이 음수가 되지 않도록)
+            if (discountedAmount.compareTo(BigDecimal.ZERO) < 0) {
+                discountedAmount = BigDecimal.ZERO;
+            }
+
+            // 6. 쿠폰 사용 처리 (도메인 로직) - 비관적 락 적용
+            userCoupon.use(LocalDateTime.now());
+            updateUserCouponPort.updateUserCoupon(userCoupon);
+
+            return UseCouponResult.success(discountedAmount, userCoupon.getDiscountAmount());
+            
+        } catch (Exception e) {
+            return UseCouponResult.failure("쿠폰 사용 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
 } 
