@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.integration;
+package kr.hhplus.be.server.integration.concurrency;
 
 import kr.hhplus.be.server.balance.application.ChargeBalanceService;
 import kr.hhplus.be.server.balance.application.GetBalanceService;
@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
