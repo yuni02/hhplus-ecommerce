@@ -3,6 +3,9 @@ spring:
     name: hhplus
   profiles:
     active: local
+  redis:
+    host: localhost
+    port: 6379
   datasource:
     name: HangHaePlusDataSource
     type: com.zaxxer.hikari.HikariDataSource
