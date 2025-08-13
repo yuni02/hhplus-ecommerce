@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.application.OrderDistributedLockService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;    
 import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
@@ -25,6 +26,7 @@ import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
 import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.application.OrderDistributedLockService;
 
 @ExtendWith(MockitoExtension.class)
 class CreateOrderServiceTest {
@@ -46,6 +48,9 @@ class CreateOrderServiceTest {
     
     @Mock
     private UseCouponUseCase useCouponUseCase;
+    
+    @Mock
+    private OrderDistributedLockService orderDistributedLockService;
 
     private CreateOrderService createOrderService;
 
@@ -57,7 +62,8 @@ class CreateOrderServiceTest {
             updateProductStockPort, 
             deductBalancePort, 
             saveOrderPort, 
-            useCouponUseCase
+            useCouponUseCase,
+            orderDistributedLockService
         );
     }
 
@@ -86,8 +92,8 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(true);
-        when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(true);
+        when(orderDistributedLockService.deductProductStockWithDistributedLock(1L, 2)).thenReturn(true);
+        when(orderDistributedLockService.deductBalanceWithDistributedLock(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(true);
         when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
         // when
