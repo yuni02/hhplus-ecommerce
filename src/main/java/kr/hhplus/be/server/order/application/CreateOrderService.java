@@ -30,11 +30,11 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final UseCouponUseCase useCouponUseCase;
 
     /**
-     * 단일 분산락으로 주문 생성
-     * 사용자별로 하나의 락을 사용하여 동시 주문 방지 및 부분 실패 방지
+     * 세밀한 분산락으로 주문 생성
+     * 사용자 + 상품 + 잔액 조합으로 락을 사용하여 최대한 병렬 처리 허용
      */
     @DistributedLock(
-        key = "'order-creation:' + #command.userId",
+        key = "#generateOrderLockKey(#command)",
         waitTime = 10,
         leaseTime = 30,
         timeUnit = TimeUnit.SECONDS
@@ -80,6 +80,22 @@ public class CreateOrderService implements CreateOrderUseCase {
             log.error("주문 생성 중 예외 발생 (단일 분산락) - userId: {}", command.getUserId(), e);
             return CreateOrderUseCase.CreateOrderResult.failure("주문 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
+    }
+
+    /**
+     * 주문 락 키 생성
+     * 사용자 + 상품 ID들을 정렬하여 일관된 키 생성
+     */
+    public String generateOrderLockKey(CreateOrderUseCase.CreateOrderCommand command) {
+        // 상품 ID들을 정렬하여 일관된 키 생성
+        List<Long> productIds = command.getOrderItems().stream()
+            .map(CreateOrderUseCase.OrderItemCommand::getProductId)
+            .sorted()
+            .toList();
+        
+        return String.format("order-creation:%d:%s", 
+            command.getUserId(), 
+            productIds.toString());
     }
 
     /**
