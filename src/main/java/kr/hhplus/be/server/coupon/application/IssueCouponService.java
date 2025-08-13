@@ -5,34 +5,43 @@ import kr.hhplus.be.server.coupon.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
+import kr.hhplus.be.server.shared.lock.DistributedLock;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 쿠폰 발급 Application 서비스
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class IssueCouponService implements IssueCouponUseCase {
 
     private final LoadUserPort loadUserPort;
     private final LoadCouponPort loadCouponPort;
     private final SaveUserCouponPort saveUserCouponPort;
 
-    public IssueCouponService(LoadUserPort loadUserPort,
-                             LoadCouponPort loadCouponPort,
-                             SaveUserCouponPort saveUserCouponPort) {
-        this.loadUserPort = loadUserPort;
-        this.loadCouponPort = loadCouponPort;
-        this.saveUserCouponPort = saveUserCouponPort;
-    }
-
     @Override
+    @DistributedLock(
+        key = "'coupon-issue:' + #command.couponId",
+        waitTime = 10,
+        leaseTime = 15,
+        timeUnit = TimeUnit.SECONDS,
+        fair = true
+    )
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public IssueCouponResult issueCoupon(IssueCouponCommand command) {
+        return processCouponIssue(command);
+    }
+    
+    private IssueCouponResult processCouponIssue(IssueCouponCommand command) {
         try {
             // 1. 입력값 검증
             if (command.getUserId() == null || command.getUserId() <= 0) {

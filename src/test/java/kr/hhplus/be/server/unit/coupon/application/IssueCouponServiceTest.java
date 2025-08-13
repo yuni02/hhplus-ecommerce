@@ -64,6 +64,8 @@ class IssueCouponServiceTest {
         when(loadCouponPort.loadCouponByIdWithLock(couponId)).thenReturn(Optional.of(couponInfo));
         when(loadCouponPort.incrementIssuedCount(couponId)).thenReturn(true);
         when(saveUserCouponPort.saveUserCoupon(any(UserCoupon.class))).thenReturn(savedUserCoupon);
+        
+        // AOP 기반 @DistributedLock 사용으로 Redis 분산락 Mock 불필요
 
         // when
         IssueCouponUseCase.IssueCouponResult result = issueCouponService.issueCoupon(command);
