@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import kr.hhplus.be.server.order.application.CreateOrderService;
-import kr.hhplus.be.server.order.application.OrderDistributedLockService;
+
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;    
 import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
@@ -26,7 +26,6 @@ import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
 import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.application.OrderDistributedLockService;
 
 @ExtendWith(MockitoExtension.class)
 class CreateOrderServiceTest {
@@ -49,21 +48,19 @@ class CreateOrderServiceTest {
     @Mock
     private UseCouponUseCase useCouponUseCase;
     
-    @Mock
-    private OrderDistributedLockService orderDistributedLockService;
+
 
     private CreateOrderService createOrderService;
 
-    @BeforeEach
+        @BeforeEach
     void setUp() {
         createOrderService = new CreateOrderService(
-            loadUserPort, 
-            loadProductPort, 
-            updateProductStockPort, 
-            deductBalancePort, 
-            saveOrderPort, 
-            useCouponUseCase,
-            orderDistributedLockService
+            loadUserPort,
+            loadProductPort,
+            updateProductStockPort,
+            deductBalancePort,
+            saveOrderPort,
+            useCouponUseCase
         );
     }
 
@@ -92,8 +89,8 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(orderDistributedLockService.deductProductStockWithDistributedLock(1L, 2)).thenReturn(true);
-        when(orderDistributedLockService.deductBalanceWithDistributedLock(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
+        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(true);
         when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
         // when
@@ -111,8 +108,8 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStock(1L, 2);
-        verify(deductBalancePort).deductBalance(userId, BigDecimal.valueOf(20000));
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);  
+        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(20000));
         verify(saveOrderPort).saveOrder(any(Order.class));
         verify(useCouponUseCase, never()).useCoupon(any());
     }
@@ -147,9 +144,9 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(true);
-        when(useCouponUseCase.useCoupon(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
-        when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(18000)))).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
+        when(useCouponUseCase.useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
+        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(18000)))).thenReturn(true);
         when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
         // when
@@ -166,9 +163,9 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStock(1L, 2);
-        verify(useCouponUseCase).useCoupon(any(UseCouponUseCase.UseCouponCommand.class));
-        verify(deductBalancePort).deductBalance(userId, BigDecimal.valueOf(18000));
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
+        verify(useCouponUseCase).useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class));
+        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(18000));
         verify(saveOrderPort).saveOrder(any(Order.class));
     }
 
@@ -189,11 +186,11 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort, never()).loadProductById(any());
-        verify(updateProductStockPort, never()).deductStock(any(), any());
+        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -219,7 +216,7 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(999L);
-        verify(updateProductStockPort, never()).deductStock(any(), any());
+        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -229,7 +226,7 @@ class CreateOrderServiceTest {
         // given
         Long userId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 200); // 재고보다 많은 수량
+            new CreateOrderUseCase.OrderItemCommand(1L,         200);   // 재고보다 많은 수량
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
@@ -248,7 +245,7 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort, never()).deductStock(any(), any());
+        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -267,7 +264,7 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(false); // 재고 차감 실패
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)   ).thenReturn(false); // 재고 차감 실패
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
@@ -278,7 +275,7 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStock(1L, 2);
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
         verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
@@ -302,7 +299,7 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);       
         when(useCouponUseCase.useCoupon(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
 
         // when
@@ -310,13 +307,12 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("쿠폰을 사용할 수 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStock(1L, 2);
-        verify(useCouponUseCase).useCoupon(any(UseCouponUseCase.UseCouponCommand.class));
-        verify(updateProductStockPort).restoreStock(1L, 2); // 재고 복구 확인
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
+        verify(useCouponUseCase, never()).useCoupon(any(UseCouponUseCase.UseCouponCommand.class));
         verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
@@ -336,7 +332,7 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
         when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(false);
 
         // when
@@ -344,13 +340,12 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("잔액이 부족합니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStock(1L, 2);
-        verify(deductBalancePort).deductBalance(userId, BigDecimal.valueOf(20000));
-        verify(updateProductStockPort).restoreStock(1L, 2); // 재고 복구 확인
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
+        verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -384,9 +379,9 @@ class CreateOrderServiceTest {
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(product1));
         when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(product2));
-        when(updateProductStockPort.deductStock(1L, 2)).thenReturn(true);
-        when(updateProductStockPort.deductStock(2L, 1)).thenReturn(true);
-        when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(35000)))).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
+        when(updateProductStockPort.deductStockWithPessimisticLock(2L, 1)).thenReturn(true);
+        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(35000)))).thenReturn(true);
         when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
         // when
@@ -401,9 +396,9 @@ class CreateOrderServiceTest {
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
         verify(loadProductPort).loadProductById(2L);
-        verify(updateProductStockPort).deductStock(1L, 2);
-        verify(updateProductStockPort).deductStock(2L, 1);
-        verify(deductBalancePort).deductBalance(userId, BigDecimal.valueOf(35000));
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
+        verify(updateProductStockPort).deductStockWithPessimisticLock(2L, 1);
+        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(35000));
         verify(saveOrderPort).saveOrder(any(Order.class));
     }
 
@@ -420,7 +415,7 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 상품이 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort, never()).existsById(any());
         verify(loadProductPort, never()).loadProductById(any());
@@ -441,7 +436,7 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 수량은 1개 이상이어야 합니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort, never()).existsById(any());
         verify(loadProductPort, never()).loadProductById(any());
