@@ -6,9 +6,6 @@ import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.UpdateUserCouponPort;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
-import kr.hhplus.be.server.shared.cache.CacheConstants;
-import kr.hhplus.be.server.shared.cache.CacheKeyGenerator;
-import kr.hhplus.be.server.shared.cache.RedisCacheManager;
 import kr.hhplus.be.server.shared.cache.Cacheable;
 import kr.hhplus.be.server.shared.cache.CacheEvict;
 import lombok.extern.slf4j.Slf4j;
@@ -26,19 +23,13 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     private final LoadCouponPort loadCouponPort;
     private final LoadUserCouponPort loadUserCouponPort;
     private final UpdateUserCouponPort updateUserCouponPort;
-    private final RedisCacheManager cacheManager;
-    private final CacheKeyGenerator keyGenerator;
 
     public CachedCouponService(LoadCouponPort loadCouponPort,
                              LoadUserCouponPort loadUserCouponPort,
-                             UpdateUserCouponPort updateUserCouponPort,
-                             RedisCacheManager cacheManager,
-                             CacheKeyGenerator keyGenerator) {
+                             UpdateUserCouponPort updateUserCouponPort) {
         this.loadCouponPort = loadCouponPort;
         this.loadUserCouponPort = loadUserCouponPort;
         this.updateUserCouponPort = updateUserCouponPort;
-        this.cacheManager = cacheManager;
-        this.keyGenerator = keyGenerator;
     }
 
     /**

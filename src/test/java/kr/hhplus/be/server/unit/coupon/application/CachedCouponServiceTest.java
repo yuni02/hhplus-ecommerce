@@ -4,8 +4,6 @@ import kr.hhplus.be.server.coupon.application.CachedCouponService;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.UpdateUserCouponPort;
-import kr.hhplus.be.server.shared.cache.RedisCacheManager;
-import kr.hhplus.be.server.shared.cache.CacheKeyGenerator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,18 +32,12 @@ class CachedCouponServiceTest {
     
     @Mock
     private UpdateUserCouponPort updateUserCouponPort;
-    
-    @Mock
-    private RedisCacheManager cacheManager;
-    
-    @Mock
-    private CacheKeyGenerator keyGenerator;
 
     private CachedCouponService cachedCouponService;
 
     @BeforeEach
     void setUp() {
-        cachedCouponService = new CachedCouponService(loadCouponPort, loadUserCouponPort, updateUserCouponPort, cacheManager, keyGenerator);
+        cachedCouponService = new CachedCouponService(loadCouponPort, loadUserCouponPort, updateUserCouponPort);
     }
 
     @Test

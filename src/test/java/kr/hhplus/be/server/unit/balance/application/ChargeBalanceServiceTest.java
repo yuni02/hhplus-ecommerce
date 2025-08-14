@@ -44,7 +44,7 @@ class ChargeBalanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort, distributedLockManager);
+        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort);
     }
 
     @Test
@@ -68,7 +68,7 @@ class ChargeBalanceServiceTest {
 
         when(loadUserPort.existsByUserId(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
-        when(loadBalancePort.saveBalanceWithConcurrencyControl(any(Balance.class))).thenReturn(savedBalance);
+        when(loadBalancePort.saveBalance(any(Balance.class))).thenReturn(savedBalance);
         when(saveBalanceTransactionPort.saveBalanceTransaction(any(BalanceTransaction.class)))
             .thenReturn(savedTransaction);
         
@@ -90,7 +90,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort).loadActiveBalanceByUserId(userId);
-        verify(loadBalancePort).saveBalanceWithConcurrencyControl(any(Balance.class));
+        verify(loadBalancePort).saveBalance(any(Balance.class));
         verify(saveBalanceTransactionPort).saveBalanceTransaction(any(BalanceTransaction.class));
     }
 
@@ -121,7 +121,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
-        verify(loadBalancePort, never()).saveBalanceWithConcurrencyControl(any());
+        verify(loadBalancePort, never()).saveBalance(any());
         verify(saveBalanceTransactionPort, never()).saveBalanceTransaction(any());
     }
 } 

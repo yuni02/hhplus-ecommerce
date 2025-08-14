@@ -72,30 +72,6 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
         return mapToBalance(entity);
     }
 
-    /**
-     * 동시성 제어를 위한 잔액 저장 (Optimistic Lock 사용)
-     */
-    @Override
-    @Transactional
-    public Balance saveBalanceWithConcurrencyControl(Balance balance) {
-        // 낙관적 락으로 잔액 조회 (비관적 락 제거)
-        Optional<BalanceEntity> existingEntity = balanceJpaRepository.findByUserIdAndStatus(balance.getUserId(), "ACTIVE");
-        
-        BalanceEntity entity;
-        if (existingEntity.isPresent()) {
-            // 기존 엔티티 업데이트 (Optimistic Lock으로 동시성 제어)
-            entity = existingEntity.get();
-            entity.updateAmount(balance.getAmount());
-            entity = balanceJpaRepository.save(entity);
-        } else {
-            // 새로운 엔티티 생성
-            entity = mapToBalanceEntity(balance);
-            entity = balanceJpaRepository.save(entity);
-        }
-        
-        return mapToBalance(entity);
-    }
-
     @Override
     @Transactional
     public BalanceTransaction saveBalanceTransaction(BalanceTransaction transaction) {

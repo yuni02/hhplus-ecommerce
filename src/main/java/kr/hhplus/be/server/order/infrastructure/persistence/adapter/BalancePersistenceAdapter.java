@@ -3,14 +3,14 @@ package kr.hhplus.be.server.order.infrastructure.persistence.adapter;
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
-import kr.hhplus.be.server.shared.lock.DistributedLockManager;
+import kr.hhplus.be.server.shared.lock.DistributedLock;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Balance 차감 영속성 Adapter (Order 도메인용)
@@ -21,28 +21,23 @@ import java.time.Duration;
 public class BalancePersistenceAdapter implements DeductBalancePort {
 
     private final BalanceJpaRepository balanceJpaRepository;
-    private final DistributedLockManager distributedLockManager;
 
-    public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository,
-                                   DistributedLockManager distributedLockManager) {
+    public BalancePersistenceAdapter(BalanceJpaRepository balanceJpaRepository) {
         this.balanceJpaRepository = balanceJpaRepository;
-        this.distributedLockManager = distributedLockManager;
     }
 
     @Override
+    @DistributedLock(
+        key = "balance-#{#userId}",
+        waitTime = 3,
+        leaseTime = 10,
+        timeUnit = TimeUnit.SECONDS,
+        throwException = true
+    )
+    @Transactional
     public boolean deductBalance(Long userId, BigDecimal amount) {
         System.out.println("DEBUG: 잔액 차감 시작 - 사용자: " + userId + ", 금액: " + amount);
         
-        return distributedLockManager.executeWithLock(
-            "balance-charge:" + userId, // 충전과 동일한 키 사용
-            Duration.ofSeconds(10),      // 락 보유 시간
-            Duration.ofSeconds(3),       // 락 대기 시간
-            () -> performDeductBalanceWithTransaction(userId, amount)
-        );
-    }
-    
-    @Transactional
-    private boolean performDeductBalanceWithTransaction(Long userId, BigDecimal amount) {
         try {
             System.out.println("DEBUG: 분산 락 획득 후 잔액 차감 실행 - 사용자: " + userId);
             

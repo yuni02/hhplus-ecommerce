@@ -6,15 +6,14 @@ import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
-import kr.hhplus.be.server.shared.lock.DistributedLockManager;
+import kr.hhplus.be.server.shared.lock.DistributedLock;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 잔액 충전 Application 서비스
@@ -28,51 +27,43 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
     private final LoadUserPort loadUserPort;
     private final LoadBalancePort loadBalancePort;
     private final SaveBalanceTransactionPort saveBalanceTransactionPort;
-    private final DistributedLockManager distributedLockManager;
 
     public ChargeBalanceService(LoadUserPort loadUserPort, 
                                LoadBalancePort loadBalancePort,
-                               SaveBalanceTransactionPort saveBalanceTransactionPort,
-                               DistributedLockManager distributedLockManager) {
+                               SaveBalanceTransactionPort saveBalanceTransactionPort) {
         this.loadUserPort = loadUserPort;
         this.loadBalancePort = loadBalancePort;
         this.saveBalanceTransactionPort = saveBalanceTransactionPort;
-        this.distributedLockManager = distributedLockManager;
     }
 
     /**
-     * 잔액 충전 - 분산 락으로 중복 클릭 방지
-     * 사용자별로 락을 걸어 동시 충전 요청을 순차 처리
+     * 잔액 충전 - 분산 락으로 사용자별 순차 처리
+     * @DistributedLock 어노테이션으로 동시성 제어
      */
     @Override
+    @DistributedLock(
+        key = "balance-#{#command.userId}",
+        waitTime = 3,
+        leaseTime = 10,
+        timeUnit = TimeUnit.SECONDS,
+        throwException = true
+    )
+    @Transactional
     public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
-        String lockKey = "balance-charge:" + command.getUserId();
-        
         log.info("잔액 충전 시작 - 사용자: {}, 금액: {}", command.getUserId(), command.getAmount());
         
         try {
-            // 분산 락으로 중복 클릭 방지 (3초 대기, 10초 보유)
-            return distributedLockManager.executeWithLock(
-                lockKey,
-                Duration.ofSeconds(10), // 락 보유 시간
-                Duration.ofSeconds(3),  // 락 대기 시간
-                () -> performChargeBalanceWithTransaction(command)
-            );
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("Failed to acquire lock")) {
-                log.warn("분산 락 획득 실패 - 사용자: {}, 다른 요청이 처리 중", command.getUserId());
-                return ChargeBalanceResult.failure("동일한 요청이 처리 중입니다. 잠시 후 다시 시도해주세요.");
-            }
+            return performChargeBalanceWithTransaction(command);
+        } catch (Exception e) {
             log.error("잔액 충전 실패 - 사용자: {}, 오류: {}", command.getUserId(), e.getMessage(), e);
             return ChargeBalanceResult.failure("잔액 충전 중 오류가 발생했습니다.");
         }
     }
     
     /**
-     * 트랜잭션 범위에서 실행되는 실제 잔액 충전 로직
-     * 분산 락이 걸린 상태에서 호출됨
+     * 실제 잔액 충전 로직
+     * AOP 분산 락과 트랜잭션이 적용된 상태에서 호출됨
      */
-    @Transactional
     private ChargeBalanceResult performChargeBalanceWithTransaction(ChargeBalanceCommand command) {
         // 1. 입력값 검증
         if (command.getAmount() == null || command.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
@@ -109,8 +100,8 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
         log.debug("잔액 충전 처리 - 사용자: {}, 이전잔액: {}, 충전금액: {}, 충전후잔액: {}", 
                 command.getUserId(), beforeAmount, command.getAmount(), balance.getAmount());
         
-        // 5. 낙관적 락으로 저장 (version 필드를 통한 동시성 제어)
-        Balance savedBalance = loadBalancePort.saveBalanceWithConcurrencyControl(balance);
+        // 5. 잔액 저장 (분산 락으로 동시성 제어됨)
+        Balance savedBalance = loadBalancePort.saveBalance(balance);
 
         // 6. 거래 내역 생성
         BalanceTransaction transaction = BalanceTransaction.create(
