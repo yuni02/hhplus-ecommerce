@@ -267,7 +267,7 @@ class CouponDistributedLockIntegrationTest {
 #### **3.2 잔액 충전 동시성 테스트**
 ```java
 @Test
-@DisplayName("잔액 충전 동시성 테스트 - 중복 클릭 방지")
+@DisplayName("잔액 충전 동시성 테스트 - 분산 락으로 순차 처리")
 void concurrentBalanceChargeTest() throws InterruptedException {
     // Given
     Long userId = 1L;
@@ -295,7 +295,7 @@ void concurrentBalanceChargeTest() throws InterruptedException {
         .filter(ChargeBalanceResult::isSuccess)
         .count();
     
-    assertThat(successCount).isEqualTo(1); // 하나만 성공해야 함
+    assertThat(successCount).isEqualTo(threadCount); // 모든 요청이 성공해야 함 (분산 락으로 순차 처리)
 }
 ```
 
@@ -557,19 +557,19 @@ void cacheEvictTest() {
 ### 2. 캐싱 성능 개선
 
 #### **2.1 응답 시간 개선**
-- **상품 상세 조회**: 평균 응답 시간 90% 단축 (500ms → 50ms)
-- **인기 상품 조회**: 평균 응답 시간 95% 단축 (1000ms → 50ms)
-- **사용자 쿠폰 조회**: 평균 응답 시간 85% 단축 (300ms → 45ms)
+- **캐시 적용 전**: 평균 응답 시간 1000ms (DB 조회 + 1초 지연)
+- **캐시 적용 후**: 평균 응답 시간 100ms 미만 (Redis 캐시 조회)
+- **개선 효과**: 응답 시간 90% 이상 단축
 
 #### **2.2 DB 부하 감소**
-- **상품 조회**: DB 쿼리 수 80% 감소
-- **쿠폰 조회**: DB 쿼리 수 70% 감소
-- **전체 시스템**: DB 연결 풀 사용률 60% 감소
+- **캐시 적용으로 DB 조회 횟수 대폭 감소**
+- **반복 조회 시 DB 접근 없이 캐시에서 응답**
+- **전체 시스템 DB 부하 감소 예상**
 
 #### **2.3 캐시 히트율**
-- **상품 상세**: 85% 캐시 히트율 달성
-- **인기 상품**: 90% 캐시 히트율 달성
-- **사용자 쿠폰**: 75% 캐시 히트율 달성
+- **실제 테스트로 캐시 동작 검증 완료**
+- **TTL 기반 만료로 데이터 일관성 보장**
+- **캐시 무효화로 데이터 변경 시 정확성 유지**
 
 ---
 
