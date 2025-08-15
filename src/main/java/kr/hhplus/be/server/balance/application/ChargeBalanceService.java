@@ -1,16 +1,14 @@
 package kr.hhplus.be.server.balance.application;
 
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
-import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
+import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
-import kr.hhplus.be.server.shared.service.DistributedLockService;
+import kr.hhplus.be.server.shared.lock.DistributedLock;
 
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,111 +17,91 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 잔액 충전 Application 서비스
+ * - 분산 락으로 중복 클릭 방지
+ * - 사용자별 순차 처리로 동시성 제어
  */
+@Slf4j
 @Service
 public class ChargeBalanceService implements ChargeBalanceUseCase {
 
     private final LoadUserPort loadUserPort;
     private final LoadBalancePort loadBalancePort;
     private final SaveBalanceTransactionPort saveBalanceTransactionPort;
-    private final DistributedLockService distributedLockService;
-    
-    // 재시도 설정
-    private static final int MAX_RETRY_ATTEMPTS = 5;
-    private static final long INITIAL_DELAY_MS = 50;
-    private static final double BACKOFF_MULTIPLIER = 1.5;
 
     public ChargeBalanceService(LoadUserPort loadUserPort, 
                                LoadBalancePort loadBalancePort,
-                               SaveBalanceTransactionPort saveBalanceTransactionPort,
-                               DistributedLockService distributedLockService) {
+                               SaveBalanceTransactionPort saveBalanceTransactionPort) {
         this.loadUserPort = loadUserPort;
         this.loadBalancePort = loadBalancePort;
         this.saveBalanceTransactionPort = saveBalanceTransactionPort;
-        this.distributedLockService = distributedLockService;
     }
 
+    /**
+     * 잔액 충전 - 분산 락으로 사용자별 순차 처리
+     * @DistributedLock 어노테이션으로 동시성 제어
+     */
     @Override
+    @DistributedLock(
+        key = "balance-#{#command.userId}",
+        waitTime = 3,
+        leaseTime = 10,
+        timeUnit = TimeUnit.SECONDS,
+        throwException = true
+    )
     @Transactional
     public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
-        String lockKey = DistributedLockService.LockKeyGenerator.balanceLock(command.getUserId());
-        boolean lockAcquired = false;
+        log.info("잔액 충전 시작 - 사용자: {}, 금액: {}", command.getUserId(), command.getAmount());
         
         try {
-            // 1. 분산락 획득 (사용자별 잔액 락)
-            lockAcquired = distributedLockService.acquireLock(lockKey, 20); // 20초 타임아웃
-            if (!lockAcquired) {
-                return ChargeBalanceResult.failure("잔액 충전 처리 중입니다. 잠시 후 다시 시도해주세요.");
-            }
-
-            // 2. 낙관적 락으로 잔액 충전 수행
-            return chargeBalanceWithOptimisticLock(command, 0);
-            
-        } finally {
-            // 3. 분산락 해제
-            if (lockAcquired) {
-                distributedLockService.releaseLock(lockKey);
-            }
-        }
-    }
-    
-    /**
-     * 낙관적 락 전략을 사용한 잔액 충전
-     * 데드락을 방지하기 위해 비관적 락 대신 낙관적 락만 사용
-     */
-    private ChargeBalanceResult chargeBalanceWithOptimisticLock(ChargeBalanceCommand command, int attempt) {
-        try {
-            return performChargeBalanceWithOptimisticLock(command);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            // 낙관적 락 실패 시 재시도
-            if (attempt < MAX_RETRY_ATTEMPTS) {
-                System.out.println("낙관적 락 충돌 발생. 재시도 " + (attempt + 1) + "/" + MAX_RETRY_ATTEMPTS);
-                
-                // 지수 백오프 적용 (더 짧은 지연)
-                long delay = (long) (INITIAL_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, attempt));
-                try {
-                    TimeUnit.MILLISECONDS.sleep(delay);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return ChargeBalanceResult.failure("재시도 중 인터럽트가 발생했습니다.");
-                }
-                
-                // 재귀적으로 재시도
-                return chargeBalanceWithOptimisticLock(command, attempt + 1);
-            } else {
-                System.out.println("최대 재시도 횟수 초과. 잔액 충전 실패");
-                return ChargeBalanceResult.failure("동시성 충돌로 인해 잔액 충전에 실패했습니다. 잠시 후 다시 시도해주세요.");
-            }
+            return performChargeBalanceWithTransaction(command);
         } catch (Exception e) {
-            return ChargeBalanceResult.failure("잔액 충전 중 오류가 발생했습니다: " + e.getMessage());
+            log.error("잔액 충전 실패 - 사용자: {}, 오류: {}", command.getUserId(), e.getMessage(), e);
+            return ChargeBalanceResult.failure("잔액 충전 중 오류가 발생했습니다.");
         }
     }
     
     /**
-     * 낙관적 락을 사용한 잔액 충전 로직
-     * 데드락을 방지하기 위해 비관적 락 대신 낙관적 락만 사용
+     * 실제 잔액 충전 로직
+     * AOP 분산 락과 트랜잭션이 적용된 상태에서 호출됨
      */
-    private ChargeBalanceResult performChargeBalanceWithOptimisticLock(ChargeBalanceCommand command) {
+    private ChargeBalanceResult performChargeBalanceWithTransaction(ChargeBalanceCommand command) {
         // 1. 입력값 검증
         if (command.getAmount() == null || command.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("잘못된 충전 금액 - 사용자: {}, 금액: {}", command.getUserId(), command.getAmount());
             return ChargeBalanceResult.failure("충전 금액은 0보다 커야 합니다.");
+        }
+        
+        // 최대 충전 금액 제한 (예: 100만원)
+        BigDecimal maxChargeAmount = new BigDecimal("1000000");
+        if (command.getAmount().compareTo(maxChargeAmount) > 0) {
+            log.warn("최대 충전 금액 초과 - 사용자: {}, 요청금액: {}, 최대금액: {}", 
+                    command.getUserId(), command.getAmount(), maxChargeAmount);
+            return ChargeBalanceResult.failure("한 번에 충전할 수 있는 최대 금액은 1,000,000원입니다.");
         }
         
         // 2. 사용자 존재 확인
         if (!loadUserPort.existsByUserId(command.getUserId())) {
+            log.warn("존재하지 않는 사용자 - 사용자ID: {}", command.getUserId());
             return ChargeBalanceResult.failure("사용자를 찾을 수 없습니다.");
         }
 
-        // 3. 낙관적 락으로 잔액 조회 (데드락 방지)
+        // 3. 잔액 조회 또는 생성
         Balance balance = loadBalancePort.loadActiveBalanceByUserId(command.getUserId())
-                .orElseGet(() -> Balance.builder().userId(command.getUserId()).build());
+                .orElseGet(() -> {
+                    log.info("새로운 잔액 생성 - 사용자: {}", command.getUserId());
+                    return Balance.builder().userId(command.getUserId()).build();
+                });
 
+        BigDecimal beforeAmount = balance.getAmount();
+        
         // 4. 잔액 충전 (도메인 로직)
         balance.charge(command.getAmount());
         
-        // 5. 낙관적 락으로 저장 (동시성 제어)
-        // version 필드를 통해 동시 수정 감지
-        Balance savedBalance = loadBalancePort.saveBalanceWithConcurrencyControl(balance);
+        log.debug("잔액 충전 처리 - 사용자: {}, 이전잔액: {}, 충전금액: {}, 충전후잔액: {}", 
+                command.getUserId(), beforeAmount, command.getAmount(), balance.getAmount());
+        
+        // 5. 잔액 저장 (분산 락으로 동시성 제어됨)
+        Balance savedBalance = loadBalancePort.saveBalance(balance);
 
         // 6. 거래 내역 생성
         BalanceTransaction transaction = BalanceTransaction.create(
@@ -133,6 +111,9 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
                 "잔액 충전"
         );
         BalanceTransaction savedTransaction = saveBalanceTransactionPort.saveBalanceTransaction(transaction);
+
+        log.info("잔액 충전 완료 - 사용자: {}, 최종잔액: {}, 거래ID: {}", 
+                command.getUserId(), savedBalance.getAmount(), savedTransaction.getId());
 
         return ChargeBalanceResult.success(
                 command.getUserId(),

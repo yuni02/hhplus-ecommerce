@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(docker system prune:*)",
-      "Bash(./gradlew test:*)"
-    ],
-    "deny": []
-  }
-}

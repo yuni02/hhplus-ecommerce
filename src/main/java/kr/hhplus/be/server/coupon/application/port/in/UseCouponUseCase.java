@@ -27,11 +27,12 @@ public interface UseCouponUseCase {
         
         public UseCouponCommand(Long userId, Long userCouponId, BigDecimal orderAmount) {
             this.userId = userId;
-            this.userCouponId = userCouponId;
-            this.orderAmount = orderAmount;
+            this.userCouponId = userCouponId;   // 사용자 쿠폰 ID
+            this.orderAmount = orderAmount; // 주문 총 금액 (할인 전 금액)                  
+
         }
         
-        public Long getUserId() {
+        public Long getUserId() {   
             return userId;
         }
         

@@ -2,6 +2,7 @@ package kr.hhplus.be.server.coupon.adapter.in.web;
 
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
+import kr.hhplus.be.server.coupon.application.CachedCouponService;
 import kr.hhplus.be.server.coupon.adapter.in.dto.CouponResponse;
 import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;
 import kr.hhplus.be.server.shared.response.ErrorResponse;       
@@ -17,14 +18,17 @@ public class CouponController implements CouponApiDocumentation {
 
     private final IssueCouponUseCase issueCouponUseCase;
     private final GetUserCouponsUseCase getUserCouponsUseCase;
+    private final CachedCouponService cachedCouponService;
 
     public CouponController(IssueCouponUseCase issueCouponUseCase,
-                          GetUserCouponsUseCase getUserCouponsUseCase) {
+                          GetUserCouponsUseCase getUserCouponsUseCase,
+                          CachedCouponService cachedCouponService) {
         this.issueCouponUseCase = issueCouponUseCase;
         this.getUserCouponsUseCase = getUserCouponsUseCase;
+        this.cachedCouponService = cachedCouponService;
     }
 
-    @Override
+    @PostMapping("/{id}/issue")
     public ResponseEntity<?> issueCoupon(
             @PathVariable(name = "id") Long id,
             @RequestParam(name = "userId", required = true) Long userId) {
@@ -48,7 +52,7 @@ public class CouponController implements CouponApiDocumentation {
         return ResponseEntity.ok(response);
     }
 
-    @Override
+    @GetMapping("/users/{userId}")
     public ResponseEntity<?> getUserCoupons(
             @PathVariable(name = "userId") Long userId) {
         

@@ -3,6 +3,7 @@ package kr.hhplus.be.server.unit.coupon.adapter.in.web;
 import kr.hhplus.be.server.coupon.adapter.in.web.CouponController;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
+import kr.hhplus.be.server.coupon.application.CachedCouponService;
 import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,9 @@ class CouponControllerTest {
     
     @Mock
     private GetUserCouponsUseCase getUserCouponsUseCase;
+    
+    @Mock
+    private CachedCouponService cachedCouponService;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -46,7 +50,7 @@ class CouponControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CouponController(issueCouponUseCase, getUserCouponsUseCase))
+                new CouponController(issueCouponUseCase, getUserCouponsUseCase, cachedCouponService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

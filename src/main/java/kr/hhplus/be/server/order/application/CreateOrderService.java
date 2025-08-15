@@ -1,16 +1,13 @@
 package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
-import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
-import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
-import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
-import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
+import kr.hhplus.be.server.order.application.port.out.*;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
-import kr.hhplus.be.server.shared.service.DistributedLockService;
-
+import kr.hhplus.be.server.shared.lock.DistributedLock;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +15,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.TimeUnit;
 
-/**
- * 주문 생성 Application 서비스
- */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class CreateOrderService implements CreateOrderUseCase {
 
     private final LoadUserPort loadUserPort;
@@ -32,155 +28,137 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final DeductBalancePort deductBalancePort;
     private final SaveOrderPort saveOrderPort;
     private final UseCouponUseCase useCouponUseCase;
-    private final DistributedLockService distributedLockService;
 
-    public CreateOrderService(LoadUserPort loadUserPort,
-                             LoadProductPort loadProductPort,
-                             UpdateProductStockPort updateProductStockPort,
-                             DeductBalancePort deductBalancePort,
-                             SaveOrderPort saveOrderPort,
-                             UseCouponUseCase useCouponUseCase,
-                             DistributedLockService distributedLockService) {
-        this.loadUserPort = loadUserPort;
-        this.loadProductPort = loadProductPort;
-        this.updateProductStockPort = updateProductStockPort;
-        this.deductBalancePort = deductBalancePort;
-        this.saveOrderPort = saveOrderPort;
-        this.useCouponUseCase = useCouponUseCase;
-        this.distributedLockService = distributedLockService;
-    }
-
-    @Override
+    /**
+     * 세밀한 분산락으로 주문 생성
+     * 사용자 + 상품 + 잔액 조합으로 락을 사용하여 최대한 병렬 처리 허용
+     */
+    @DistributedLock(
+        key = "#generateOrderLockKey(#command)",
+        waitTime = 10,
+        leaseTime = 30,
+        timeUnit = TimeUnit.SECONDS
+    )
     @Transactional
-    public CreateOrderResult createOrder(CreateOrderCommand command) {
-        String lockKey = DistributedLockService.LockKeyGenerator.orderLock(command.getUserId());
-        boolean lockAcquired = false;
+    public CreateOrderUseCase.CreateOrderResult createOrder(CreateOrderUseCase.CreateOrderCommand command) {
+        log.debug("주문 생성 시작 (단일 분산락) - userId: {}", command.getUserId());
         
         try {
-            // 1. 분산락 획득 (사용자별 주문 락)
-            lockAcquired = distributedLockService.acquireLock(lockKey, 30); // 30초 타임아웃
-            if (!lockAcquired) {
-                return CreateOrderResult.failure("주문 처리 중입니다. 잠시 후 다시 시도해주세요.");
+            // 1. 주문 검증
+            if (!validateOrder(command)) {
+                return CreateOrderUseCase.CreateOrderResult.failure("주문 검증에 실패했습니다.");
             }
 
-            // 2. 주문 검증
-            OrderValidationResult validationResult = validateOrder(command);
-            if (!validationResult.isValid()) {
-                return CreateOrderResult.failure(validationResult.getErrorMessage());
-            }
-
-            // 3. 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
-            OrderItemsResult itemsResult = createOrderItemsWithPessimisticLock(command);
+            // 2. 재고 확인 및 차감
+            OrderItemsResult itemsResult = processStockDeduction(command);
             if (!itemsResult.isSuccess()) {
-                return CreateOrderResult.failure(itemsResult.getErrorMessage());
+                return CreateOrderUseCase.CreateOrderResult.failure(itemsResult.getErrorMessage());
             }
-            List<OrderItem> createdOrderItems = itemsResult.getOrderItems();
-            boolean stockDeducted = true;
 
-            // 4. 쿠폰 할인 적용 (비관적 락 적용)
-            CouponDiscountResult discountResult = applyCouponDiscountWithPessimisticLock(command, itemsResult.getTotalAmount());
+            // 3. 쿠폰 할인 적용
+            CouponDiscountResult discountResult = processCouponDiscount(command, itemsResult.getTotalAmount());
             if (!discountResult.isSuccess()) {
-                // 쿠폰 할인 실패 시 재고 복구
-                restoreStockWithPessimisticLock(createdOrderItems);
-                return CreateOrderResult.failure(discountResult.getErrorMessage());
+                return CreateOrderUseCase.CreateOrderResult.failure(discountResult.getErrorMessage());
             }
 
-            // 5. 잔액 차감 (비관적 락 적용)
-            if (!deductBalancePort.deductBalanceWithPessimisticLock(command.getUserId(), discountResult.getDiscountedAmount())) {
-                // 잔액 부족 시 재고 복구
-                restoreStockWithPessimisticLock(createdOrderItems);
-                return CreateOrderResult.failure("잔액이 부족합니다.");
+            // 4. 잔액 차감
+            if (!processBalanceDeduction(command.getUserId(), discountResult.getDiscountedAmount())) {
+                return CreateOrderUseCase.CreateOrderResult.failure("잔액이 부족합니다.");
             }
 
-            // 6. 주문 생성 및 저장
-            Order order = createAndSaveOrder(command, createdOrderItems,
+            // 5. 주문 생성 및 저장
+            Order order = createAndSaveOrder(command, itemsResult.getOrderItems(), 
                                            itemsResult.getTotalAmount(), discountResult);
 
-            // 7. 결과 반환
-            return createOrderResult(order, createdOrderItems);
+            // 6. 성공 결과 반환
+            CreateOrderUseCase.CreateOrderResult result = createOrderResult(order, itemsResult.getOrderItems());
+            log.debug("주문 생성 완료 (단일 분산락) - userId: {}, orderId: {}", command.getUserId(), order.getId());
+            
+            return result;
 
         } catch (Exception e) {
-            return CreateOrderResult.failure("주문 생성 중 오류가 발생했습니다: " + e.getMessage());
-        } finally {
-            // 8. 분산락 해제
-            if (lockAcquired) {
-                distributedLockService.releaseLock(lockKey);
-            }
+            log.error("주문 생성 중 예외 발생 (단일 분산락) - userId: {}", command.getUserId(), e);
+            return CreateOrderUseCase.CreateOrderResult.failure("주문 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
+    }
+
+    /**
+     * 주문 락 키 생성
+     * 사용자 + 상품 ID들을 정렬하여 일관된 키 생성
+     */
+    public String generateOrderLockKey(CreateOrderUseCase.CreateOrderCommand command) {
+        // 상품 ID들을 정렬하여 일관된 키 생성
+        List<Long> productIds = command.getOrderItems().stream()
+            .map(CreateOrderUseCase.OrderItemCommand::getProductId)
+            .sorted()
+            .toList();
+        
+        return String.format("order-creation:%d:%s", 
+            command.getUserId(), 
+            productIds.toString());
     }
 
     /**
      * 주문 검증
      */
-    private OrderValidationResult validateOrder(CreateOrderCommand command) {
+    private boolean validateOrder(CreateOrderUseCase.CreateOrderCommand command) {
         // 1. 입력값 검증
         if (command.getUserId() == null || command.getUserId() <= 0) {
-            return OrderValidationResult.failure("잘못된 사용자 ID입니다.");
+            return false;
         }
         
         if (command.getOrderItems() == null || command.getOrderItems().isEmpty()) {
-            return OrderValidationResult.failure("주문 상품이 없습니다.");
+            return false;
         }
         
         // 2. 주문 아이템 수량 검증
-        for (OrderItemCommand itemCommand : command.getOrderItems()) {
+        for (CreateOrderUseCase.OrderItemCommand itemCommand : command.getOrderItems()) {
             if (itemCommand.getQuantity() <= 0) {
-                return OrderValidationResult.failure("주문 수량은 1개 이상이어야 합니다.");
+                return false;
             }
         }
         
         // 3. 사용자 존재 확인
-        if (!loadUserPort.existsById(command.getUserId())) {
-            return OrderValidationResult.failure("사용자를 찾을 수 없습니다.");
-        }
-        return OrderValidationResult.success();
+        return loadUserPort.existsById(command.getUserId());
     }
 
     /**
-     * 주문 아이템 생성 및 재고 차감 (비관적 락 적용)
+     * 재고 처리 (비관적 락 사용)
      */
-    private OrderItemsResult createOrderItemsWithPessimisticLock(CreateOrderCommand command) {
+    private OrderItemsResult processStockDeduction(CreateOrderUseCase.CreateOrderCommand command) {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-    
-        for (OrderItemCommand itemCommand : command.getOrderItems()) {
-            // 1. 상품 조회 + 재고 차감을 한 번에 처리 (비관적 락)
-            if (!updateProductStockPort.deductStockWithPessimisticLock(itemCommand.getProductId(), itemCommand.getQuantity())) {
-                return OrderItemsResult.failure("재고가 부족하거나 상품을 찾을 수 없습니다");
-            }
-            
-            // 2. 상품 정보 조회 (재고 차감 후)
+
+        for (CreateOrderUseCase.OrderItemCommand itemCommand : command.getOrderItems()) {
             LoadProductPort.ProductInfo productInfo = loadProductPort.loadProductById(itemCommand.getProductId())
-                    .orElse(null);
+                .orElse(null);
             
             if (productInfo == null) {
-                return OrderItemsResult.failure("상품을 찾을 수 없습니다");
+                return OrderItemsResult.failure("상품을 찾을 수 없습니다: " + itemCommand.getProductId());
             }
-    
-            // 3. 주문 아이템 생성
-            OrderItem orderItem = createOrderItem(
-                    productInfo.getId(),
-                    productInfo.getName(),
-                    itemCommand.getQuantity(),
-                    productInfo.getCurrentPrice()
-            );
-    
-            orderItems.add(orderItem);
             
-            if (orderItem.getTotalPrice() != null) {
-                totalAmount = totalAmount.add(orderItem.getTotalPrice());
-            } else {
-                return OrderItemsResult.failure("주문 아이템 가격 계산에 실패했습니다.");
+            if (productInfo.getStock() < itemCommand.getQuantity()) {
+                return OrderItemsResult.failure("재고가 부족합니다: " + productInfo.getName());
             }
+            
+            // 비관적 락으로 재고 차감
+            if (!updateProductStockPort.deductStockWithPessimisticLock(itemCommand.getProductId(), itemCommand.getQuantity())) {
+                return OrderItemsResult.failure("재고 차감에 실패했습니다: " + productInfo.getName());
+            }
+            
+            OrderItem orderItem = createOrderItem(itemCommand.getProductId(), productInfo.getName(), 
+                                                itemCommand.getQuantity(), productInfo.getCurrentPrice());
+            orderItems.add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getTotalPrice());
         }
-    
+        
         return OrderItemsResult.success(orderItems, totalAmount);
     }
 
     /**
-     * 쿠폰 할인 적용 (비관적 락 적용)
+     * 쿠폰 할인 처리 (비관적 락 사용)
      */
-    private CouponDiscountResult applyCouponDiscountWithPessimisticLock(CreateOrderCommand command, BigDecimal totalAmount) {
+    private CouponDiscountResult processCouponDiscount(CreateOrderUseCase.CreateOrderCommand command, BigDecimal totalAmount) {
         if (command.getUserCouponId() == null) {
             return CouponDiscountResult.success(totalAmount, 0);
         }
@@ -198,9 +176,16 @@ public class CreateOrderService implements CreateOrderUseCase {
     }
 
     /**
+     * 잔액 차감 처리 (비관적 락 사용)
+     */
+    private boolean processBalanceDeduction(Long userId, BigDecimal amount) {
+        return deductBalancePort.deductBalanceWithPessimisticLock(userId, amount);
+    }
+
+    /**
      * 주문 생성 및 저장
      */
-    private Order createAndSaveOrder(CreateOrderCommand command, 
+    private Order createAndSaveOrder(CreateOrderUseCase.CreateOrderCommand command, 
                                    List<OrderItem> orderItems, 
                                    BigDecimal totalAmount, 
                                    CouponDiscountResult discountResult) {
@@ -219,7 +204,7 @@ public class CreateOrderService implements CreateOrderUseCase {
         order.calculateDiscountedAmount();   
         order.complete();
 
-        // Order 저장 (OrderPersistenceAdapter에서 OrderItem들도 함께 처리)
+        // Order 저장
         Order savedOrder = saveOrderPort.saveOrder(order);
         
         // OrderItem들의 orderId 업데이트
@@ -233,10 +218,10 @@ public class CreateOrderService implements CreateOrderUseCase {
     /**
      * 주문 결과 생성
      */
-    private CreateOrderResult createOrderResult(Order order, List<OrderItem> orderItems) {
-        List<OrderItemResult> orderItemResults = new ArrayList<>();
+    private CreateOrderUseCase.CreateOrderResult createOrderResult(Order order, List<OrderItem> orderItems) {
+        List<CreateOrderUseCase.OrderItemResult> orderItemResults = new ArrayList<>();
         for (OrderItem item : orderItems) {
-            orderItemResults.add(new OrderItemResult(
+            orderItemResults.add(new CreateOrderUseCase.OrderItemResult(
                 item.getId(),
                 item.getProductId(),
                 item.getProductName(),
@@ -246,7 +231,7 @@ public class CreateOrderService implements CreateOrderUseCase {
             ));
         }
 
-        return CreateOrderResult.success(
+        return CreateOrderUseCase.CreateOrderResult.success(
             order.getId(),
             order.getUserId(),
             order.getUserCouponId(),
@@ -277,58 +262,28 @@ public class CreateOrderService implements CreateOrderUseCase {
         return orderItem;
     }
 
-    /**
-     * 재고 복구 (비관적 락 적용)
-     */
-    private void restoreStockWithPessimisticLock(List<OrderItem> orderItems) {
-        for (OrderItem item : orderItems) {
-            updateProductStockPort.restoreStockWithPessimisticLock(item.getProductId(), item.getQuantity());
-        }
-    }
-
-    // 내부 결과 클래스들
-    private static class OrderValidationResult {
-        private final boolean valid;
-        private final String errorMessage;
-
-        private OrderValidationResult(boolean valid, String errorMessage) {
-            this.valid = valid;
-            this.errorMessage = errorMessage;
-        }
-
-        public static OrderValidationResult success() {
-            return new OrderValidationResult(true, null);
-        }
-
-        public static OrderValidationResult failure(String errorMessage) {
-            return new OrderValidationResult(false, errorMessage);
-        }
-
-        public boolean isValid() { return valid; }
-        public String getErrorMessage() { return errorMessage; }
-    }
-
+    // 내부 클래스들
     private static class OrderItemsResult {
         private final boolean success;
         private final List<OrderItem> orderItems;
         private final BigDecimal totalAmount;
         private final String errorMessage;
-
+        
         private OrderItemsResult(boolean success, List<OrderItem> orderItems, BigDecimal totalAmount, String errorMessage) {
             this.success = success;
             this.orderItems = orderItems;
             this.totalAmount = totalAmount;
             this.errorMessage = errorMessage;
         }
-
+        
         public static OrderItemsResult success(List<OrderItem> orderItems, BigDecimal totalAmount) {
             return new OrderItemsResult(true, orderItems, totalAmount, null);
         }
-
+        
         public static OrderItemsResult failure(String errorMessage) {
             return new OrderItemsResult(false, null, null, errorMessage);
         }
-
+        
         public boolean isSuccess() { return success; }
         public List<OrderItem> getOrderItems() { return orderItems; }
         public BigDecimal getTotalAmount() { return totalAmount; }
@@ -338,27 +293,27 @@ public class CreateOrderService implements CreateOrderUseCase {
     private static class CouponDiscountResult {
         private final boolean success;
         private final BigDecimal discountedAmount;
-        private final Integer discountAmount;
+        private final int discountAmount;
         private final String errorMessage;
-
-        private CouponDiscountResult(boolean success, BigDecimal discountedAmount, Integer discountAmount, String errorMessage) {
+        
+        private CouponDiscountResult(boolean success, BigDecimal discountedAmount, int discountAmount, String errorMessage) {
             this.success = success;
             this.discountedAmount = discountedAmount;
             this.discountAmount = discountAmount;
             this.errorMessage = errorMessage;
         }
-
-        public static CouponDiscountResult success(BigDecimal discountedAmount, Integer discountAmount) {
+        
+        public static CouponDiscountResult success(BigDecimal discountedAmount, int discountAmount) {
             return new CouponDiscountResult(true, discountedAmount, discountAmount, null);
         }
-
+        
         public static CouponDiscountResult failure(String errorMessage) {
-            return new CouponDiscountResult(false, null, null, errorMessage);
+            return new CouponDiscountResult(false, null, 0, errorMessage);
         }
-
+        
         public boolean isSuccess() { return success; }
         public BigDecimal getDiscountedAmount() { return discountedAmount; }
-        public Integer getDiscountAmount() { return discountAmount; }
+        public int getDiscountAmount() { return discountAmount; }
         public String getErrorMessage() { return errorMessage; }
     }
-} 
+}
