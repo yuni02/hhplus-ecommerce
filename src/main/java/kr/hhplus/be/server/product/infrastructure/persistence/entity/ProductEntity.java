@@ -64,4 +64,24 @@ public class ProductEntity extends BaseEntity {
     public void increaseStock(Integer quantity) {
         this.stockQuantity += quantity;
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
+    public void updatePrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public void updateProduct(String name, String description, BigDecimal price, Integer stockQuantity, String status) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.status = status;
+    }
 }

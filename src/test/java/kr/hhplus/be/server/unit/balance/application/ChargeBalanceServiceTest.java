@@ -7,7 +7,7 @@ import kr.hhplus.be.server.balance.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.balance.application.port.out.SaveBalanceTransactionPort;
 import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.balance.domain.BalanceTransaction;
-import kr.hhplus.be.server.shared.service.DistributedLockService;
+import kr.hhplus.be.server.shared.lock.DistributedLockManager;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,15 +36,15 @@ class ChargeBalanceServiceTest {
     
     @Mock
     private SaveBalanceTransactionPort saveBalanceTransactionPort;
-
+    
     @Mock
-    private DistributedLockService distributedLockService;
+    private DistributedLockManager distributedLockManager;
 
     private ChargeBalanceService chargeBalanceService;
 
     @BeforeEach
     void setUp() {
-        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort, distributedLockService);
+        chargeBalanceService = new ChargeBalanceService(loadUserPort, loadBalancePort, saveBalanceTransactionPort);
     }
 
     @Test
@@ -66,9 +68,16 @@ class ChargeBalanceServiceTest {
 
         when(loadUserPort.existsByUserId(userId)).thenReturn(true);
         when(loadBalancePort.loadActiveBalanceByUserId(userId)).thenReturn(Optional.of(existingBalance));
-        when(loadBalancePort.saveBalanceWithConcurrencyControl(any(Balance.class))).thenReturn(savedBalance);
+        when(loadBalancePort.saveBalance(any(Balance.class))).thenReturn(savedBalance);
         when(saveBalanceTransactionPort.saveBalanceTransaction(any(BalanceTransaction.class)))
             .thenReturn(savedTransaction);
+        
+        // DistributedLockManager mock 설정 - 실제 supplier를 실행하도록 함
+        when(distributedLockManager.executeWithLock(anyString(), any(Duration.class), any(Duration.class), any(Supplier.class)))
+            .thenAnswer(invocation -> {
+                Supplier<Object> supplier = invocation.getArgument(3);
+                return supplier.get();
+            });
 
         // when
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(command);
@@ -81,7 +90,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort).loadActiveBalanceByUserId(userId);
-        verify(loadBalancePort).saveBalanceWithConcurrencyControl(any(Balance.class));
+        verify(loadBalancePort).saveBalance(any(Balance.class));
         verify(saveBalanceTransactionPort).saveBalanceTransaction(any(BalanceTransaction.class));
     }
 
@@ -94,7 +103,14 @@ class ChargeBalanceServiceTest {
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
             new ChargeBalanceUseCase.ChargeBalanceCommand(userId, amount);
 
-        when(loadUserPort.existsByUserId(userId)).thenReturn(false);                        
+        when(loadUserPort.existsByUserId(userId)).thenReturn(false);
+        
+        // DistributedLockManager mock 설정
+        when(distributedLockManager.executeWithLock(anyString(), any(Duration.class), any(Duration.class), any(Supplier.class)))
+            .thenAnswer(invocation -> {
+                Supplier<Object> supplier = invocation.getArgument(3);
+                return supplier.get();
+            });
 
         // when
         ChargeBalanceUseCase.ChargeBalanceResult result = chargeBalanceService.chargeBalance(command);
@@ -105,7 +121,7 @@ class ChargeBalanceServiceTest {
         
         verify(loadUserPort).existsByUserId(userId);
         verify(loadBalancePort, never()).loadActiveBalanceByUserId(any());
-        verify(loadBalancePort, never()).saveBalanceWithConcurrencyControl(any());
+        verify(loadBalancePort, never()).saveBalance(any());
         verify(saveBalanceTransactionPort, never()).saveBalanceTransaction(any());
     }
 } 

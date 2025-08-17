@@ -3,6 +3,7 @@ package kr.hhplus.be.server.product.application;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
+import org.springframework.cache.annotation.Cacheable;
 
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class GetProductDetailService implements GetProductDetailUseCase {
     }
 
     @Override
+    @Cacheable(value = "productDetail", key = "#command.productId", unless = "#result.isEmpty()", cacheManager = "shortTermCacheManager")
     public Optional<GetProductDetailResult> getProductDetail(GetProductDetailCommand command) {
         try {
             // 1. 입력값 검증

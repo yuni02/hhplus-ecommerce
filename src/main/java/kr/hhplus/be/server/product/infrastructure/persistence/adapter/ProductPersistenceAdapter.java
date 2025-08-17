@@ -2,6 +2,7 @@ package kr.hhplus.be.server.product.infrastructure.persistence.adapter;
 
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
+import kr.hhplus.be.server.product.application.port.out.SaveProductPort;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
 
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
  * Product 도메인 전용 데이터 접근
  */
 @Component("productProductPersistenceAdapter")
-public class ProductPersistenceAdapter implements LoadProductPort, LoadProductStatsPort {
+public class ProductPersistenceAdapter implements LoadProductPort, LoadProductStatsPort, SaveProductPort {
 
     private final ProductJpaRepository productJpaRepository;
 
@@ -71,5 +72,48 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
     public List<LoadProductStatsPort.ProductStatsInfo> loadTopProductsBySales(int limit) {
         // TODO: ProductStatsEntity 구현 후 실제 데이터 반환
         return List.of();
+    }
+
+    @Override
+    public SaveProductPort.ProductInfo saveProduct(SaveProductPort.ProductInfo productInfo) {
+        ProductEntity entity;
+        
+        if (productInfo.getId() != null) {
+            // 기존 상품 업데이트
+            entity = productJpaRepository.findById(productInfo.getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + productInfo.getId()));
+            
+            // 비즈니스 메서드를 사용하여 업데이트
+            entity.updateProduct(
+                productInfo.getName(),
+                productInfo.getDescription(),
+                productInfo.getCurrentPrice(),
+                productInfo.getStock(),
+                productInfo.getStatus()
+            );
+        } else {
+            // 새 상품 생성
+            entity = ProductEntity.builder()
+                    .name(productInfo.getName())
+                    .description(productInfo.getDescription())
+                    .price(productInfo.getCurrentPrice())
+                    .stockQuantity(productInfo.getStock())
+                    .status(productInfo.getStatus())
+                    .build();
+        }
+        
+        ProductEntity savedEntity = productJpaRepository.save(entity);
+        
+        return SaveProductPort.ProductInfo.builder()
+                .id(savedEntity.getId())
+                .name(savedEntity.getName())
+                .description(savedEntity.getDescription())
+                .currentPrice(savedEntity.getPrice())
+                .stock(savedEntity.getStockQuantity())
+                .status(savedEntity.getStatus())
+                .category("GENERAL")
+                .createdAt(savedEntity.getCreatedAt())
+                .updatedAt(savedEntity.getUpdatedAt())
+                .build();
     }
 }

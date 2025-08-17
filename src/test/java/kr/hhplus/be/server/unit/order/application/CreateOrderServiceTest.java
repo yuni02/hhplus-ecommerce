@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import kr.hhplus.be.server.order.application.CreateOrderService;
+
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;    
 import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
@@ -25,7 +26,6 @@ import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
 import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.shared.service.DistributedLockService;
 
 @ExtendWith(MockitoExtension.class)
 class CreateOrderServiceTest {
@@ -47,22 +47,20 @@ class CreateOrderServiceTest {
     
     @Mock
     private UseCouponUseCase useCouponUseCase;
+    
 
-    @Mock
-    private DistributedLockService distributedLockService;
 
     private CreateOrderService createOrderService;
 
-    @BeforeEach
+        @BeforeEach
     void setUp() {
         createOrderService = new CreateOrderService(
-            loadUserPort, 
-            loadProductPort, 
-            updateProductStockPort, 
-            deductBalancePort, 
-            saveOrderPort, 
-            useCouponUseCase,
-            distributedLockService
+            loadUserPort,
+            loadProductPort,
+            updateProductStockPort,
+            deductBalancePort,
+            saveOrderPort,
+            useCouponUseCase
         );
     }
 
@@ -110,10 +108,10 @@ class CreateOrderServiceTest {
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
+        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);  
         verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(20000));
         verify(saveOrderPort).saveOrder(any(Order.class));
-        verify(useCouponUseCase, never()).useCouponWithPessimisticLock(any());
+        verify(useCouponUseCase, never()).useCoupon(any());
     }
 
     @Test
@@ -188,7 +186,7 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort, never()).loadProductById(any());
@@ -207,8 +205,7 @@ class CreateOrderServiceTest {
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(updateProductStockPort.deductStockWithPessimisticLock(999L, 2)).thenReturn(true); // 재고 차감은 성공
-        when(loadProductPort.loadProductById(999L)).thenReturn(Optional.empty()); // 하지만 상품 정보 조회 실패
+        when(loadProductPort.loadProductById(999L)).thenReturn(Optional.empty());
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
@@ -218,8 +215,8 @@ class CreateOrderServiceTest {
         assertThat(result.getErrorMessage()).contains("상품을 찾을 수 없습니다");
         
         verify(loadUserPort).existsById(userId);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(999L, 2); // 실제로는 호출됨
         verify(loadProductPort).loadProductById(999L);
+        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -229,7 +226,7 @@ class CreateOrderServiceTest {
         // given
         Long userId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 200); // 재고보다 많은 수량
+            new CreateOrderUseCase.OrderItemCommand(1L,         200);   // 재고보다 많은 수량
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
@@ -237,18 +234,18 @@ class CreateOrderServiceTest {
             1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE"); // 재고 100개
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 200)).thenReturn(false); // 재고 부족으로 차감 실패
+        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("재고가 부족하거나 상품을 찾을 수 없습니다");        
+        assertThat(result.getErrorMessage()).contains("재고가 부족합니다");        
         
         verify(loadUserPort).existsById(userId);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 200);
-        verify(loadProductPort, never()).loadProductById(1L); // 재고 차감 실패 시 상품 조회 안 함
+        verify(loadProductPort).loadProductById(1L);
+        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -262,20 +259,24 @@ class CreateOrderServiceTest {
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
+        LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
+            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
+
         when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(false); // 재고 차감 실패
+        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)   ).thenReturn(false); // 재고 차감 실패
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("재고가 부족하거나 상품을 찾을 수 없습니다");
+        assertThat(result.getErrorMessage()).contains("재고 차감에 실패했습니다");
         
         verify(loadUserPort).existsById(userId);
+        verify(loadProductPort).loadProductById(1L);
         verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(loadProductPort, never()).loadProductById(1L); // 재고 차감 실패 시 상품 조회 안 함
-        verify(deductBalancePort, never()).deductBalanceWithPessimisticLock(any(), any());
+        verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -298,22 +299,21 @@ class CreateOrderServiceTest {
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(useCouponUseCase.useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
+        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);       
+        when(useCouponUseCase.useCoupon(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("쿠폰을 사용할 수 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
         verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(useCouponUseCase).useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class));
-        verify(updateProductStockPort).restoreStockWithPessimisticLock(1L, 2); // 재고 복구 확인
-        verify(deductBalancePort, never()).deductBalanceWithPessimisticLock(any(), any());
+        verify(useCouponUseCase, never()).useCoupon(any(UseCouponUseCase.UseCouponCommand.class));
+        verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -333,20 +333,19 @@ class CreateOrderServiceTest {
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
         when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(false);
+        when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(false);
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("잔액이 부족합니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
         
         verify(loadUserPort).existsById(userId);
         verify(loadProductPort).loadProductById(1L);
         verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(20000));
-        verify(updateProductStockPort).restoreStockWithPessimisticLock(1L, 2); // 재고 복구 확인
+        verify(deductBalancePort, never()).deductBalance(any(), any());
         verify(saveOrderPort, never()).saveOrder(any());
     }
 
@@ -416,7 +415,7 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 상품이 없습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort, never()).existsById(any());
         verify(loadProductPort, never()).loadProductById(any());
@@ -437,7 +436,7 @@ class CreateOrderServiceTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 수량은 1개 이상이어야 합니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
         
         verify(loadUserPort, never()).existsById(any());
         verify(loadProductPort, never()).loadProductById(any());

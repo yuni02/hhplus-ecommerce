@@ -23,9 +23,4 @@ public interface LoadBalancePort {
      * 잔액 저장
      */
     Balance saveBalance(Balance balance);
-    
-    /**
-     * 잔액 저장 (동시성 제어용)
-     */
-    Balance saveBalanceWithConcurrencyControl(Balance balance);
 } 

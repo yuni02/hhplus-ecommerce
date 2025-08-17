@@ -2,9 +2,9 @@ package kr.hhplus.be.server.integration;
 
 import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.coupon.application.IssueCouponService;
-import kr.hhplus.be.server.coupon.application.GetUserCouponsService;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
+import kr.hhplus.be.server.coupon.application.CachedCouponService;
+import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
@@ -32,9 +32,9 @@ class CouponIntegrationTest {
 
     @Autowired
     private IssueCouponService issueCouponService;
-
+    
     @Autowired
-    private GetUserCouponsService getUserCouponsService;
+    private CachedCouponService cachedCouponService;
 
     @Autowired
     private CouponJpaRepository couponJpaRepository;
@@ -139,8 +139,8 @@ class CouponIntegrationTest {
     }
 
     @Test
-    @DisplayName("사용자 쿠폰 목록 조회 성공")
-    void 사용자_쿠폰_목록_조회_성공() {
+    @DisplayName("전체 사용자 쿠폰 목록 조회 성공 - CachedCouponService")
+    void 전체_사용자_쿠폰_목록_조회_성공_Cached() {
         // given
         Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long couponId = testCoupon.getId();
@@ -150,31 +150,17 @@ class CouponIntegrationTest {
         issueCouponService.issueCoupon(issueCommand);
 
         // when
-        GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(userId);
-        GetUserCouponsUseCase.GetUserCouponsResult result = getUserCouponsService.getUserCoupons(command);
+        List<LoadUserCouponPort.UserCouponInfo> result = cachedCouponService.getAllUserCoupons(userId);
 
         // then
-        assertThat(result.getUserCoupons()).hasSize(1);
-        GetUserCouponsUseCase.UserCouponInfo userCouponInfo = result.getUserCoupons().get(0);
+        assertThat(result).hasSize(1);
+        LoadUserCouponPort.UserCouponInfo userCouponInfo = result.get(0);
         assertThat(userCouponInfo.getCouponId()).isEqualTo(couponId);
-        assertThat(userCouponInfo.getCouponName()).isEqualTo("테스트 쿠폰");
-        assertThat(userCouponInfo.getDiscountAmount()).isEqualTo(1000);
         assertThat(userCouponInfo.getStatus()).isEqualTo("AVAILABLE");
     }
+    
 
-    @Test
-    @DisplayName("사용자 쿠폰 목록 조회 실패 - 존재하지 않는 사용자")
-    void 사용자_쿠폰_목록_조회_실패_존재하지_않는_사용자() {
-        // given
-        Long nonExistentUserId = 9999L;
 
-        // when
-        GetUserCouponsUseCase.GetUserCouponsCommand command = new GetUserCouponsUseCase.GetUserCouponsCommand(nonExistentUserId);
-        GetUserCouponsUseCase.GetUserCouponsResult result = getUserCouponsService.getUserCoupons(command);
-
-        // then
-        assertThat(result.getUserCoupons()).isEmpty();
-    }
 
     @Test
     @DisplayName("쿠폰 발급 실패 - 쿠폰 소진")

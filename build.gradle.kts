@@ -36,10 +36,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.retry:spring-retry")
 	implementation("org.springframework:spring-aspects")
-	implementation("org.springframework.boot:spring-boot-starter-data-redis")
-	
-	// Redisson - Redis 분산락 라이브러리
-	implementation("org.redisson:redisson-spring-boot-starter:3.27.1")
 
     // Lombok
 	compileOnly("org.projectlombok:lombok")
@@ -54,8 +50,9 @@ dependencies {
 	runtimeOnly("com.mysql:mysql-connector-j")
 	implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
 	
-    // Test DB
-    testRuntimeOnly("com.h2database:h2")
+    // Redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("org.redisson:redisson-spring-boot-starter:3.27.1")				
 
     // DevTools (개발 시 자동 재시작)
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -65,7 +62,6 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:mysql")
-	testImplementation("org.testcontainers:testcontainers")
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
