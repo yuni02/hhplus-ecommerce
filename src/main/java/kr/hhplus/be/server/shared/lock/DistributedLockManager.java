@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +30,7 @@ public class DistributedLockManager {
 
     /**
      * 분산락 획득 및 작업 실행 (커스텀 타임아웃)
+     * 트랜잭션 내에서 락을 유지하도록 설계
      */
     public <T> T executeWithLock(String lockKey, Duration lockTimeout, Duration waitTimeout, Supplier<T> task) {
         String fullLockKey = LOCK_PREFIX + lockKey;
@@ -42,16 +44,35 @@ public class DistributedLockManager {
             }
             
             log.debug("Lock acquired - key: {}", fullLockKey);
-            return task.get();
+            
+            // 작업 실행 (트랜잭션 내에서 실행됨)
+            T result = task.get();
+            
+            // 트랜잭션이 완료된 후 락 해제
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                // 트랜잭션 내에서 실행 중인 경우, 트랜잭션 완료 후 락 해제
+                TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (lock.isHeldByCurrentThread()) {
+                            lock.unlock();
+                            log.debug("Lock released after transaction completion - key: {}", fullLockKey);
+                        }
+                    }
+                });
+            } else {
+                // 트랜잭션 외부에서 실행 중인 경우, 즉시 락 해제
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                    log.debug("Lock released immediately (no transaction) - key: {}", fullLockKey);
+                }
+            }
+            
+            return result;
             
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Lock acquisition interrupted", e);
-        } finally {
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
-                log.debug("Lock released - key: {}", fullLockKey);
-            }
         }
     }
 
