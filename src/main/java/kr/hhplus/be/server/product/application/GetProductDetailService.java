@@ -3,7 +3,7 @@ package kr.hhplus.be.server.product.application;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
-import kr.hhplus.be.server.shared.cache.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
 
 import org.springframework.stereotype.Service;
 
@@ -25,11 +25,7 @@ public class GetProductDetailService implements GetProductDetailUseCase {
     }
 
     @Override
-    @Cacheable(
-        key = "'product-detail:' + #command.productId",
-        expireAfterWrite = 300L, // 5분간 캐시
-        unless = "#result.isEmpty()"
-    )
+    @Cacheable(value = "productDetail", key = "#command.productId", unless = "#result.isEmpty()", cacheManager = "shortTermCacheManager")
     public Optional<GetProductDetailResult> getProductDetail(GetProductDetailCommand command) {
         try {
             // 1. 입력값 검증

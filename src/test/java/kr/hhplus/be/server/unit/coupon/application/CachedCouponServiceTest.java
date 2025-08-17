@@ -41,31 +41,6 @@ class CachedCouponServiceTest {
     }
 
     @Test
-    @DisplayName("사용 가능한 쿠폰 조회 성공")
-    void getAvailableUserCoupons_Success() {
-        // given
-        Long userId = 1L;
-        String issuedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        
-        LoadUserCouponPort.UserCouponInfo availableCoupon = new LoadUserCouponPort.UserCouponInfo(
-            1L, userId, 1L, "AVAILABLE", issuedAt, null, null);
-        LoadUserCouponPort.UserCouponInfo usedCoupon = new LoadUserCouponPort.UserCouponInfo(
-            2L, userId, 2L, "USED", issuedAt, issuedAt, 1L);
-
-        when(loadUserCouponPort.loadUserCouponsByUserId(userId))
-            .thenReturn(List.of(availableCoupon, usedCoupon));
-
-        // when
-        List<LoadUserCouponPort.UserCouponInfo> result = cachedCouponService.getAvailableUserCoupons(userId);
-
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getStatus()).isEqualTo("AVAILABLE");
-        
-        verify(loadUserCouponPort).loadUserCouponsByUserId(userId);
-    }
-
-    @Test
     @DisplayName("전체 사용자 쿠폰 조회 성공")
     void getAllUserCoupons_Success() {
         // given

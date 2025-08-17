@@ -12,7 +12,6 @@ import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderJpaRepository;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
-import kr.hhplus.be.server.shared.config.RedisDistributedLock;
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(TestcontainersConfiguration.class)
 class CouponDistributedLockIntegrationTest {
 
-    @Autowired
-    private RedisDistributedLock redisDistributedLock;
 
     @Autowired
     private CouponJpaRepository couponJpaRepository;
@@ -167,21 +164,6 @@ class CouponDistributedLockIntegrationTest {
                 .status("ACTIVE")
                 .build();
         balanceJpaRepository.saveAndFlush(testBalance);
-    }
-
-    @Test
-    void 쿠폰_락_키_생성_테스트() {
-        // given
-        Long couponId = 1L;
-        Long userId = 100L;
-
-        // when
-        String couponLockKey = RedisDistributedLock.createCouponLockKey(couponId);
-        String userCouponLockKey = RedisDistributedLock.createUserCouponLockKey(couponId, userId);
-
-        // then
-        assertThat(couponLockKey).isEqualTo("coupon:issue:1");
-        assertThat(userCouponLockKey).isEqualTo("coupon:issue:user:1:100");
     }
 
 

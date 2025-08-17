@@ -159,64 +159,8 @@ class CouponIntegrationTest {
         assertThat(userCouponInfo.getStatus()).isEqualTo("AVAILABLE");
     }
     
-    @Test
-    @DisplayName("사용 가능한 쿠폰 목록 조회 성공 - CachedCouponService")
-    void 사용가능한_쿠폰_목록_조회_성공_Cached() {
-        // given
-        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
-        Long couponId = testCoupon.getId();
 
-        // 쿠폰 발급
-        IssueCouponUseCase.IssueCouponCommand issueCommand = new IssueCouponUseCase.IssueCouponCommand(userId, couponId);
-        issueCouponService.issueCoupon(issueCommand);
 
-        // when
-        List<LoadUserCouponPort.UserCouponInfo> result = cachedCouponService.getAvailableUserCoupons(userId);
-
-        // then
-        assertThat(result).hasSize(1);
-        LoadUserCouponPort.UserCouponInfo userCouponInfo = result.get(0);
-        assertThat(userCouponInfo.getCouponId()).isEqualTo(couponId);
-        assertThat(userCouponInfo.getStatus()).isEqualTo("AVAILABLE");
-    }
-
-    @Test
-    @DisplayName("사용자 쿠폰 목록 조회 실패 - 존재하지 않는 사용자")
-    void 사용자_쿠폰_목록_조회_실패_존재하지_않는_사용자() {
-        // given
-        Long nonExistentUserId = 9999L;
-
-        // when - 캐시된 서비스로 조회
-        List<LoadUserCouponPort.UserCouponInfo> result = cachedCouponService.getAvailableUserCoupons(nonExistentUserId);
-
-        // then
-        assertThat(result).isEmpty();
-    }
-    
-    @Test
-    @DisplayName("사용 가능한 쿠폰 캐시 무효화 테스트")
-    void 사용가능한_쿠폰_캐시_무효화_테스트() {
-        // given
-        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
-        Long couponId = testCoupon.getId();
-
-        // 쿠폰 발급 후 캐시 생성 (AOP에 의해 자동 처리)
-        IssueCouponUseCase.IssueCouponCommand issueCommand = new IssueCouponUseCase.IssueCouponCommand(userId, couponId);
-        issueCouponService.issueCoupon(issueCommand);
-        
-        // 첫 번째 조회로 캐시 생성 (AOP @Cacheable에 의해 자동 캐시)
-        List<LoadUserCouponPort.UserCouponInfo> firstResult = cachedCouponService.getAvailableUserCoupons(userId);
-        assertThat(firstResult).hasSize(1);
-
-        // when - 캐시 무효화 (AOP @CacheEvict에 의해 자동 처리)
-        cachedCouponService.evictAvailableUserCouponsCache(userId);
-        cachedCouponService.evictAllUserCouponsCache(userId);
-        
-        // then - 캐시 무효화 후에도 데이터를 올바르게 조회
-        List<LoadUserCouponPort.UserCouponInfo> secondResult = cachedCouponService.getAvailableUserCoupons(userId);
-        assertThat(secondResult).hasSize(1);
-        assertThat(secondResult.get(0).getStatus()).isEqualTo("AVAILABLE");
-    }
 
     @Test
     @DisplayName("쿠폰 발급 실패 - 쿠폰 소진")

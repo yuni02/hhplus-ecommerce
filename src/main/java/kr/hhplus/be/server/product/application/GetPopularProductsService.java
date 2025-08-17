@@ -3,7 +3,7 @@ package kr.hhplus.be.server.product.application;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
-import kr.hhplus.be.server.shared.cache.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
 
 import org.springframework.stereotype.Service;
 
@@ -27,11 +27,7 @@ public class GetPopularProductsService implements GetPopularProductsUseCase {
     }
 
     @Override
-    @Cacheable(
-        key = "'popular-products'",
-        expireAfterWrite = 60L, // 1분간 캐시 (자주 변경되는 데이터)
-        unless = "#result.popularProducts.isEmpty()"
-    )
+    @Cacheable(value = "popularProducts", key = "'all'", unless = "#result.popularProducts.isEmpty()", cacheManager = "shortTermCacheManager")
     public GetPopularProductsResult getPopularProducts(GetPopularProductsCommand command) {
         try {
             // 1. 인기 상품 통계 조회 (상위 5개)

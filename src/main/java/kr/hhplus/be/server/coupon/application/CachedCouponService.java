@@ -6,8 +6,8 @@ import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.UpdateUserCouponPort;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
-import kr.hhplus.be.server.shared.cache.Cacheable;
-import kr.hhplus.be.server.shared.cache.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -33,29 +33,9 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     }
 
     /**
-     * 사용 가능한 쿠폰 목록 조회 (캐시 적용) - 자주 조회됨
-     */
-    @Cacheable(
-        key = "'user-coupons-available:' + #userId",
-        expireAfterWrite = 180L, // 3분간 캐시
-        unless = "#result.isEmpty()"
-    )
-    public List<LoadUserCouponPort.UserCouponInfo> getAvailableUserCoupons(Long userId) {
-        log.debug("사용 가능한 쿠폰 목록 조회 (DB) - userId: {}", userId);
-        
-        List<LoadUserCouponPort.UserCouponInfo> availableCoupons = loadUserCouponPort.loadUserCouponsByUserId(userId)
-            .stream()
-            .filter(coupon -> "AVAILABLE".equals(coupon.getStatus()))
-            .toList();
-        
-        log.debug("Available user coupons retrieved - userId: {}, count: {}", userId, availableCoupons.size());
-        return availableCoupons;
-    }
-
-    /**
      * 사용 가능한 쿠폰 캐시 무효화
      */
-    @CacheEvict(key = "'user-coupons-available:' + #userId")
+    @CacheEvict(value = "userCouponsAvailable", key = "#userId")
     public void evictAvailableUserCouponsCache(Long userId) {
         log.debug("사용 가능한 쿠폰 캐시 무효화 - userId: {}", userId);
         // 메서드 내용 없음 - AOP가 캐시 무효화 처리
@@ -64,7 +44,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     /**
      * 전체 사용자 쿠폰 캐시 무효화
      */
-    @CacheEvict(key = "'user-coupons-all:' + #userId")
+    @CacheEvict(value = "userCouponsAll", key = "#userId")
     public void evictAllUserCouponsCache(Long userId) {
         log.debug("전체 사용자 쿠폰 캐시 무효화 - userId: {}", userId);
         // 메서드 내용 없음 - AOP가 캐시 무효화 처리
@@ -73,11 +53,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     /**
      * 사용자 쿠폰 목록 조회 (전체, 캐시 적용) - API 응답용
      */
-    @Cacheable(
-        key = "'user-coupons-all:' + #userId",
-        expireAfterWrite = 300L, // 5분간 캐시
-        unless = "#result.isEmpty()"
-    )
+    @Cacheable(value = "userCouponsAll", key = "#userId", unless = "#result.isEmpty()", cacheManager = "shortTermCacheManager")
     public List<LoadUserCouponPort.UserCouponInfo> getAllUserCoupons(Long userId) {
         log.debug("전체 사용자 쿠폰 목록 조회 (DB) - userId: {}", userId);
         
@@ -112,10 +88,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     }
 
     @Override
-    @CacheEvict(
-        key = "'user-coupons-available:' + #command.userId",
-        condition = "#result.success"
-    )
+    @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
     public UseCouponResult useCoupon(UseCouponCommand command) {
         try {
             // 1. 사용자 쿠폰 조회
@@ -153,10 +126,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     }
 
     @Override
-    @CacheEvict(
-        key = "'user-coupons-available:' + #command.userId",
-        condition = "#result.success"
-    )
+    @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
     public UseCouponResult useCouponWithPessimisticLock(UseCouponCommand command) {
         try {
             // 1. 비관적 락으로 사용자 쿠폰 조회
@@ -196,7 +166,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     /**
      * 쿠폰 정보 캐시 무효화 (쿠폰 정보 변경 시에만 호출)
      */
-    @CacheEvict(key = "'coupon-info:' + #couponId")
+    @CacheEvict(value = "couponInfo", key = "#couponId")
     public void evictCouponInfoCache(Long couponId) {
         log.debug("쿠폰 정보 캐시 무효화 - couponId: {}", couponId);
         // 메서드 내용 없음 - AOP가 캐시 무효화 처리
