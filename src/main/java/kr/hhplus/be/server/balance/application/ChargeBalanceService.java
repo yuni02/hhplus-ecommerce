@@ -118,7 +118,8 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
         return ChargeBalanceResult.success(
                 command.getUserId(),
                 savedBalance.getAmount(),
-                savedTransaction.getId()
+                savedTransaction.getId(),
+                command.getAmount()  // 충전 금액 추가
         );
     }
 } 
