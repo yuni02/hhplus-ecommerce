@@ -84,7 +84,7 @@ public class IssueCouponService implements IssueCouponUseCase {
                     couponInfo.getId(), couponInfo.getName(), couponInfo.getDescription(),
                     couponInfo.getDiscountAmount(), couponInfo.getMaxIssuanceCount(),
                     couponInfo.getIssuedCount(), couponInfo.getStatus(),
-                    couponInfo.getStartDate(), couponInfo.getEndDate()
+                    couponInfo.getValidFrom(), couponInfo.getValidTo()
                 );
             }
 
@@ -149,13 +149,13 @@ public class IssueCouponService implements IssueCouponUseCase {
             return false;
         }
         
-        // 3. 발급 시작일 체크 (startDate가 설정되어 있고, 아직 시작되지 않은 경우)
-        if (couponInfo.getStartDate() != null && now.isBefore(couponInfo.getStartDate())) {
+        // 3. 발급 시작일 체크 (validFrom이 설정되어 있고, 아직 시작되지 않은 경우)
+        if (couponInfo.getValidFrom() != null && now.isBefore(couponInfo.getValidFrom())) {
             return false;
         }
         
-        // 4. 발급 종료일 체크 (endDate가 설정되어 있고, 이미 만료된 경우)
-        if (couponInfo.getEndDate() != null && now.isAfter(couponInfo.getEndDate())) {
+        // 4. 발급 종료일 체크 (validTo가 설정되어 있고, 이미 만료된 경우)
+        if (couponInfo.getValidTo() != null && now.isAfter(couponInfo.getValidTo())) {
             return false;
         }
         

@@ -106,8 +106,8 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
                 entity.getMaxIssuanceCount(),
                 entity.getIssuedCount(),
                 entity.getStatus(),
-                entity.getValidFrom(),  // validFrom을 startDate로 매핑
-                entity.getValidTo()     // validTo를 endDate로 매핑
+                entity.getValidFrom(),  // validFrom을 validFrom으로 매핑
+                entity.getValidTo()     // validTo를 validTo로 매핑
         );
     }
 

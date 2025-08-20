@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.coupon.application.port.out;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -11,6 +13,11 @@ public interface LoadCouponPort {
      * 쿠폰 ID로 조회
      */
     Optional<CouponInfo> loadCouponById(Long couponId);
+    
+    /**
+     * 모든 쿠폰 조회
+     */
+    List<CouponInfo> loadAllCoupons();
     
     /**
      * 쿠폰 ID로 락을 사용하여 조회 (선착순 쿠폰 발급용)
@@ -33,9 +40,12 @@ public interface LoadCouponPort {
         private final Integer maxIssuanceCount;
         private final Integer issuedCount;
         private final String status;
+        private final LocalDateTime validFrom;
+        private final LocalDateTime validTo;
         
         public CouponInfo(Long id, String name, String description, Integer discountAmount,
-                         Integer maxIssuanceCount, Integer issuedCount, String status) {
+                         Integer maxIssuanceCount, Integer issuedCount, String status,
+                         LocalDateTime validFrom, LocalDateTime validTo) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -43,6 +53,8 @@ public interface LoadCouponPort {
             this.maxIssuanceCount = maxIssuanceCount;
             this.issuedCount = issuedCount;
             this.status = status;
+            this.validFrom = validFrom;
+            this.validTo = validTo;
         }
         
         public Long getId() {
@@ -71,6 +83,23 @@ public interface LoadCouponPort {
         
         public String getStatus() {
             return status;
+        }
+        
+        public LocalDateTime getValidFrom() {
+            return validFrom;
+        }
+        
+        public LocalDateTime getValidTo() {
+            return validTo;
+        }
+        
+        // 기존 생성자와의 호환성을 위한 getter
+        public Long getCouponId() {
+            return id;
+        }
+        
+        public String getCouponName() {
+            return name;
         }
     }
 } 
