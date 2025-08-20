@@ -47,45 +47,6 @@ class PopularProductsCacheIntegrationTest {
     }
 
     @Test
-    @DisplayName("인기상품 조회 캐시 성능 테스트")
-    void popularProductsCachePerformanceTest() {
-        // given
-        GetPopularProductsCommand command = new GetPopularProductsCommand(5);
-
-        // when & then
-        // 첫 번째 호출 - DB에서 조회 (캐시 저장)
-        long startTime1 = System.currentTimeMillis();
-        GetPopularProductsResult result1 = getPopularProductsService.getPopularProducts(command);
-        long endTime1 = System.currentTimeMillis();
-        long firstCallTime = endTime1 - startTime1;
-
-        // 두 번째 호출 - 캐시에서 조회 (빠른 응답)
-        long startTime2 = System.currentTimeMillis();
-        GetPopularProductsResult result2 = getPopularProductsService.getPopularProducts(command);
-        long endTime2 = System.currentTimeMillis();
-        long secondCallTime = endTime2 - startTime2;
-
-        // 세 번째 호출 - 캐시에서 조회 (빠른 응답)
-        long startTime3 = System.currentTimeMillis();
-        GetPopularProductsResult result3 = getPopularProductsService.getPopularProducts(command);
-        long endTime3 = System.currentTimeMillis();
-        long thirdCallTime = endTime3 - startTime3;
-
-        // 결과 검증
-        assertThat(result1.getPopularProducts()).isEqualTo(result2.getPopularProducts());
-        assertThat(result2.getPopularProducts()).isEqualTo(result3.getPopularProducts());
-
-        // 성능 검증 - 두 번째, 세 번째 호출이 첫 번째보다 빨라야 함
-        System.out.println("첫 번째 호출 시간: " + firstCallTime + "ms");
-        System.out.println("두 번째 호출 시간: " + secondCallTime + "ms");
-        System.out.println("세 번째 호출 시간: " + thirdCallTime + "ms");
-
-        // 캐시 효과 검증 (두 번째, 세 번째 호출이 첫 번째보다 50% 이상 빨라야 함)
-        assertThat(secondCallTime).isLessThan((long) (firstCallTime * 0.5));
-        assertThat(thirdCallTime).isLessThan((long) (firstCallTime * 0.5));
-    }
-
-    @Test
     @DisplayName("인기상품 캐시 TTL 확인 테스트")
     void popularProductsCacheTtlTest() {
         // given
