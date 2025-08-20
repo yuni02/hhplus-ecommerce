@@ -2,9 +2,11 @@ package kr.hhplus.be.server.integration.concurrency;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,7 +23,7 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = {RedisOnlyIntegrationTest.RedisTestConfig.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Testcontainers  
 class RedisOnlyIntegrationTest {
 
@@ -37,17 +39,19 @@ class RedisOnlyIntegrationTest {
         registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
     }
 
-    @Configuration
+    @TestConfiguration
     static class RedisTestConfig {
         
         @Bean
+        @Primary
         public RedisConnectionFactory redisConnectionFactory() {
             LettuceConnectionFactory factory = new LettuceConnectionFactory(redis.getHost(), redis.getMappedPort(6379));
             factory.afterPropertiesSet();
             return factory;
         }
 
-        @Bean
+        @Bean("testRedisTemplate")
+        @Primary
         public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(connectionFactory);
