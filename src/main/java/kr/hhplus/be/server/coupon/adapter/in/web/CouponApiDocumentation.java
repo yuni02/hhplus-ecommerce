@@ -29,7 +29,9 @@ public interface CouponApiDocumentation {
             @Parameter(description = CouponSchemaDescription.couponId, required = true, example = "1") 
             @PathVariable(name = "id") Long id,
             @Parameter(description = CouponSchemaDescription.userId, required = true, example = "1001") 
-            @RequestParam(name = "userId", required = true) Long userId);
+            @RequestParam(name = "userId", required = true) Long userId,
+            @Parameter(description = "즉시 처리 여부", required = false, example = "false") 
+            @RequestParam(name = "immediate", required = false, defaultValue = "false") boolean immediate);
 
     @GetMapping("/users/{userId}")
     @Operation(summary = "보유 쿠폰 조회", description = "사용자가 보유한 쿠폰 목록을 조회합니다.")

@@ -1,7 +1,6 @@
 -- 외래키 관계로 인한 순서를 고려하여 테이블 삭제
 DROP TABLE IF EXISTS user_coupons;
 DROP TABLE IF EXISTS user_balance_tx;
-DROP TABLE IF EXISTS product_stats;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS order_history_events;
 DROP TABLE IF EXISTS orders;
@@ -93,24 +92,6 @@ CREATE TABLE order_items
     updated_at   DATETIME(6)    NOT NULL
 );
 
-CREATE TABLE product_stats
-(
-    conversion_rate    DECIMAL(38, 2) NULL,
-    date               DATE           NOT NULL,
-    product_rank       INT            NULL,
-    quantity_sold      INT            NOT NULL,
-    revenue            DECIMAL(38, 2) NOT NULL,
-    total_sales_amount DECIMAL(38, 2) NULL,
-    total_sales_count  INT            NULL,
-    aggregation_date   DATETIME(6)    NULL,
-    created_at         DATETIME(6)    NOT NULL,
-    last_order_date    DATETIME(6)    NULL,
-    product_id         BIGINT         NOT NULL,
-    updated_at         DATETIME(6)    NOT NULL,
-    PRIMARY KEY (date, product_id),
-    CONSTRAINT FKqawohfr96evam9fw5pt69rata
-        FOREIGN KEY (product_id) REFERENCES products (id)
-);
 
 CREATE TABLE user_balance_tx
 (
