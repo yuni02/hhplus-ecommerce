@@ -404,50 +404,6 @@ public class PerformanceLogger {
     }
 }
 ```
-
----
-
-## 🎯 확장성 고려사항
-
-### 1. 수평 확장
-
-#### Redis 클러스터
-```yaml
-# Redis Cluster 설정
-spring:
-  redis:
-    cluster:
-      nodes:
-        - redis-node1:7000
-        - redis-node2:7001
-        - redis-node3:7002
-```
-
-#### 데이터베이스 샤딩
-```java
-// 쿠폰 ID 기반 샤딩
-int shardIndex = Math.abs(couponId.hashCode()) % SHARD_COUNT;
-DataSource targetDataSource = dataSources.get(shardIndex);
-```
-
-### 2. 장애 복구
-
-#### Circuit Breaker 패턴
-```java
-@CircuitBreaker(name = "redis", fallbackMethod = "fallbackToDatabase")
-public CouponIssueResult checkAndIssueCoupon(Long couponId, Long userId) {
-    return redisCouponService.checkAndIssueCouponOptimized(couponId, userId, maxCount);
-}
-```
-
-#### 백업 및 복구
-```java
-// Redis AOF + RDB 백업
-save 900 1      # 15분마다 1개 이상 변경 시 저장
-save 300 10     # 5분마다 10개 이상 변경 시 저장
-appendonly yes  # AOF 활성화
-```
-
 ---
 
 ## 📈 성능 벤치마크
@@ -489,22 +445,3 @@ appendonly yes  # AOF 활성화
 4. **📊 운영 효율성**
    - 실시간 모니터링
    - 구조화된 로깅
-
-### 향후 개선 방안
-
-1. **기능 확장**
-   - 개인화 랭킹 (사용자별 추천)
-   - 카테고리별 랭킹
-   - 실시간 알림 시스템
-
-2. **성능 최적화**
-   - Redis Pipeline 활용
-   - 캐시 Warm-up 전략
-   - 배치 처리 크기 동적 조절
-
-3. **운영 개선**
-   - A/B 테스트 프레임워크
-   - 자동 스케일링
-   - 장애 예측 시스템
-
-이러한 **Redis 기반 랭킹 비동기 시스템**을 통해 대규모 트래픽을 효율적으로 처리하고, 사용자에게 빠르고 안정적인 서비스를 제공할 수 있습니다.
