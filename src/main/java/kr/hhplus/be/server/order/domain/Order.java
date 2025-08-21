@@ -96,7 +96,6 @@ public class Order {
         this.orderedAt = orderedAt;
     }
 
-
     public enum OrderStatus {
         PENDING, COMPLETED, CANCELLED, FAILED
     }
