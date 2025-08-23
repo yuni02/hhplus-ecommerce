@@ -77,6 +77,19 @@ public class CacheConfig {
     }
 
     /**
+     * 일별 집계 데이터용 캐시 매니저 (6시간 TTL) - 인기상품 등 일 단위 집계 데이터용
+     */
+    @Bean("dailyAggregationCacheManager")
+    public CacheManager dailyAggregationCacheManager(RedisConnectionFactory connectionFactory) {
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(6));
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config)
+                .build();
+    }
+
+    /**
      * Redis Template for 랭킹, 쿠폰 등 일반적인 Redis 작업용
      */
     @Bean("cacheRedisTemplate")
