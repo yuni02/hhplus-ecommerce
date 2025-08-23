@@ -5,10 +5,11 @@ import kr.hhplus.be.server.order.application.port.out.*;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
-import kr.hhplus.be.server.product.application.port.in.ProductRankingUseCase;
+import kr.hhplus.be.server.product.domain.ProductRankingUpdateEvent;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,7 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final DeductBalancePort deductBalancePort;
     private final SaveOrderPort saveOrderPort;
     private final UseCouponUseCase useCouponUseCase;
-    private final ProductRankingUseCase productRankingService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 세밀한 분산락으로 주문 생성
@@ -213,13 +214,8 @@ public class CreateOrderService implements CreateOrderUseCase {
         for (OrderItem item : orderItems) {
             item.setOrderId(savedOrder.getId());
             
-            // Redis 랭킹 업데이트 (비동기적으로 처리하여 주문 성능에 영향 없음)
-            try {
-                productRankingService.updateProductRanking(item.getProductId(), item.getQuantity());
-            } catch (Exception e) {
-                log.warn("상품 랭킹 업데이트 실패 - productId: {}", item.getProductId(), e);
-                // 랭킹 업데이트 실패해도 주문은 성공으로 처리
-            }
+            // Redis 랭킹 업데이트 이벤트 발행 (비동기 처리)
+            eventPublisher.publishEvent(new ProductRankingUpdateEvent(this, item.getProductId(), item.getQuantity()));
         }
         
         return savedOrder;

@@ -28,4 +28,19 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 상품 랭킹 업데이트 전용 스레드 풀
+     */
+    @Bean("productRankingExecutor")
+    public Executor productRankingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);           // 기본 스레드 수
+        executor.setMaxPoolSize(10);           // 최대 스레드 수
+        executor.setQueueCapacity(50);         // 대기열 크기
+        executor.setThreadNamePrefix("product-ranking-");
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

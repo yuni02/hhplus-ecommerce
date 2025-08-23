@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.product.application.port.in.ProductRankingUseCase;
+import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -8,9 +9,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
+import kr.hhplus.be.server.shared.constants.RedisKeyConstants;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,12 +61,12 @@ public class RedisProductRankingService implements ProductRankingUseCase {
     @Override
     public List<Long> getTopProductIds(int limit) {
         LocalDate today = LocalDate.now();
-        String aggregateKey = "product:ranking:recent3days:" + today.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String aggregateKey = RedisKeyConstants.getProductRankingRecent3DaysKey(today);
         
         try {
             // 최근 3일 데이터가 이미 집계되어 있는지 확인
             if (!redisTemplate.hasKey(aggregateKey)) {
-                aggregateRecentDaysRanking(aggregateKey, today, 3);
+                aggregateRecentDaysRankingWithLock(aggregateKey, today, 3);
             }
             
             // TOP N 조회 (점수 높은 순)
@@ -82,11 +85,11 @@ public class RedisProductRankingService implements ProductRankingUseCase {
     @Override
     public Long getProductRank(Long productId) {
         LocalDate today = LocalDate.now();
-        String aggregateKey = "product:ranking:recent3days:" + today.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String aggregateKey = RedisKeyConstants.getProductRankingRecent3DaysKey(today);
         
         try {
             if (!redisTemplate.hasKey(aggregateKey)) {
-                aggregateRecentDaysRanking(aggregateKey, today, 3);
+                aggregateRecentDaysRankingWithLock(aggregateKey, today, 3);
             }
             
             return redisTemplate.opsForZSet().reverseRank(aggregateKey, productId.toString());
@@ -99,11 +102,11 @@ public class RedisProductRankingService implements ProductRankingUseCase {
     @Override
     public Double getProductSalesScore(Long productId) {
         LocalDate today = LocalDate.now();
-        String aggregateKey = "product:ranking:recent3days:" + today.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String aggregateKey = RedisKeyConstants.getProductRankingRecent3DaysKey(today);
         
         try {
             if (!redisTemplate.hasKey(aggregateKey)) {
-                aggregateRecentDaysRanking(aggregateKey, today, 3);
+                aggregateRecentDaysRankingWithLock(aggregateKey, today, 3);
             }
             
             return redisTemplate.opsForZSet().score(aggregateKey, productId.toString());
@@ -111,6 +114,26 @@ public class RedisProductRankingService implements ProductRankingUseCase {
             log.warn("상품 판매량 점수 조회 실패 - productId: {}", productId, e);
             throw new RuntimeException("Redis 판매량 점수 조회 실패", e);
         }
+    }
+
+    /**
+     * 분산락을 사용한 최근 N일간 랭킹 집계
+     * 동시 집계 요청을 방지하여 자정 시간대 요청 집중 문제 해결
+     */
+    @DistributedLock(
+        key = "'ranking-aggregate:' + #aggregateKey",
+        waitTime = 3,
+        leaseTime = 10,
+        timeUnit = TimeUnit.SECONDS
+    )
+    public void aggregateRecentDaysRankingWithLock(String aggregateKey, LocalDate baseDate, int days) {
+        // 락 획득 후 다시 한번 키 존재 여부 확인 (Double-checked locking pattern)
+        if (redisTemplate.hasKey(aggregateKey)) {
+            log.debug("이미 집계된 키 발견, 집계 작업 생략 - key: {}", aggregateKey);
+            return;
+        }
+        
+        aggregateRecentDaysRanking(aggregateKey, baseDate, days);
     }
 
     /**
@@ -128,8 +151,8 @@ public class RedisProductRankingService implements ProductRankingUseCase {
             // ZUNIONSTORE로 여러 일별 랭킹을 합산
             if (dailyKeys.length > 0) {
                 redisTemplate.opsForZSet().unionAndStore(dailyKeys[0], List.of(dailyKeys).subList(1, dailyKeys.length), aggregateKey);
-                // 집계 결과는 1시간 TTL
-                redisTemplate.expire(aggregateKey, java.time.Duration.ofHours(1));
+                // 집계 결과는 6시간 TTL (자정 재집계 빈도 감소)
+                redisTemplate.expire(aggregateKey, java.time.Duration.ofHours(6));
             }
             
             log.debug("최근 {}일 랭킹 집계 완료 - key: {}", days, aggregateKey);
@@ -143,6 +166,6 @@ public class RedisProductRankingService implements ProductRankingUseCase {
      * 일별 랭킹 키 생성
      */
     private String generateDailyRankingKey(LocalDate date) {
-        return "product:ranking:daily:" + date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        return RedisKeyConstants.getProductRankingDailyKey(date);
     }
 }

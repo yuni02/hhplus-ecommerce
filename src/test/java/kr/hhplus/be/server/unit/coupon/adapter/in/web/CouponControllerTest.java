@@ -56,7 +56,7 @@ class CouponControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CouponController(issueCouponUseCase, getUserCouponsUseCase, cachedCouponService, queueService))  // 생성자 주입 방식으로 변경
+                new CouponController( getUserCouponsUseCase,  queueService))  // 생성자 주입 방식으로 변경
                 .setControllerAdvice(new GlobalExceptionHandler())  // 예외 처리 핸들러 설정    
                 .build();           
     }

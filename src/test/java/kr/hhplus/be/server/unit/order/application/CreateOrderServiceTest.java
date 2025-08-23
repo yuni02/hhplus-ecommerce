@@ -25,7 +25,7 @@ import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
-import kr.hhplus.be.server.product.application.RedisProductRankingService;
+import org.springframework.context.ApplicationEventPublisher;
 import kr.hhplus.be.server.order.domain.Order;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +50,7 @@ class CreateOrderServiceTest {
     private UseCouponUseCase useCouponUseCase;
 
     @Mock
-    private RedisProductRankingService redisProductRankingService;  // 선착순 체크를 위한 Redis 서비스                  
+    private ApplicationEventPublisher eventPublisher;                  
 
     private CreateOrderService createOrderService;
 
@@ -63,7 +63,7 @@ class CreateOrderServiceTest {
             deductBalancePort,
             saveOrderPort,
             useCouponUseCase,
-            redisProductRankingService  // 선착순 체크를 위한 Redis 서비스                  
+            eventPublisher
         );      
     }
 
