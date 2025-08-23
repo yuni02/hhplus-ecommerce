@@ -90,7 +90,7 @@ class ProductIntegrationTest {
     @DisplayName("인기 상품 조회 성공")
     void 인기_상품_조회_성공() {
         // when
-        GetPopularProductsUseCase.GetPopularProductsCommand command = new GetPopularProductsUseCase.GetPopularProductsCommand(10);
+        GetPopularProductsUseCase.GetPopularProductsCommand command = new GetPopularProductsUseCase.GetPopularProductsCommand(5);
         GetPopularProductsUseCase.GetPopularProductsResult result = getPopularProductsService.getPopularProducts(command);
 
         // then
