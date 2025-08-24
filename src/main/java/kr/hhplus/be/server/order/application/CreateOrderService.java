@@ -6,6 +6,7 @@ import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
 import kr.hhplus.be.server.product.domain.ProductRankingUpdateEvent;
+import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -210,11 +211,26 @@ public class CreateOrderService implements CreateOrderUseCase {
         // Order 저장
         Order savedOrder = saveOrderPort.saveOrder(order);
         
-        // OrderItem들의 orderId 업데이트 및 랭킹 업데이트
+        // OrderItem들의 orderId 업데이트
         for (OrderItem item : orderItems) {
             item.setOrderId(savedOrder.getId());
-            
-            // Redis 랭킹 업데이트 이벤트 발행 (비동기 처리)
+        }
+        
+        // 주문 완료 이벤트 발행 (트랜잭션 완료 후 비동기 처리)
+        eventPublisher.publishEvent(new OrderCompletedEvent(
+            this, 
+            savedOrder.getId(), 
+            savedOrder.getUserId(),
+            savedOrder.getOrderItems(),
+            savedOrder.getTotalAmount(),
+            savedOrder.getDiscountedAmount(),
+            savedOrder.getDiscountAmount(),
+            savedOrder.getUserCouponId(),
+            savedOrder.getOrderedAt()
+        ));
+        
+        // 상품 랭킹 업데이트 이벤트 발행 (트랜잭션 완료 후 비동기 처리)
+        for (OrderItem item : orderItems) {
             eventPublisher.publishEvent(new ProductRankingUpdateEvent(this, item.getProductId(), item.getQuantity()));
         }
         

@@ -27,4 +27,27 @@ public interface ProductRankingUseCase {
      * 상품 랭킹 업데이트
      */
     void updateProductRanking(Long productId, Integer quantity);
+    
+    /**
+     * 상품의 랭킹과 점수를 한 번에 조회
+     * Redis 통신 횟수 최적화를 위한 메서드
+     */
+    ProductRankingInfo getProductRankingInfo(Long productId);
+    
+    /**
+     * 상품 랭킹 정보
+     */
+    class ProductRankingInfo {
+        private final Long rank;
+        private final Double score;
+        
+        public ProductRankingInfo(Long rank, Double score) {
+            this.rank = rank;
+            this.score = score;
+        }
+        
+        public Long getRank() { return rank; }
+        public Double getScore() { return score; }
+        public Integer getSalesCount() { return score != null ? score.intValue() : 0; }
+    }
 }
