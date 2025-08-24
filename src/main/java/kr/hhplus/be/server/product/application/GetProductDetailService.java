@@ -2,7 +2,6 @@ package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
-import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
 import org.springframework.cache.annotation.Cacheable;
 
 import org.springframework.stereotype.Service;
@@ -16,12 +15,9 @@ import java.util.Optional;
 public class GetProductDetailService implements GetProductDetailUseCase {
 
     private final LoadProductPort loadProductPort;
-    private final LoadProductStatsPort loadProductStatsPort;
 
-    public GetProductDetailService(LoadProductPort loadProductPort, 
-                                  LoadProductStatsPort loadProductStatsPort) {
+    public GetProductDetailService(LoadProductPort loadProductPort) {
         this.loadProductPort = loadProductPort;
-        this.loadProductStatsPort = loadProductStatsPort;
     }
 
     @Override
@@ -42,11 +38,7 @@ public class GetProductDetailService implements GetProductDetailUseCase {
 
             LoadProductPort.ProductInfo productInfo = productInfoOpt.get();
 
-            // 3. 상품 통계 조회 (선택적)
-            Optional<LoadProductStatsPort.ProductStatsInfo> statsInfoOpt = 
-                loadProductStatsPort.loadProductStatsByProductId(command.getProductId());
-
-            // 4. 결과 생성
+            // 3. 결과 생성
             GetProductDetailResult result = new GetProductDetailResult(
                     productInfo.getId(),
                     productInfo.getName(),

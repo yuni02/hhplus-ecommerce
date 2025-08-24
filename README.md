@@ -335,3 +335,6 @@ public ChargeBalanceResult chargeBalance(ChargeBalanceCommand command) {
 - **Application Service**가 **실제 비즈니스 로직**을 캡슐화하고 여러 서브시스템을 조율
 - **Port-Adapter 패턴**으로 의존성 역전 원칙 준수
 - **단순하고 명확한 구조**로 복잡성 최소화
+
+## 디비 환경구성
+- 기존 컨테이너가 있다면 docker compose down -v && docker compose up -d로 볼륨까지 삭제 후 재시작해야 초기화 스크립트가 실행됩니다.

@@ -11,6 +11,8 @@ services:
       - MYSQL_DATABASE=hhplus
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
 
   redis:
     image: redis:7-alpine

@@ -5,6 +5,7 @@ import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
+import kr.hhplus.be.server.coupon.application.RedisCouponService;
 import kr.hhplus.be.server.coupon.domain.UserCoupon;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,11 +34,14 @@ class IssueCouponServiceTest {
     @Mock
     private SaveUserCouponPort saveUserCouponPort;
 
+    @Mock
+    private RedisCouponService redisCouponService;
+
     private IssueCouponService issueCouponService;
 
     @BeforeEach
     void setUp() {
-        issueCouponService = new IssueCouponService(loadUserPort, loadCouponPort, saveUserCouponPort);
+        issueCouponService = new IssueCouponService(loadUserPort, loadCouponPort, saveUserCouponPort, redisCouponService);   // 생성자 주입 방식으로 변경            
     }
 
     @Test
@@ -50,7 +54,7 @@ class IssueCouponServiceTest {
             new IssueCouponUseCase.IssueCouponCommand(userId, couponId);
 
         LoadCouponPort.CouponInfo couponInfo = new LoadCouponPort.CouponInfo(
-            couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE");
+            couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE", LocalDateTime.now(), LocalDateTime.now());
 
         UserCoupon savedUserCoupon = UserCoupon.builder()
             .id(1L)  // id 추가
@@ -163,7 +167,7 @@ class IssueCouponServiceTest {
             new IssueCouponUseCase.IssueCouponCommand(userId, couponId);
 
         LoadCouponPort.CouponInfo couponInfo = new LoadCouponPort.CouponInfo(
-            couponId, "만료된 쿠폰", "만료된 쿠폰", 1000, 100, 50, "INACTIVE");
+            couponId, "만료된 쿠폰", "만료된 쿠폰", 1000, 100, 50, "INACTIVE", LocalDateTime.now(), LocalDateTime.now());
 
         when(loadUserPort.existsById(userId)).thenReturn(true);
         when(loadCouponPort.loadCouponByIdWithLock(couponId)).thenReturn(Optional.of(couponInfo));

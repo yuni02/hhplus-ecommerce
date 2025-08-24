@@ -13,6 +13,7 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.sql.DataSource;
 
@@ -25,7 +26,9 @@ public class TestcontainersConfiguration {
         MySQLContainer<?> container = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
                 .withDatabaseName("hhplus")
                 .withUsername("test")
-                .withPassword("test");
+                .withPassword("test")
+                .withReuse(true) // 컨테이너 재사용 활성화
+                .withInitScript("schema.sql"); // 초기 스키마 로드
         container.start();
         
         System.out.println("=== MySQL Container Started ===");
@@ -43,7 +46,8 @@ public class TestcontainersConfiguration {
     @Bean
     public GenericContainer<?> redisContainer() {
         GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-                .withExposedPorts(6379);
+                .withExposedPorts(6379)
+                .withReuse(true); // 컨테이너 재사용 활성화
         container.start();
         
         System.out.println("=== Redis Container Started ===");
@@ -63,18 +67,18 @@ public class TestcontainersConfiguration {
         config.setUsername(mysqlContainer.getUsername());
         config.setPassword(mysqlContainer.getPassword());
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(5);
-        config.setConnectionTimeout(30000);
-        config.setIdleTimeout(600000);
-        config.setMaxLifetime(1800000);
+        config.setMaximumPoolSize(5); // 연결 풀 크기 줄임
+        config.setMinimumIdle(2); // 최소 연결 수 줄임
+        config.setConnectionTimeout(10000); // 연결 타임아웃 줄임
+        config.setIdleTimeout(300000); // 유휴 타임아웃 줄임
+        config.setMaxLifetime(900000); // 최대 수명 줄임
         return new HikariDataSource(config);
     }
 
     // 테스트용 Redis ConnectionFactory Bean
     @Bean
     @Primary
-    public RedisConnectionFactory redisConnectionFactory(GenericContainer<?> redisContainer) {
+    public RedisConnectionFactory redisConnectionFactory(@Qualifier("redisContainer") GenericContainer<?> redisContainer) {
         return new LettuceConnectionFactory(redisContainer.getHost(), redisContainer.getMappedPort(6379));
     }
 
@@ -100,15 +104,18 @@ public class TestcontainersConfiguration {
     // 테스트용 RedissonClient Bean - Redisson 설정을 Override
     @Bean
     @Primary
-    public RedissonClient redissonClient(GenericContainer<?> redisContainer) {
+    public RedissonClient redissonClient(@Qualifier("redisContainer") GenericContainer<?> redisContainer) {
         Config config = new Config();
         String address = "redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
         config.useSingleServer()
                 .setAddress(address)
                 .setConnectionMinimumIdleSize(1)
-                .setConnectionPoolSize(5)
+                .setConnectionPoolSize(3) // 연결 풀 크기 줄임
                 .setDatabase(0)
-                .setDnsMonitoringInterval(5000);
+                .setDnsMonitoringInterval(10000) // DNS 모니터링 간격 늘림
+                .setConnectTimeout(5000) // 연결 타임아웃 줄임
+                .setRetryAttempts(2) // 재시도 횟수 줄임
+                .setRetryInterval(1000); // 재시도 간격 줄임
         
         System.out.println("=== Redisson Test Config ===");
         System.out.println("Redis Address: " + address);

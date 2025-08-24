@@ -1,10 +1,10 @@
 package kr.hhplus.be.server.unit.coupon.adapter.in.web;
 
-import kr.hhplus.be.server.coupon.adapter.in.web.CouponController;
-import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.CachedCouponService;
-import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
+import kr.hhplus.be.server.coupon.application.AsyncCouponIssueWorker;
+import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;                   
+import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
+import kr.hhplus.be.server.coupon.adapter.in.web.CouponController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,9 +19,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -30,6 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+import kr.hhplus.be.server.shared.exception.GlobalExceptionHandler;
+import kr.hhplus.be.server.coupon.application.RedisCouponQueueService;
 
 @ExtendWith(MockitoExtension.class)
 class CouponControllerTest {
@@ -41,7 +41,13 @@ class CouponControllerTest {
     private GetUserCouponsUseCase getUserCouponsUseCase;
     
     @Mock
-    private CachedCouponService cachedCouponService;
+    private CachedCouponService cachedCouponService;        
+
+    @Mock
+    private RedisCouponQueueService queueService;
+
+    @Mock
+    private AsyncCouponIssueWorker asyncCouponIssueWorker;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -50,9 +56,9 @@ class CouponControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CouponController(issueCouponUseCase, getUserCouponsUseCase, cachedCouponService))
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
+                new CouponController( getUserCouponsUseCase,  queueService))  // 생성자 주입 방식으로 변경
+                .setControllerAdvice(new GlobalExceptionHandler())  // 예외 처리 핸들러 설정    
+                .build();           
     }
 
     @Test
@@ -122,82 +128,115 @@ class CouponControllerTest {
     }
 
     @Test
-    @DisplayName("선착순 쿠폰 발급 - 정상 발급")
-    void issueCoupon_FirstComeFirstServed_Success() throws Exception {
+    @DisplayName("쿠폰 발급 요청 - 대기열 등록 성공")
+    void issueCoupon_QueueRegistration_Success() throws Exception {
         // given
         Long couponId = 1L;
         Long userId = 1L;
-        IssueCouponUseCase.IssueCouponResult result = IssueCouponUseCase.IssueCouponResult.success(
-                1L, couponId, "신규 가입 쿠폰", 1000, "AVAILABLE", LocalDateTime.now());
 
-        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenReturn(result);
+        when(queueService.addToQueue(couponId, userId)).thenReturn(true);
+        when(queueService.getUserQueuePosition(couponId, userId)).thenReturn(1L);
+        when(queueService.getQueueSize(couponId)).thenReturn(5L);
 
         // when & then
         mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
+                        .param("userId", userId.toString()))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("쿠폰 발급 요청이 대기열에 등록되었습니다."))
+                .andExpect(jsonPath("$.queuePosition").value(1))
+                .andExpect(jsonPath("$.queueSize").value(5));
+
+        verify(queueService).addToQueue(couponId, userId);
+        verify(queueService).getUserQueuePosition(couponId, userId);
+        verify(queueService).getQueueSize(couponId);
+    }
+
+    @Test
+    @DisplayName("쿠폰 발급 요청 - 이미 대기열에 등록된 경우")
+    void issueCoupon_AlreadyInQueue_Failure() throws Exception {
+        // given
+        Long couponId = 1L;
+        Long userId = 1L;
+
+        when(queueService.addToQueue(couponId, userId)).thenReturn(false);
+
+        // when & then
+        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
+                        .param("userId", userId.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("이미 대기열에 등록되어 있습니다."));
+
+        verify(queueService).addToQueue(couponId, userId);
+    }
+
+    @Test
+    @DisplayName("쿠폰 발급 상태 조회 - 처리 중")
+    void getIssueStatus_Processing() throws Exception {
+        // given
+        Long couponId = 1L;
+        Long userId = 1L;
+
+        when(queueService.getIssueResult(couponId, userId)).thenReturn(null);
+        when(queueService.getUserQueuePosition(couponId, userId)).thenReturn(3L);
+        when(queueService.getQueueSize(couponId)).thenReturn(10L);
+
+        // when & then
+        mockMvc.perform(get("/api/coupons/{id}/issue/status", couponId)
                         .param("userId", userId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.userCouponId").value(1L))
-                .andExpect(jsonPath("$.couponName").value("신규 가입 쿠폰"));
+                .andExpect(jsonPath("$.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.message").value("처리 중입니다."))
+                .andExpect(jsonPath("$.queuePosition").value(3))
+                .andExpect(jsonPath("$.queueSize").value(10));
 
-        verify(issueCouponUseCase).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+        verify(queueService).getIssueResult(couponId, userId);
+        verify(queueService).getUserQueuePosition(couponId, userId);
+        verify(queueService).getQueueSize(couponId);
     }
 
     @Test
-    @DisplayName("선착순 쿠폰 발급 - 재고 소진으로 실패")
-    void issueCoupon_OutOfStock_Failure() throws Exception {
+    @DisplayName("쿠폰 발급 상태 조회 - 성공")
+    void getIssueStatus_Success() throws Exception {
         // given
         Long couponId = 1L;
         Long userId = 1L;
-        IssueCouponUseCase.IssueCouponResult result = IssueCouponUseCase.IssueCouponResult
-                .failure("쿠폰이 모두 소진되었습니다. 선착순 발급에 실패했습니다.");
+        RedisCouponQueueService.CouponIssueResult result = 
+            new RedisCouponQueueService.CouponIssueResult(true, "쿠폰 발급 성공", LocalDateTime.now());
 
-        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenReturn(result);
+        when(queueService.getIssueResult(couponId, userId)).thenReturn(result);
 
         // when & then
-        mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
+        mockMvc.perform(get("/api/coupons/{id}/issue/status", couponId)
                         .param("userId", userId.toString()))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("쿠폰 발급 성공"));
 
-        verify(issueCouponUseCase).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+        verify(queueService).getIssueResult(couponId, userId);
     }
 
     @Test
-    @DisplayName("선착순 쿠폰 발급 - 동시 요청 시뮬레이션")
-    void issueCoupon_ConcurrentRequests_Simulation() throws Exception {
+    @DisplayName("쿠폰 발급 상태 조회 - 실패")
+    void getIssueStatus_Failed() throws Exception {
         // given
         Long couponId = 1L;
-        int numberOfThreads = 4;
-        CountDownLatch latch = new CountDownLatch(numberOfThreads);
-        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+        Long userId = 1L;
+        RedisCouponQueueService.CouponIssueResult result = 
+            new RedisCouponQueueService.CouponIssueResult(false, "쿠폰이 모두 소진되었습니다.", LocalDateTime.now());
 
-        // 성공 응답 설정
-        when(issueCouponUseCase.issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class)))
-                .thenReturn(IssueCouponUseCase.IssueCouponResult.success(
-                        1L, couponId, "신규 가입 쿠폰", 1000, "AVAILABLE", LocalDateTime.now()));
+        when(queueService.getIssueResult(couponId, userId)).thenReturn(result);
 
-        // when
-        for (int i = 0; i < numberOfThreads; i++) {
-            final int userId = i + 1;
-            executorService.submit(() -> {
-                try {
-                    mockMvc.perform(post("/api/coupons/{id}/issue", couponId)
-                                    .param("userId", String.valueOf(userId)))
-                            .andExpect(status().isOk());
-                } catch (Exception e) {
-                    // 예외 무시 (테스트에서는 동시성만 확인)
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
+        // when & then
+        mockMvc.perform(get("/api/coupons/{id}/issue/status", couponId)
+                        .param("userId", userId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("FAILED"))
+                .andExpect(jsonPath("$.message").value("쿠폰이 모두 소진되었습니다."));
 
-        latch.await();
-        executorService.shutdown();
-
-        // then
-        verify(issueCouponUseCase, times(4)).issueCoupon(any(IssueCouponUseCase.IssueCouponCommand.class));
+        verify(queueService).getIssueResult(couponId, userId);
     }
 } 

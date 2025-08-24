@@ -109,7 +109,7 @@ class BalanceControllerTest {
 
         ChargeBalanceRequest request = new ChargeBalanceRequest(userId, amount);
         ChargeBalanceUseCase.ChargeBalanceResult result = 
-            ChargeBalanceUseCase.ChargeBalanceResult.success(userId, newBalance, transactionId);
+            ChargeBalanceUseCase.ChargeBalanceResult.success(userId, newBalance, transactionId, newBalance);
 
         when(chargeBalanceUseCase.chargeBalance(any(ChargeBalanceUseCase.ChargeBalanceCommand.class)))
                 .thenReturn(result);

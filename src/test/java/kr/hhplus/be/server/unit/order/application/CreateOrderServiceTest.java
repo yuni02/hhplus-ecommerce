@@ -25,6 +25,7 @@ import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
+import org.springframework.context.ApplicationEventPublisher;
 import kr.hhplus.be.server.order.domain.Order;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,12 +48,13 @@ class CreateOrderServiceTest {
     
     @Mock
     private UseCouponUseCase useCouponUseCase;
-    
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;                  
 
     private CreateOrderService createOrderService;
 
-        @BeforeEach
+    @BeforeEach
     void setUp() {
         createOrderService = new CreateOrderService(
             loadUserPort,
@@ -60,8 +62,9 @@ class CreateOrderServiceTest {
             updateProductStockPort,
             deductBalancePort,
             saveOrderPort,
-            useCouponUseCase
-        );
+            useCouponUseCase,
+            eventPublisher
+        );      
     }
 
     @Test

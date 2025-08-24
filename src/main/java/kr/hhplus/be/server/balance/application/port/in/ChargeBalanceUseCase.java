@@ -42,22 +42,24 @@ public interface ChargeBalanceUseCase {
         private final BigDecimal newBalance;
         private final Long transactionId;
         private final String errorMessage;
+        private final BigDecimal chargeAmount;  // 충전 금액 추가
         
         private ChargeBalanceResult(boolean success, Long userId, BigDecimal newBalance, 
-                                  Long transactionId, String errorMessage) {
+                                  Long transactionId, String errorMessage, BigDecimal chargeAmount) {
             this.success = success;
             this.userId = userId;
             this.newBalance = newBalance;
             this.transactionId = transactionId;
             this.errorMessage = errorMessage;
+            this.chargeAmount = chargeAmount;
         }
         
-        public static ChargeBalanceResult success(Long userId, BigDecimal newBalance, Long transactionId) {
-            return new ChargeBalanceResult(true, userId, newBalance, transactionId, null);
+        public static ChargeBalanceResult success(Long userId, BigDecimal newBalance, Long transactionId, BigDecimal chargeAmount) {
+            return new ChargeBalanceResult(true, userId, newBalance, transactionId, null, chargeAmount);
         }
         
         public static ChargeBalanceResult failure(String errorMessage) {
-            return new ChargeBalanceResult(false, null, null, null, errorMessage);
+            return new ChargeBalanceResult(false, null, null, null, errorMessage, null);
         }
         
         public boolean isSuccess() {
@@ -80,9 +82,8 @@ public interface ChargeBalanceUseCase {
             return errorMessage;
         }
 
-        public Object getChargeAmount() {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'getChargeAmount'");
+        public BigDecimal getChargeAmount() {
+            return chargeAmount;
         }
     }
 } 

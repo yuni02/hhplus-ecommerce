@@ -1,11 +1,9 @@
 package kr.hhplus.be.server.product.infrastructure.persistence.adapter;
 
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;
-import kr.hhplus.be.server.product.application.port.out.LoadProductStatsPort;
 import kr.hhplus.be.server.product.application.port.out.SaveProductPort;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
-
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,7 +15,7 @@ import java.util.stream.Collectors;
  * Product 도메인 전용 데이터 접근
  */
 @Component("productProductPersistenceAdapter")
-public class ProductPersistenceAdapter implements LoadProductPort, LoadProductStatsPort, SaveProductPort {
+public class ProductPersistenceAdapter implements LoadProductPort, SaveProductPort {
 
     private final ProductJpaRepository productJpaRepository;
 
@@ -56,23 +54,6 @@ public class ProductPersistenceAdapter implements LoadProductPort, LoadProductSt
         );
     }
 
-    @Override
-    public List<LoadProductStatsPort.ProductStatsInfo> loadAllProductStats() {
-        // TODO: ProductStatsEntity 구현 후 실제 데이터 반환
-        return List.of();
-    }
-
-    @Override
-    public Optional<LoadProductStatsPort.ProductStatsInfo> loadProductStatsByProductId(Long productId) {
-        // TODO: ProductStatsEntity 구현 후 실제 데이터 반환
-        return Optional.empty();
-    }
-
-    @Override
-    public List<LoadProductStatsPort.ProductStatsInfo> loadTopProductsBySales(int limit) {
-        // TODO: ProductStatsEntity 구현 후 실제 데이터 반환
-        return List.of();
-    }
 
     @Override
     public SaveProductPort.ProductInfo saveProduct(SaveProductPort.ProductInfo productInfo) {
