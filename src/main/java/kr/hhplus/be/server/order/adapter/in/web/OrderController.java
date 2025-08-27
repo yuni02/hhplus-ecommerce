@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
+import kr.hhplus.be.server.order.application.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;
 import kr.hhplus.be.server.shared.response.ErrorResponse;
@@ -21,17 +22,17 @@ import java.util.stream.Collectors;
 @Tag(name = "Order", description = "주문 관리 API")
 public class OrderController {
 
-    private final CreateOrderUseCase createOrderUseCase;
+    private final CreateOrderService createOrderService;
 
-    public OrderController(CreateOrderUseCase createOrderUseCase) {
-        this.createOrderUseCase = createOrderUseCase;
+    public OrderController(CreateOrderService createOrderService) {
+        this.createOrderService = createOrderService;
     }
 
     /**
      * 주문 생성 API
      */
     @PostMapping
-    @Operation(summary = "주문 생성", description = "상품을 주문하고 결제를 처리합니다.")
+    @Operation(summary = "주문 생성", description = "주문을 생성하고 결제를 처리합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "주문 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 또는 주문 실패"),
@@ -47,7 +48,7 @@ public class OrderController {
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
                 request.getUserId(), orderItemCommands, request.getUserCouponId());
 
-        CreateOrderUseCase.CreateOrderResult result = createOrderUseCase.createOrder(command);
+        CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         if (!result.isSuccess()) {
             return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
@@ -64,15 +65,15 @@ public class OrderController {
                         item.getTotalPrice().intValue()))
                 .collect(Collectors.toList());
 
-        // 할인 금액 계산
-        int discountAmount = result.getTotalAmount().intValue() - result.getFinalAmount().intValue();
+        // 할인 금액 계산 (MSA 버전에서는 getDiscountAmount() 사용)
+        int discountAmount = result.getDiscountAmount().intValue();
         
         OrderResponse response = new OrderResponse(
                 result.getOrderId(),
                 result.getUserId(),
                 result.getUserCouponId(),
                 result.getTotalAmount().intValue(),
-                result.getFinalAmount().intValue(),
+                result.getDiscountedAmount().intValue(), // getFinalAmount() -> getDiscountedAmount()
                 discountAmount,
                 result.getStatus(),
                 orderItemResponses,
