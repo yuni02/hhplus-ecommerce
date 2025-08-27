@@ -20,24 +20,10 @@ import java.util.Optional;
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long> {
 
     /**
-     * 상품명으로 조회
-     */
-    List<ProductEntity> findByNameContaining(String name);
-
-    /**
      * 활성 상태의 상품 조회
      */
     List<ProductEntity> findByStatus(String status);
 
-    /**
-     * 재고가 있는 상품 조회
-     */
-    List<ProductEntity> findByStockQuantityGreaterThan(Integer stockQuantity);
-
-    /**
-     * 가격 범위로 상품 조회
-     */
-    List<ProductEntity> findByPriceBetween(java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
 
     /**
      * 재고 차감을 위한 비관적 락 조회
