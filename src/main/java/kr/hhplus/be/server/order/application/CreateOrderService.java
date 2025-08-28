@@ -1,22 +1,21 @@
 package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.order.domain.*;
 import kr.hhplus.be.server.order.domain.service.OrderDomainService;
-import kr.hhplus.be.server.product.domain.service.ProductDomainService;
-import kr.hhplus.be.server.coupon.domain.service.CouponDomainService;
-import kr.hhplus.be.server.balance.domain.service.BalanceDomainService;
+import kr.hhplus.be.server.shared.event.AsyncEventPublisher;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.ArrayList;
 
 @Slf4j
 @Service
@@ -24,13 +23,14 @@ import java.util.concurrent.TimeUnit;
 public class CreateOrderService implements CreateOrderUseCase {
 
     private final OrderDomainService orderDomainService;
-    private final ProductDomainService productDomainService;
-    private final CouponDomainService couponDomainService;
-    private final BalanceDomainService balanceDomainService;
+    private final AsyncEventPublisher eventPublisher;
+    
+    // 주문 처리 상태를 추적하는 임시 저장소 (실제로는 Redis나 DB를 사용)
+    private final Map<String, OrderProcessingState> orderProcessingStates = new ConcurrentHashMap<>();
 
     /**
-     * 세밀한 분산락으로 주문 생성
-     * 사용자 + 상품 + 잔액 조합으로 락을 사용하여 최대한 병렬 처리 허용
+     * 코레오그래피 방식의 주문 생성
+     * 이벤트를 발행하고 각 도메인이 독립적으로 처리
      */
     @DistributedLock(
         key = "'order_' + #command.userId",
@@ -39,61 +39,39 @@ public class CreateOrderService implements CreateOrderUseCase {
         timeUnit = TimeUnit.SECONDS
     )
     public CreateOrderUseCase.CreateOrderResult createOrder(CreateOrderUseCase.CreateOrderCommand command) {
-        log.debug("분산 트랜잭션 주문 생성 시작 - userId: {}", command.getUserId());
+        log.debug("코레오그래피 주문 처리 시작 - userId: {}", command.getUserId());
         
         try {
-            // 1. 주문 검증
+            // 1. 주문 검증만 동기적으로 수행
             OrderDomainService.OrderValidationResult validationResult = orderDomainService.validateOrder(command);
             if (!validationResult.isSuccess()) {
                 return CreateOrderUseCase.CreateOrderResult.failure(validationResult.getErrorMessage());
             }
 
-            // 2. 재고 확인 및 차감
-            ProductDomainService.StockProcessResult stockResult = productDomainService.processStockDeduction(command);
-            if (!stockResult.isSuccess()) {
-                return CreateOrderUseCase.CreateOrderResult.failure(stockResult.getErrorMessage());
-            }
-
-            // 3. 쿠폰 할인 적용
-            CouponDomainService.CouponProcessResult couponResult = couponDomainService.processCouponDiscount(command, stockResult.getTotalAmount());
-            if (!couponResult.isSuccess()) {
-                // 재고 복원 (보상 트랜잭션)
-                productDomainService.rollbackStockDeduction(stockResult.getOrderItems(), "쿠폰 사용 실패");
-                return CreateOrderUseCase.CreateOrderResult.failure(couponResult.getErrorMessage());
-            }
-
-            // 4. 잔액 차감 - 결제로 정의
-            BalanceDomainService.BalanceProcessResult balanceResult = balanceDomainService.processBalanceDeduction(
-                command.getUserId(), couponResult.getDiscountedAmount());
-            if (!balanceResult.isSuccess()) {
-                // 쿠폰 및 재고 복원 (보상 트랜잭션)
-                couponDomainService.rollbackCouponUsage(command, "잔액 차감 실패");
-                productDomainService.rollbackStockDeduction(stockResult.getOrderItems(), "잔액 차감 실패");
-                return CreateOrderUseCase.CreateOrderResult.failure(balanceResult.getErrorMessage());
-            }
-
-            // 5. 주문 생성 및 저장
-            OrderDomainService.OrderCreationResult orderResult = orderDomainService.createAndSaveOrder(
-                command, stockResult.getOrderItems(), stockResult.getTotalAmount(), 
-                couponResult.getDiscountedAmount(), BigDecimal.valueOf(couponResult.getDiscountAmount()));
+            // 2. 주문 처리 상태 초기화
+            String orderId = UUID.randomUUID().toString();
+            OrderProcessingState state = new OrderProcessingState(orderId, command);
+            orderProcessingStates.put(orderId, state);
             
-            if (!orderResult.isSuccess()) {
-                // 모든 보상 트랜잭션 실행
-                couponDomainService.rollbackCouponUsage(command, "주문 저장 실패");
-                productDomainService.rollbackStockDeduction(stockResult.getOrderItems(), "주문 저장 실패");
-                return CreateOrderUseCase.CreateOrderResult.failure(orderResult.getErrorMessage());
-            }
+            // 3. 주문 처리 시작 이벤트 발행 - 이후 모든 처리는 이벤트 기반으로 진행
+            eventPublisher.publishAsync(new OrderProcessingStartedEvent(this, command));
             
-            Order order = orderResult.getOrder();
-
-            // 6. 성공 결과 반환
-            CreateOrderUseCase.CreateOrderResult result = createOrderResult(order, stockResult.getOrderItems());
-            log.debug("분산 트랜잭션 주문 생성 완료 - userId: {}, orderId: {}", command.getUserId(), order.getId());
-            
-            return result;
+            // 4. 비동기 처리 결과를 기다리거나 별도 조회 API로 상태 확인하도록 안내
+            return CreateOrderUseCase.CreateOrderResult.success(
+                Long.valueOf(orderId.hashCode()), // orderId를 Long으로 변환
+                command.getUserId(),
+                command.getUserCouponId(),
+                null, // totalAmount는 이후 계산
+                null, // discountedAmount는 이후 계산
+                null, // discountAmount는 이후 계산
+                null, // finalAmount는 이후 계산
+                "PROCESSING", // 처리 중 상태
+                null, // orderItems는 이후 설정
+                null  // orderedAt은 이후 설정
+            );
 
         } catch (Exception e) {
-            log.error("분산 트랜잭션 주문 생성 중 예외 발생 - userId: {}", command.getUserId(), e);
+            log.error("코레오그래피 주문 처리 중 예외 발생 - userId: {}", command.getUserId(), e);
             return CreateOrderUseCase.CreateOrderResult.failure("주문 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
     }

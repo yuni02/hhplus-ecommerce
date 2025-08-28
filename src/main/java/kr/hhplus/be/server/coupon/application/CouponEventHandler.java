@@ -95,18 +95,28 @@ public class CouponEventHandler {
         
         try {
             // 쿠폰 복원 (사용 취소)
-            // TODO: UseCouponUseCase에 복원 메소드 추가 필요
-            // 임시로 로그만 남기고 성공 처리
-            
-            log.info("쿠폰 복원 시뮬레이션 - userId: {}, userCouponId: {}", 
-                     event.getUserId(), event.getUserCouponId());
-            
-            responseEvent = CouponRestorationCompletedEvent.success(
-                this, event.getRequestId(), event.getUserId(), event.getUserCouponId()
+            UseCouponUseCase.RestoreCouponCommand restoreCommand = new UseCouponUseCase.RestoreCouponCommand(
+                event.getUserId(), event.getUserCouponId(), event.getReason()
             );
             
-            log.info("쿠폰 복원 성공 (시뮬레이션) - requestId: {}, userId: {}, userCouponId: {}", 
-                     event.getRequestId(), event.getUserId(), event.getUserCouponId());
+            UseCouponUseCase.RestoreCouponResult restoreResult = useCouponUseCase.restoreCoupon(restoreCommand);
+            
+            if (restoreResult.isSuccess()) {
+                responseEvent = CouponRestorationCompletedEvent.success(
+                    this, event.getRequestId(), event.getUserId(), event.getUserCouponId()
+                );
+                
+                log.info("쿠폰 복원 성공 - requestId: {}, userId: {}, userCouponId: {}", 
+                         event.getRequestId(), event.getUserId(), event.getUserCouponId());
+            } else {
+                responseEvent = CouponRestorationCompletedEvent.failure(
+                    this, event.getRequestId(), event.getUserId(), event.getUserCouponId(),
+                    restoreResult.getErrorMessage()
+                );
+                
+                log.warn("쿠폰 복원 실패 - requestId: {}, error: {}", 
+                        event.getRequestId(), restoreResult.getErrorMessage());
+            }
             
         } catch (Exception e) {
             log.error("쿠폰 복원 처리 중 예외 발생 - requestId: {}", event.getRequestId(), e);

@@ -61,6 +61,19 @@ public class UserCoupon {
         this.updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * 쿠폰 사용 취소 (복원)
+     */
+    public void restore() {
+        if (status != UserCouponStatus.USED) {
+            throw new IllegalStateException("사용된 쿠폰만 복원할 수 있습니다.");
+        }
+        this.status = UserCouponStatus.AVAILABLE;
+        this.usedAt = null;
+        this.orderId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public enum UserCouponStatus {
         AVAILABLE, USED, EXPIRED
     }

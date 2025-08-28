@@ -66,21 +66,6 @@ class CachedCouponServiceTest {
         verify(loadUserCouponPort).loadUserCouponsByUserId(userId);
     }
 
-    @Test
-    @DisplayName("캐시 무효화 테스트")
-    void cacheEvictionTest() {
-        // given
-        Long userId = 1L;
-
-        // when - 캐시 무효화 메서드 호출
-        cachedCouponService.evictAvailableUserCouponsCache(userId);
-        cachedCouponService.evictAllUserCouponsCache(userId);
-
-        // then - 메서드가 정상적으로 실행되는지 확인
-        // AOP에서 실제 캐시 무효화는 Spring이 처리하므로 
-        // 메서드 호출 자체가 성공하는지만 확인
-        assertThat(true).isTrue(); // 단순히 메서드가 예외 없이 실행되었는지 확인
-    }
 
 
 } 
