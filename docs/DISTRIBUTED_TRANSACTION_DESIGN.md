@@ -297,22 +297,26 @@ classDiagram
 ### 8.2 현재 이벤트 핸들러 구조
 ```mermaid
 graph TB
-    subgraph "Event Handlers"
+    subgraph EH["Event Handlers"]
         OH[OrderCompletedEventHandler]
         PRH[ProductRankingEventHandler] 
         DPH[DataPlatformEventHandler]
     end
     
-    subgraph "Handler Responsibilities"
-        OH --> DPS[DataPlatformService<br/>외부 API 호출]
-        PRH --> RRS[RedisProductRankingService<br/>Redis 랭킹 업데이트]
-        DPH --> EXT[External System Integration]
+    subgraph HR["Handler Responsibilities"]
+        DPS["DataPlatformService<br/>외부 API 호출"]
+        RRS["RedisProductRankingService<br/>Redis 랭킹 업데이트"]
+        EXT["External System Integration"]
     end
     
-    subgraph "Execution Context"
-        ASYNC["@Async('orderEventExecutor')"]
-        TX_LISTENER["@TransactionalEventListener<br/>(AFTER_COMMIT)"]
+    subgraph EC["Execution Context"]
+        ASYNC["@Async orderEventExecutor"]
+        TX_LISTENER["@TransactionalEventListener<br/>AFTER_COMMIT"]
     end
+    
+    OH --> DPS
+    PRH --> RRS
+    DPH --> EXT
     
     OH -.-> ASYNC
     OH -.-> TX_LISTENER
