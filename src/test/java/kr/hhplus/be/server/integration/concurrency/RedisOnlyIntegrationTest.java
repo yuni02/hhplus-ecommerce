@@ -1,30 +1,23 @@
 package kr.hhplus.be.server.integration.concurrency;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;  
+import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@Testcontainers  
+@Testcontainers
 class RedisOnlyIntegrationTest {
 
     @Container
@@ -32,40 +25,31 @@ class RedisOnlyIntegrationTest {
             .withExposedPorts(6379)
             .withStartupTimeout(Duration.ofMinutes(2));
 
-    @DynamicPropertySource
-    static void redisProperties(DynamicPropertyRegistry registry) {
-        redis.start(); // 명시적으로 컨테이너 시작
-        registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
-    }
-
-    @TestConfiguration
-    static class RedisTestConfig {
-        
-        @Bean
-        @Primary
-        public RedisConnectionFactory redisConnectionFactory() {
-            LettuceConnectionFactory factory = new LettuceConnectionFactory(redis.getHost(), redis.getMappedPort(6379));
-            factory.afterPropertiesSet();
-            return factory;
-        }
-
-        @Bean("testRedisTemplate")
-        @Primary
-        public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-            RedisTemplate<String, Object> template = new RedisTemplate<>();
-            template.setConnectionFactory(connectionFactory);
-            template.setKeySerializer(new StringRedisSerializer());
-            template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-            template.setHashKeySerializer(new StringRedisSerializer());
-            template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
-            template.afterPropertiesSet();
-            return template;
-        }
-    }
-
-    @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    private RedisConnectionFactory connectionFactory;
+
+    @BeforeEach
+    void setUp() {
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(redis.getHost(), redis.getMappedPort(6379));
+        factory.afterPropertiesSet();
+        this.connectionFactory = factory;
+
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.afterPropertiesSet();
+        this.redisTemplate = template;
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (connectionFactory != null) {
+            connectionFactory.getConnection().serverCommands().flushAll();
+        }
+    }
 
     @Test
     void redis_연결_테스트() {
@@ -82,7 +66,7 @@ class RedisOnlyIntegrationTest {
     }
 
     @Test
-    void redis_만료시간_테스트() {
+    void redis_만료시간_테스트() throws InterruptedException {
         // given
         String key = "test:expire";
         String value = "expire_value";
@@ -96,11 +80,7 @@ class RedisOnlyIntegrationTest {
         assertThat(result).isEqualTo(value);
 
         // 만료 시간 대기
-        try {
-            Thread.sleep(1100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        Thread.sleep(1100);
 
         // 만료 후 확인
         Object expiredResult = redisTemplate.opsForValue().get(key);

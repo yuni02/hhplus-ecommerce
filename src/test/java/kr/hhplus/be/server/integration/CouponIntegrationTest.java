@@ -55,11 +55,12 @@ class CouponIntegrationTest {
         couponJpaRepository.deleteAll();
         userJpaRepository.deleteAll();
 
-        // 테스트용 사용자 생성
+        // 테스트용 사용자 생성 (유니크한 이메일 사용)
+        String uniqueEmail = "test-" + System.currentTimeMillis() + "@example.com";
         testUser = UserEntity.builder()
                 .userId(1L)
                 .name("testuser")
-                .email("test@example.com")
+                .email(uniqueEmail)
                 .status("ACTIVE")
                 .build();
         testUser = userJpaRepository.saveAndFlush(testUser);

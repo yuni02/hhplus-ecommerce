@@ -50,7 +50,7 @@ class BalanceDomainServiceTest {
         when(mockSuccessEvent.getErrorMessage()).thenReturn(null);
 
         when(synchronousEventProcessor.publishAndWaitForResponse(
-            any(BalanceDeductionRequestedEvent.class), 
+            any(BalanceDeductionRequestedEvent.class),
             any(String.class), 
             eq(BalanceDeductionCompletedEvent.class), 
             eq(5)))

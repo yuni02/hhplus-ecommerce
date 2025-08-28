@@ -36,3 +36,25 @@ spring:
 
 springdoc:
   use-fqn: true
+
+# Event Publisher 설정
+event:
+  publisher:
+    type: spring  # spring(기본값) 또는 kafka
+    
+# 차주 Kafka 설정 준비
+kafka:
+  bootstrap-servers: localhost:9092
+  producer:
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  consumer:
+    group-id: ecommerce-group
+    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    properties:
+      spring.json.trusted.packages: "kr.hhplus.be.server"
+  topics:
+    order-completed: order-completed-topic
+    product-ranking: product-ranking-topic
+    data-platform-transfer: data-platform-transfer-topic
