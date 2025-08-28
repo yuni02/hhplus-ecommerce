@@ -23,7 +23,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
     public boolean deductStock(Long productId, Integer quantity) {
         try {
             ProductEntity product = productJpaRepository.findByIdWithLock(productId)
@@ -48,7 +48,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
     public boolean restoreStock(Long productId, Integer quantity) {
         try {
             ProductEntity product = productJpaRepository.findByIdWithLock(productId)
@@ -69,7 +69,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "#result == true")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "#result == true and ${spring.profiles.active:dev} != 'test'")
     public boolean deductStockWithPessimisticLock(Long productId, Integer quantity) {
         // 현재 재고 확인 (로깅용) - 캐시 우회
         Integer stockBefore = productJpaRepository.findCurrentStock(productId);
@@ -94,7 +94,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
     public boolean restoreStockWithPessimisticLock(Long productId, Integer quantity) {
         try {
             // 비관적 락으로 상품 조회

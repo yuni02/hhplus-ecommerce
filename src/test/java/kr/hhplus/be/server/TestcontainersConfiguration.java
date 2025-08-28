@@ -14,6 +14,8 @@ import org.testcontainers.utility.DockerImageName;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 
 import javax.sql.DataSource;
 
@@ -122,5 +124,12 @@ public class TestcontainersConfiguration {
         System.out.println("============================");
         
         return Redisson.create(config);
+    }
+
+    // 테스트용 NoOp 캐시 매니저 - 캐시를 비활성화
+    @Bean
+    @Primary
+    public CacheManager cacheManager() {
+        return new NoOpCacheManager();
     }
 }
