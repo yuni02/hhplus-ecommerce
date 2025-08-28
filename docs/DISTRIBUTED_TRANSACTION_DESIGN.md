@@ -231,26 +231,26 @@ flowchart TD
     START([주문 요청]) --> LOCK[분산락 획득]
     LOCK --> VALIDATE{주문 검증}
     VALIDATE -->|실패| RELEASE_LOCK[락 해제] --> END_FAIL([주문 실패])
-    VALIDATE -->|성공| STOCK_LOAD[상품 정보 조회<br/>with 비관적 락]
-    
+    VALIDATE -->|성공| STOCK_LOAD[상품 정보 조회 with 비관적 락]
+
     STOCK_LOAD --> STOCK_CHECK{재고 충분?}
     STOCK_CHECK -->|부족| RELEASE_LOCK
-    STOCK_CHECK -->|충분| STOCK_DEDUCT[재고 차감<br/>with 비관적 락]
-    
-    STOCK_DEDUCT --> BALANCE_LOAD[잔액 조회<br/>with 비관적 락]
+    STOCK_CHECK -->|충분| STOCK_DEDUCT[재고 차감 with 비관적 락]
+
+    STOCK_DEDUCT --> BALANCE_LOAD[잔액 조회 with 비관적 락]
     BALANCE_LOAD --> BALANCE_CHECK{잔액 충분?}
     BALANCE_CHECK -->|부족| ROLLBACK_STOCK[재고 롤백] --> RELEASE_LOCK
-    BALANCE_CHECK -->|충분| BALANCE_DEDUCT[잔액 차감<br/>with 비관적 락]
-    
+    BALANCE_CHECK -->|충분| BALANCE_DEDUCT[잔액 차감 with 비관적 락]
+
     BALANCE_DEDUCT --> ORDER_CREATE[주문 생성 및 저장]
     ORDER_CREATE --> EVENT_EMIT[OrderCompleted 이벤트 발행]
     EVENT_EMIT --> RELEASE_LOCK_SUCCESS[락 해제]
     RELEASE_LOCK_SUCCESS --> END_SUCCESS([주문 완료])
-    
-    EVENT_EMIT -.->|@Async, AFTER_COMMIT| ASYNC_HANDLERS[비동기 핸들러들]
+
+    EVENT_EMIT -.->|Async AFTER_COMMIT| ASYNC_HANDLERS[비동기 핸들러들]
     ASYNC_HANDLERS -.-> DATA_PLATFORM[데이터 플랫폼 전송]
     ASYNC_HANDLERS -.-> PRODUCT_RANKING[상품 랭킹 업데이트]
-    
+
     style START fill:#e1f5fe
     style END_SUCCESS fill:#e8f5e8
     style END_FAIL fill:#ffebee
