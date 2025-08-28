@@ -49,16 +49,17 @@ public class CreateOrderService implements CreateOrderUseCase {
             }
 
             // 2. 주문 처리 상태 초기화
-            String orderId = UUID.randomUUID().toString();
-            OrderProcessingState state = new OrderProcessingState(orderId, command);
-            orderProcessingStates.put(orderId, state);
+            Long orderId = System.currentTimeMillis(); // 간단한 orderId 생성
+            String orderIdStr = orderId.toString();
+            OrderProcessingState state = new OrderProcessingState(orderIdStr, command);
+            orderProcessingStates.put(orderIdStr, state);
             
             // 3. 주문 처리 시작 이벤트 발행 - 이후 모든 처리는 이벤트 기반으로 진행
             eventPublisher.publishAsync(new OrderProcessingStartedEvent(this, command));
             
             // 4. 비동기 처리 결과를 기다리거나 별도 조회 API로 상태 확인하도록 안내
             return CreateOrderUseCase.CreateOrderResult.success(
-                Long.valueOf(orderId.hashCode()), // orderId를 Long으로 변환
+                orderId, // 생성된 orderId
                 command.getUserId(),
                 command.getUserCouponId(),
                 null, // totalAmount는 이후 계산
