@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.order.application;
 
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,9 +26,9 @@ public class DataPlatformService {
      * @param orderData 전송할 주문 데이터
      * @return 전송 성공 여부
      */
-    public boolean sendOrderData(OrderCompletedEventHandler.DataPlatformOrderDto orderData) {
+    public boolean sendOrderData(Object orderData) {
         try {
-            log.debug("데이터 플랫폼 전송 요청 - orderId: {}", orderData.getOrderId());
+            log.debug("데이터 플랫폼 전송 요청 - orderData: {}", orderData.getClass().getSimpleName());
             
             // Mock API 호출 (실제로는 RestTemplate 사용)
             // ResponseEntity<String> response = restTemplate.postForEntity(
@@ -37,16 +38,15 @@ public class DataPlatformService {
             boolean success = simulateDataPlatformResponse(orderData);
             
             if (success) {
-                log.info("데이터 플랫폼 전송 성공 - orderId: {}, userId: {}", 
-                        orderData.getOrderId(), orderData.getUserId());
+                log.info("데이터 플랫폼 전송 성공 - orderData: {}", orderData.getClass().getSimpleName());
             } else {
-                log.warn("데이터 플랫폼 전송 실패 - orderId: {}", orderData.getOrderId());
+                log.warn("데이터 플랫폼 전송 실패 - orderData: {}", orderData.getClass().getSimpleName());
             }
             
             return success;
             
         } catch (Exception e) {
-            log.error("데이터 플랫폼 전송 중 예외 발생 - orderId: {}", orderData.getOrderId(), e);
+            log.error("데이터 플랫폼 전송 중 예외 발생 - orderData: {}", orderData.getClass().getSimpleName(), e);
             return false;
         }
     }
@@ -55,7 +55,7 @@ public class DataPlatformService {
      * 데이터 플랫폼 응답 시뮬레이션
      * 실제 운영에서는 제거하고 실제 API 응답 처리
      */
-    private boolean simulateDataPlatformResponse(OrderCompletedEventHandler.DataPlatformOrderDto orderData) {
+    private boolean simulateDataPlatformResponse(Object orderData) {
         // 95% 성공률로 시뮬레이션
         double random = Math.random();
         boolean success = random < 0.95;

@@ -24,7 +24,6 @@ import java.util.Map;
 public class OrderCompletedEventHandler {
 
     private final DataPlatformService dataPlatformService;
-    private final NotificationService notificationService;
 
     /**
      * 데이터 플랫폼 전송 핸들러
@@ -54,34 +53,6 @@ public class OrderCompletedEventHandler {
         }
     }
 
-    /**
-     * 알림톡 발송 핸들러
-     * AFTER_COMMIT으로 트랜잭션 완료 후 실행
-     */
-    @Async("orderEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleNotificationSend(OrderCompletedEvent event) {
-        try {
-            log.info("주문 완료 알림톡 발송 시작 - orderId: {}, userId: {}", 
-                    event.getOrderId(), event.getUserId());
-            
-            // 알림톡 메시지 생성
-            NotificationMessageDto message = createOrderCompletionMessage(event);
-            
-            // 알림톡 발송 (Mock API 호출)
-            boolean success = notificationService.sendOrderCompletionNotification(message);
-            
-            if (success) {
-                log.info("주문 완료 알림톡 발송 성공 - orderId: {}", event.getOrderId());
-            } else {
-                log.warn("주문 완료 알림톡 발송 실패 - orderId: {}", event.getOrderId());
-            }
-            
-        } catch (Exception e) {
-            log.error("주문 완료 알림톡 발송 중 예외 발생 - orderId: {}", event.getOrderId(), e);
-            // 실패해도 메인 트랜잭션에 영향 없음
-        }
-    }
 
     /**
      * 주문 데이터를 데이터 플랫폼 형식으로 변환
@@ -117,29 +88,6 @@ public class OrderCompletedEventHandler {
                 .build();
     }
 
-    /**
-     * 주문 완료 알림톡 메시지 생성
-     */
-    private NotificationMessageDto createOrderCompletionMessage(OrderCompletedEvent event) {
-        String productNames = event.getOrderItems().stream()
-                .map(OrderItem::getProductName)
-                .limit(3) // 최대 3개 상품명만 표시
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("상품");
-        
-        if (event.getOrderItems().size() > 3) {
-            productNames += " 외 " + (event.getOrderItems().size() - 3) + "개";
-        }
-        
-        return NotificationMessageDto.builder()
-                .userId(event.getUserId())
-                .orderId(event.getOrderId())
-                .messageType("ORDER_COMPLETION")
-                .title("주문이 완료되었습니다")
-                .content(String.format("주문번호: %d\n상품: %s\n결제금액: %,d원", 
-                        event.getOrderId(), productNames, event.getDiscountedAmount().intValue()))
-                .build();
-    }
 
     // DTO 클래스들
     @lombok.Builder
@@ -166,13 +114,4 @@ public class OrderCompletedEventHandler {
         private final BigDecimal totalPrice;
     }
 
-    @lombok.Builder
-    @lombok.Getter
-    public static class NotificationMessageDto {
-        private final Long userId;
-        private final Long orderId;
-        private final String messageType;
-        private final String title;
-        private final String content;
-    }
 }
