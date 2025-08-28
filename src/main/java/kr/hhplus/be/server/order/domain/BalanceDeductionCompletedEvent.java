@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationEvent;
 
 import java.math.BigDecimal;
 
+/**
+ * 잔액 차감 완료 이벤트
+ */
 @Getter
 public class BalanceDeductionCompletedEvent extends ApplicationEvent {
     
@@ -15,8 +18,8 @@ public class BalanceDeductionCompletedEvent extends ApplicationEvent {
     private final BigDecimal remainingBalance;
     private final String errorMessage;
     
-    private BalanceDeductionCompletedEvent(Object source, String requestId, Long userId, BigDecimal amount, 
-                                         boolean success, BigDecimal remainingBalance, String errorMessage) {
+    private BalanceDeductionCompletedEvent(Object source, String requestId, Long userId, BigDecimal amount,
+                                          boolean success, BigDecimal remainingBalance, String errorMessage) {
         super(source);
         this.requestId = requestId;
         this.userId = userId;
@@ -27,14 +30,12 @@ public class BalanceDeductionCompletedEvent extends ApplicationEvent {
     }
     
     public static BalanceDeductionCompletedEvent success(Object source, String requestId, Long userId, 
-                                                       BigDecimal amount, BigDecimal remainingBalance) {
-        return new BalanceDeductionCompletedEvent(source, requestId, userId, amount, 
-                                                true, remainingBalance, null);
+                                                        BigDecimal amount, BigDecimal remainingBalance) {
+        return new BalanceDeductionCompletedEvent(source, requestId, userId, amount, true, remainingBalance, null);
     }
     
     public static BalanceDeductionCompletedEvent failure(Object source, String requestId, Long userId, 
-                                                       BigDecimal amount, String errorMessage) {
-        return new BalanceDeductionCompletedEvent(source, requestId, userId, amount, 
-                                                false, null, errorMessage);
+                                                        BigDecimal amount, String errorMessage) {
+        return new BalanceDeductionCompletedEvent(source, requestId, userId, amount, false, null, errorMessage);
     }
 }

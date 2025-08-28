@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationEvent;
 
 import java.math.BigDecimal;
 
+/**
+ * 잔액 차감 요청 이벤트
+ */
 @Getter
 public class BalanceDeductionRequestedEvent extends ApplicationEvent {
     
