@@ -20,7 +20,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.cache.type=none"
+})
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
 @DisplayName("Product 도메인 통합테스트")

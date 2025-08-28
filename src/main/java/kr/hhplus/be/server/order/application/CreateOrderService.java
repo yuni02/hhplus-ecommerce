@@ -1,21 +1,26 @@
 package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.order.domain.*;
+import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
+import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
+import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
+import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
+import kr.hhplus.be.server.balance.domain.Balance;
 import kr.hhplus.be.server.order.domain.service.OrderDomainService;
-import kr.hhplus.be.server.shared.event.AsyncEventPublisher;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.domain.OrderItem;
 
 @Slf4j
 @Service
@@ -23,90 +28,159 @@ import java.util.ArrayList;
 public class CreateOrderService implements CreateOrderUseCase {
 
     private final OrderDomainService orderDomainService;
-    private final AsyncEventPublisher eventPublisher;
-    
-    // 주문 처리 상태를 추적하는 임시 저장소 (실제로는 Redis나 DB를 사용)
-    private final Map<String, OrderProcessingState> orderProcessingStates = new ConcurrentHashMap<>();
+    private final LoadProductPort loadProductPort;
+    private final UpdateProductStockPort updateProductStockPort;
+    private final LoadBalancePort loadBalancePort;
+    private final DeductBalancePort deductBalancePort;
+
 
     /**
-     * 코레오그래피 방식의 주문 생성
-     * 이벤트를 발행하고 각 도메인이 독립적으로 처리
+     * 동기식 Saga 패턴의 주문 생성
+     * MSA 경계 내에서 동기적으로 각 단계를 처리하여 동시성 제어
      */
     @DistributedLock(
-        key = "'order_' + #command.userId",
-        waitTime = 10,
-        leaseTime = 30,
+        key = "'order_user_' + #command.userId",
+        waitTime = 5,
+        leaseTime = 10,
         timeUnit = TimeUnit.SECONDS
     )
+    @Transactional
     public CreateOrderUseCase.CreateOrderResult createOrder(CreateOrderUseCase.CreateOrderCommand command) {
-        log.debug("코레오그래피 주문 처리 시작 - userId: {}", command.getUserId());
+        log.debug("동기식 Saga 주문 처리 시작 - userId: {}", command.getUserId());
         
         try {
-            // 1. 주문 검증만 동기적으로 수행
+            // 1. 주문 기본 검증
             OrderDomainService.OrderValidationResult validationResult = orderDomainService.validateOrder(command);
             if (!validationResult.isSuccess()) {
                 return CreateOrderUseCase.CreateOrderResult.failure(validationResult.getErrorMessage());
             }
 
-            // 2. 주문 처리 상태 초기화
-            Long orderId = System.currentTimeMillis(); // 간단한 orderId 생성
-            String orderIdStr = orderId.toString();
-            OrderProcessingState state = new OrderProcessingState(orderIdStr, command);
-            orderProcessingStates.put(orderIdStr, state);
+            // 2. 상품 정보 및 재고 확인 + 차감 (비관적 락)
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            List<CreateOrderUseCase.OrderItemResult> orderItemResults = new ArrayList<>();
             
-            // 3. 주문 처리 시작 이벤트 발행 - 이후 모든 처리는 이벤트 기반으로 진행
-            eventPublisher.publishAsync(new OrderProcessingStartedEvent(this, command));
+            for (CreateOrderUseCase.OrderItemCommand itemCommand : command.getOrderItems()) {
+                // 상품 정보 조회 (락 포함)
+                LoadProductPort.ProductInfo productInfo = loadProductPort.loadProductByIdWithLock(itemCommand.getProductId())
+                    .orElse(null);
+                
+                if (productInfo == null) {
+                    return CreateOrderUseCase.CreateOrderResult.failure("존재하지 않는 상품입니다: " + itemCommand.getProductId());
+                }
+                
+                if (!"ACTIVE".equals(productInfo.getStatus())) {
+                    return CreateOrderUseCase.CreateOrderResult.failure("판매 중지된 상품입니다: " + productInfo.getName());
+                }
+                
+                if (productInfo.getStock() < itemCommand.getQuantity()) {
+                    return CreateOrderUseCase.CreateOrderResult.failure("재고가 부족합니다: " + productInfo.getName() + " (남은 재고: " + productInfo.getStock() + ")");
+                }
+                
+                // 재고 차감 (비관적 락)
+                boolean stockDeducted = updateProductStockPort.deductStockWithPessimisticLock(
+                    itemCommand.getProductId(), itemCommand.getQuantity()
+                );
+                
+                if (!stockDeducted) {
+                    return CreateOrderUseCase.CreateOrderResult.failure("재고 차감에 실패했습니다: " + productInfo.getName());
+                }
+                
+                BigDecimal itemAmount = productInfo.getCurrentPrice().multiply(new BigDecimal(itemCommand.getQuantity()));
+                totalAmount = totalAmount.add(itemAmount);
+                
+                orderItemResults.add(new CreateOrderUseCase.OrderItemResult(
+                    null, // id는 나중에 설정
+                    itemCommand.getProductId(),
+                    productInfo.getName(),
+                    itemCommand.getQuantity(),
+                    productInfo.getCurrentPrice(),
+                    itemAmount
+                ));
+            }
+
+            // 3. 잔액 확인 + 차감 (비관적 락)
+            Balance balance = loadBalancePort.loadActiveBalanceByUserIdWithLock(command.getUserId())
+                .orElse(null);
             
-            // 4. 비동기 처리 결과를 기다리거나 별도 조회 API로 상태 확인하도록 안내
+            if (balance == null) {
+                // 재고 롤백 필요 (간단히 처리)
+                rollbackStock(command);
+                return CreateOrderUseCase.CreateOrderResult.failure("잔액 정보를 찾을 수 없습니다.");
+            }
+            
+            if (balance.getAmount().compareTo(totalAmount) < 0) {
+                // 재고 롤백 필요
+                rollbackStock(command);
+                return CreateOrderUseCase.CreateOrderResult.failure("잔액이 부족합니다. 현재 잔액: " + balance.getAmount() + ", 주문 금액: " + totalAmount);
+            }
+            
+            // 잔액 차감
+            boolean balanceDeducted = deductBalancePort.deductBalanceWithPessimisticLock(
+                command.getUserId(), totalAmount
+            );
+            
+            if (!balanceDeducted) {
+                // 재고 롤백 필요
+                rollbackStock(command);
+                return CreateOrderUseCase.CreateOrderResult.failure("잔액 차감에 실패했습니다.");
+            }
+
+            // 4. 주문 생성 및 저장
+            List<OrderItem> orderItems = orderItemResults.stream()
+                .map(item -> OrderItem.builder()
+                    .productId(item.getProductId())
+                    .productName(item.getProductName())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getUnitPrice())
+                    .build())
+                .collect(Collectors.toList());
+            
+            OrderDomainService.OrderCreationResult orderCreationResult = orderDomainService.createAndSaveOrder(
+                command, orderItems, totalAmount, totalAmount, BigDecimal.ZERO
+            );
+            
+            if (!orderCreationResult.isSuccess()) {
+                // 재고 롤백 필요
+                rollbackStock(command);
+                return CreateOrderUseCase.CreateOrderResult.failure(orderCreationResult.getErrorMessage());
+            }
+            
+            Order savedOrder = orderCreationResult.getOrder();
+            
             return CreateOrderUseCase.CreateOrderResult.success(
-                orderId, // 생성된 orderId
+                savedOrder.getId(),
                 command.getUserId(),
                 command.getUserCouponId(),
-                null, // totalAmount는 이후 계산
-                null, // discountedAmount는 이후 계산
-                null, // discountAmount는 이후 계산
-                null, // finalAmount는 이후 계산
-                "PROCESSING", // 처리 중 상태
-                null, // orderItems는 이후 설정
-                null  // orderedAt은 이후 설정
+                totalAmount,
+                totalAmount, // 쿠폰 적용 로직 생략
+                BigDecimal.ZERO, // 할인 금액
+                totalAmount, // 최종 금액
+                "COMPLETED", // 동기 처리 완료
+                orderItemResults,
+                savedOrder.getOrderedAt()
             );
 
         } catch (Exception e) {
-            log.error("코레오그래피 주문 처리 중 예외 발생 - userId: {}", command.getUserId(), e);
+            log.error("동기식 Saga 주문 처리 중 예외 발생 - userId: {}", command.getUserId(), e);
             return CreateOrderUseCase.CreateOrderResult.failure("주문 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
-
-
+    
     /**
-     * 주문 결과 생성
+     * 재고 롤백 (보상 트랜잭션)
      */
-    private CreateOrderUseCase.CreateOrderResult createOrderResult(Order order, List<OrderItem> orderItems) {
-        List<CreateOrderUseCase.OrderItemResult> orderItemResults = new ArrayList<>();
-        for (OrderItem item : orderItems) {
-            orderItemResults.add(new CreateOrderUseCase.OrderItemResult(
-                item.getId(),
-                item.getProductId(),
-                item.getProductName(),
-                item.getQuantity(),
-                item.getUnitPrice(),
-                item.getTotalPrice()
-            ));
+    private void rollbackStock(CreateOrderUseCase.CreateOrderCommand command) {
+        for (CreateOrderUseCase.OrderItemCommand itemCommand : command.getOrderItems()) {
+            try {
+                updateProductStockPort.restoreStock(itemCommand.getProductId(), itemCommand.getQuantity());
+            } catch (Exception e) {
+                log.error("재고 롤백 실패 - productId: {}", itemCommand.getProductId(), e);
+            }
         }
-
-        return CreateOrderUseCase.CreateOrderResult.success(
-            order.getId(),
-            order.getUserId(),
-            order.getUserCouponId(),
-            order.getTotalAmount(),
-            order.getDiscountedAmount(),
-            order.getDiscountAmount(),
-            order.getDiscountedAmount(), // finalAmount는 discountedAmount와 동일
-            order.getStatus().name(),
-            orderItemResults,
-            order.getOrderedAt()
-        );
     }
+
+
+
 
 
 }
