@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.cache.type=none"
+})
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
 @DisplayName("Order 도메인 통합테스트")
@@ -140,11 +142,11 @@ class OrderIntegrationTest {
     @DisplayName("주문 생성 실패 - 존재하지 않는 상품")
     void 주문_생성_실패_존재하지_않는_상품() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long nonExistentProductId = 9999L;
         Integer quantity = 1;
 
-                 CreateOrderUseCase.OrderItemCommand orderItem = new CreateOrderUseCase.OrderItemCommand(nonExistentProductId, quantity);
+        CreateOrderUseCase.OrderItemCommand orderItem = new CreateOrderUseCase.OrderItemCommand(nonExistentProductId, quantity);
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(userId, Arrays.asList(orderItem), null);
 
         // when
@@ -152,18 +154,18 @@ class OrderIntegrationTest {
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("상품을 찾을 수 없습니다");
+        assertThat(result.getErrorMessage()).contains("존재하지 않는 상품입니다");
     }
 
     @Test
     @DisplayName("주문 생성 실패 - 잔액 부족")
     void 주문_생성_실패_잔액_부족() {
         // given
-        Long userId = testUser.getUserId();
+        Long userId = testUser.getUserId() != null ? testUser.getUserId() : testUser.getId();
         Long productId = testProduct.getId();
         Integer quantity = 10; // 총 100,000원 (잔액 50,000원보다 많음)
 
-                 CreateOrderUseCase.OrderItemCommand orderItem = new CreateOrderUseCase.OrderItemCommand(productId, quantity);
+        CreateOrderUseCase.OrderItemCommand orderItem = new CreateOrderUseCase.OrderItemCommand(productId, quantity);
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(userId, Arrays.asList(orderItem), null);
 
         // when

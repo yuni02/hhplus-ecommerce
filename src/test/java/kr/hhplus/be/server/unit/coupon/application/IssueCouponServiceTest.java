@@ -54,7 +54,8 @@ class IssueCouponServiceTest {
             new IssueCouponUseCase.IssueCouponCommand(userId, couponId);
 
         LoadCouponPort.CouponInfo couponInfo = new LoadCouponPort.CouponInfo(
-            couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE", LocalDateTime.now(), LocalDateTime.now());
+            couponId, "신규 가입 쿠폰", "신규 회원 할인", 1000, 100, 50, "ACTIVE", 
+            LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(7));
 
         UserCoupon savedUserCoupon = UserCoupon.builder()
             .id(1L)  // id 추가
@@ -68,6 +69,13 @@ class IssueCouponServiceTest {
         when(loadCouponPort.loadCouponByIdWithLock(couponId)).thenReturn(Optional.of(couponInfo));
         when(loadCouponPort.incrementIssuedCount(couponId)).thenReturn(true);
         when(saveUserCouponPort.saveUserCoupon(any(UserCoupon.class))).thenReturn(savedUserCoupon);
+        
+        // RedisCouponService Mock 설정
+        when(redisCouponService.getCouponInfoFromCache(couponId)).thenReturn(Optional.empty()); // Redis에서 캐시 없음
+        when(redisCouponService.checkAndIssueCoupon(eq(couponId), eq(userId), eq(100)))
+            .thenReturn(RedisCouponService.CouponIssueResult.success());
+        doNothing().when(redisCouponService).cacheCouponInfo(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        doNothing().when(redisCouponService).updateCouponIssuedCount(couponId, 51);
         
         // AOP 기반 @DistributedLock 사용으로 Redis 분산락 Mock 불필요
 

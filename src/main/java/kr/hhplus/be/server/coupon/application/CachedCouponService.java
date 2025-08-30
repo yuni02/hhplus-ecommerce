@@ -32,23 +32,6 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
         this.updateUserCouponPort = updateUserCouponPort;
     }
 
-    /**
-     * 사용 가능한 쿠폰 캐시 무효화
-     */
-    @CacheEvict(value = "userCouponsAvailable", key = "#userId")
-    public void evictAvailableUserCouponsCache(Long userId) {
-        log.debug("사용 가능한 쿠폰 캐시 무효화 - userId: {}", userId);
-        // 메서드 내용 없음 - AOP가 캐시 무효화 처리
-    }
-
-    /**
-     * 전체 사용자 쿠폰 캐시 무효화
-     */
-    @CacheEvict(value = "userCouponsAll", key = "#userId")
-    public void evictAllUserCouponsCache(Long userId) {
-        log.debug("전체 사용자 쿠폰 캐시 무효화 - userId: {}", userId);
-        // 메서드 내용 없음 - AOP가 캐시 무효화 처리
-    }
 
     /**
      * 사용자 쿠폰 목록 조회 (전체, 캐시 적용) - API 응답용
@@ -87,42 +70,11 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
         return new GetUserCouponsResult(userCoupons);
     }
 
+
     @Override
     @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
     public UseCouponResult useCoupon(UseCouponCommand command) {
-        try {
-            // 1. 사용자 쿠폰 조회
-            Optional<UserCoupon> userCouponOpt = loadUserCouponPort.loadUserCoupon(command.getUserCouponId());
-            if (userCouponOpt.isEmpty()) {
-                return UseCouponResult.failure("쿠폰을 찾을 수 없습니다.");
-            }
-
-            UserCoupon userCoupon = userCouponOpt.get();
-            
-            // 2. 쿠폰 사용 검증 및 처리
-            if (!userCoupon.isAvailable()) {
-                return UseCouponResult.failure("사용할 수 없는 쿠폰입니다.");
-            }
-
-            // 3. 쿠폰 정보 조회하여 할인 금액 확인
-            Optional<LoadCouponPort.CouponInfo> couponInfo = loadCouponPort.loadCouponById(userCoupon.getCouponId());
-            if (couponInfo.isEmpty()) {
-                return UseCouponResult.failure("쿠폰 정보를 찾을 수 없습니다.");
-            }
-
-            Integer discountAmount = couponInfo.get().getDiscountAmount();
-            BigDecimal discountedAmount = command.getOrderAmount().subtract(new BigDecimal(discountAmount));
-
-            // 4. 쿠폰 사용 처리
-            userCoupon.use(java.time.LocalDateTime.now());
-            updateUserCouponPort.updateUserCoupon(userCoupon);
-
-            return UseCouponResult.success(discountedAmount, discountAmount);
-            
-        } catch (Exception e) {
-            log.error("쿠폰 사용 중 오류 발생 - userCouponId: {}", command.getUserCouponId(), e);
-            return UseCouponResult.failure("쿠폰 사용 중 오류가 발생했습니다.");
-        }
+        return useCouponWithPessimisticLock(command);
     }
 
     @Override
@@ -163,12 +115,36 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
         }
     }
 
-    /**
-     * 쿠폰 정보 캐시 무효화 (쿠폰 정보 변경 시에만 호출)
-     */
-    @CacheEvict(value = "couponInfo", key = "#couponId")
-    public void evictCouponInfoCache(Long couponId) {
-        log.debug("쿠폰 정보 캐시 무효화 - couponId: {}", couponId);
-        // 메서드 내용 없음 - AOP가 캐시 무효화 처리
+    @Override
+    @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
+    public RestoreCouponResult restoreCoupon(RestoreCouponCommand command) {
+        try {
+            // 1. 사용자 쿠폰 조회
+            Optional<UserCoupon> userCouponOpt = loadUserCouponPort.loadUserCoupon(command.getUserCouponId());
+            if (userCouponOpt.isEmpty()) {
+                return RestoreCouponResult.failure("쿠폰을 찾을 수 없습니다.");
+            }
+
+            UserCoupon userCoupon = userCouponOpt.get();
+            
+            // 2. 쿠폰 복원 가능 여부 확인
+            if (userCoupon.isAvailable()) {
+                return RestoreCouponResult.failure("이미 사용 가능한 쿠폰입니다.");
+            }
+
+            // 3. 쿠폰 복원 처리
+            userCoupon.restore();
+            updateUserCouponPort.updateUserCoupon(userCoupon);
+
+            log.info("쿠폰 복원 성공 - userCouponId: {}, reason: {}", 
+                     command.getUserCouponId(), command.getReason());
+            
+            return RestoreCouponResult.success();
+            
+        } catch (Exception e) {
+            log.error("쿠폰 복원 중 오류 발생 - userCouponId: {}", command.getUserCouponId(), e);
+            return RestoreCouponResult.failure("쿠폰 복원 중 오류가 발생했습니다.");
+        }
     }
+
 }

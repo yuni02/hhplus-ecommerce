@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.unit.order.adapter.in.web;
 
+import kr.hhplus.be.server.order.application.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.adapter.in.web.OrderController;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderRequest;
@@ -29,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderControllerTest {
 
     @Mock
-    private CreateOrderUseCase createOrderUseCase;
+    private CreateOrderService createOrderService;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -37,7 +38,7 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(createOrderUseCase))
+        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(createOrderService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -56,9 +57,9 @@ class OrderControllerTest {
                 1L, productId, "상품명", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(     
                 1L, userId, null, BigDecimal.valueOf(20000), BigDecimal.valueOf(20000), 
-                BigDecimal.valueOf(20000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());
+                BigDecimal.ZERO, BigDecimal.valueOf(20000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -73,7 +74,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.discountAmount").value(0))
                 .andExpect(jsonPath("$.discountedAmount").value(20000));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 
     @Test
@@ -91,9 +92,9 @@ class OrderControllerTest {
                 1L, productId, "상품명", quantity, BigDecimal.valueOf(10000), BigDecimal.valueOf(20000));
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult.success(
                 1L, userId, userCouponId, BigDecimal.valueOf(20000), BigDecimal.valueOf(19000), 
-                BigDecimal.valueOf(19000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());    
+                BigDecimal.valueOf(1000), BigDecimal.valueOf(19000), "COMPLETED", List.of(orderItemResult), LocalDateTime.now());    
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -109,7 +110,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.discountAmount").value(1000))
                 .andExpect(jsonPath("$.discountedAmount").value(19000));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 
     @Test
@@ -125,7 +126,7 @@ class OrderControllerTest {
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult
                 .failure("사용자를 찾을 수 없습니다.");
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -136,7 +137,7 @@ class OrderControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 
     @Test
@@ -152,7 +153,7 @@ class OrderControllerTest {
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult
                 .failure("상품을 찾을 수 없습니다: " + productId);
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -163,7 +164,7 @@ class OrderControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("상품을 찾을 수 없습니다: " + productId));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 
     @Test
@@ -179,7 +180,7 @@ class OrderControllerTest {
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult
                 .failure("재고가 부족합니다: 10");
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -190,7 +191,7 @@ class OrderControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("재고가 부족합니다: 10"));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 
     @Test
@@ -219,7 +220,7 @@ class OrderControllerTest {
         CreateOrderUseCase.CreateOrderResult result = CreateOrderUseCase.CreateOrderResult
                 .failure("주문 생성 중 오류가 발생했습니다.");
 
-        when(createOrderUseCase.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
+        when(createOrderService.createOrder(any(CreateOrderUseCase.CreateOrderCommand.class)))
                 .thenReturn(result);
 
         // when & then
@@ -230,6 +231,6 @@ class OrderControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("주문 생성 중 오류가 발생했습니다."));
 
-        verify(createOrderUseCase).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
+        verify(createOrderService).createOrder(any(CreateOrderUseCase.CreateOrderCommand.class));
     }
 } 

@@ -41,15 +41,13 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
                 .map(this::mapToBalance);
     }
 
-    /**
-     * 동시성 제어를 위한 잔액 조회 (Pessimistic Lock 사용)
-     */
     @Override
     @Transactional
     public Optional<Balance> loadActiveBalanceByUserIdWithLock(Long userId) {
         return balanceJpaRepository.findByUserIdAndStatusWithLock(userId, "ACTIVE")
                 .map(this::mapToBalance);
     }
+
 
     @Override
     @Transactional

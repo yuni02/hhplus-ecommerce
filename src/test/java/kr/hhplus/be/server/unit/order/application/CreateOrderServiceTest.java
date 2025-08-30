@@ -3,7 +3,6 @@ package kr.hhplus.be.server.unit.order.application;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,22 +16,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import kr.hhplus.be.server.order.application.CreateOrderService;
-
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;    
-import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
 import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
-import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
-import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
-import org.springframework.context.ApplicationEventPublisher;
+import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
+import kr.hhplus.be.server.balance.domain.Balance;
+import kr.hhplus.be.server.order.domain.service.OrderDomainService;
+import kr.hhplus.be.server.shared.event.AsyncEventPublisher;
 import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.domain.OrderItem;
 
+/**
+ * CreateOrderService 단위 테스트
+ * 실제 구현에 맞춘 테스트
+ */
 @ExtendWith(MockitoExtension.class)
 class CreateOrderServiceTest {
 
     @Mock
-    private LoadUserPort loadUserPort;
+    private OrderDomainService orderDomainService;
     
     @Mock
     private LoadProductPort loadProductPort;
@@ -41,407 +44,268 @@ class CreateOrderServiceTest {
     private UpdateProductStockPort updateProductStockPort;
     
     @Mock
+    private LoadBalancePort loadBalancePort;
+    
+    @Mock
     private DeductBalancePort deductBalancePort;
     
     @Mock
-    private SaveOrderPort saveOrderPort;
-    
-    @Mock
-    private UseCouponUseCase useCouponUseCase;
-
-    @Mock
-    private ApplicationEventPublisher eventPublisher;                  
+    private AsyncEventPublisher eventPublisher;
 
     private CreateOrderService createOrderService;
 
     @BeforeEach
     void setUp() {
         createOrderService = new CreateOrderService(
-            loadUserPort,
+            orderDomainService,
             loadProductPort,
             updateProductStockPort,
-            deductBalancePort,
-            saveOrderPort,
-            useCouponUseCase,
-            eventPublisher
+            loadBalancePort,
+            deductBalancePort
         );      
     }
 
     @Test
-    @DisplayName("주문 생성 성공 - 쿠폰 없이")
-    void createOrder_Success_WithoutCoupon() {
+    @DisplayName("주문 성공 - 모든 단계가 정상적으로 처리됨")
+    void createOrder_Success_AllStepsCompleted() {
         // given
         Long userId = 1L;
+        Long productId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
+            new CreateOrderUseCase.OrderItemCommand(productId, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
+        // Mock domain service response
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.success());
+
+        // Mock product info
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
+            productId, "테스트 상품", "테스트 상품 설명", 10, new BigDecimal("10000"), "ACTIVE"
+        );
+        when(loadProductPort.loadProductByIdWithLock(productId))
+            .thenReturn(java.util.Optional.of(productInfo));
 
-        Order savedOrder = Order.builder()
-            .id(1L)
+        // Mock stock deduction
+        when(updateProductStockPort.deductStockWithPessimisticLock(productId, 2))
+            .thenReturn(true);
+
+        // Mock balance
+        Balance balance = Balance.builder()
             .userId(userId)
-            .orderItems(List.of())
-            .totalAmount(BigDecimal.valueOf(20000))
-            .discountedAmount(BigDecimal.valueOf(20000))
-            .orderedAt(LocalDateTime.now())
-            .status(Order.OrderStatus.COMPLETED)
+            .amount(new BigDecimal("50000"))
+            .status(Balance.BalanceStatus.ACTIVE)
             .build();
+        when(loadBalancePort.loadActiveBalanceByUserIdWithLock(userId))
+            .thenReturn(java.util.Optional.of(balance));
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(true);
-        when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
-
-        // when
-        CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
-
-        // then
-        System.out.println("Test Result - Success: " + result.isSuccess() + ", Error: " + result.getErrorMessage());
-        assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getOrderId()).isEqualTo(1L);
-        assertThat(result.getUserId()).isEqualTo(userId);
-        assertThat(result.getTotalAmount()).isEqualTo(BigDecimal.valueOf(20000));
-        assertThat(result.getDiscountedAmount()).isEqualTo(BigDecimal.valueOf(20000));
-        assertThat(result.getUserCouponId()).isNull();
-        assertThat(result.getStatus()).isEqualTo("COMPLETED");
-        
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);  
-        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(20000));
-        verify(saveOrderPort).saveOrder(any(Order.class));
-        verify(useCouponUseCase, never()).useCoupon(any());
-    }
-
-    @Test
-    @DisplayName("주문 생성 성공 - 쿠폰 사용")
-    void createOrder_Success_WithCoupon() {
-        // given
-        Long userId = 1L;
-        Long userCouponId = 1L;
-        CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
-        CreateOrderUseCase.CreateOrderCommand command = 
-            new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), userCouponId);
-
-        LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
-
-        UseCouponUseCase.UseCouponResult couponResult = 
-            UseCouponUseCase.UseCouponResult.success(BigDecimal.valueOf(18000), 2000);
-
-        Order savedOrder = Order.builder()
-            .id(1L)
-            .userId(userId)
-            .orderItems(List.of())
-            .totalAmount(BigDecimal.valueOf(20000))
-            .discountedAmount(BigDecimal.valueOf(18000))
-            .userCouponId(userCouponId)
-            .orderedAt(LocalDateTime.now())
-            .status(Order.OrderStatus.COMPLETED)
-            .build();
-
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(useCouponUseCase.useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
-        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(18000)))).thenReturn(true);
-        when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
+        // Mock balance deduction
+        when(deductBalancePort.deductBalanceWithPessimisticLock(userId, new BigDecimal("20000")))
+            .thenReturn(true);
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getOrderId()).isEqualTo(1L);
+        assertThat(result.getOrderId()).isNotNull();
         assertThat(result.getUserId()).isEqualTo(userId);
-        assertThat(result.getTotalAmount()).isEqualTo(BigDecimal.valueOf(20000));
-        assertThat(result.getDiscountedAmount()).isEqualTo(BigDecimal.valueOf(18000));
-        assertThat(result.getUserCouponId()).isEqualTo(userCouponId);
         assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        assertThat(result.getTotalAmount()).isEqualTo(new BigDecimal("20000"));
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(useCouponUseCase).useCouponWithPessimisticLock(any(UseCouponUseCase.UseCouponCommand.class));
-        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(18000));
-        verify(saveOrderPort).saveOrder(any(Order.class));
+        // 이벤트가 발행되었는지 검증
+        verify(eventPublisher).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 사용자가 존재하지 않음")
-    void createOrder_Failure_UserNotFound() {
+    @DisplayName("주문 실패 - 검증 실패 시 이벤트 발행되지 않음")
+    void createOrder_Failure_ValidationFailed() {
         // given
-        Long userId = 999L;
-        CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
-            new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
+            new CreateOrderUseCase.CreateOrderCommand(1L, List.of(), null);
 
-        when(loadUserPort.existsById(userId)).thenReturn(false);
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.failure("주문 아이템이 없습니다."));
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
+        assertThat(result.getErrorMessage()).isEqualTo("주문 아이템이 없습니다.");
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort, never()).loadProductById(any());
-        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
+        // 검증 실패 후 이벤트가 발행되지 않았는지 확인
+        verify(eventPublisher, never()).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 상품이 존재하지 않음")
+    @DisplayName("주문 실패 - 상품이 존재하지 않는 경우")
     void createOrder_Failure_ProductNotFound() {
         // given
         Long userId = 1L;
+        Long productId = 999L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(999L, 2);
+            new CreateOrderUseCase.OrderItemCommand(productId, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(999L)).thenReturn(Optional.empty());
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.success());
+
+        when(loadProductPort.loadProductByIdWithLock(productId))
+            .thenReturn(java.util.Optional.empty());
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("상품을 찾을 수 없습니다");
+        assertThat(result.getErrorMessage()).contains("존재하지 않는 상품입니다");
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(999L);
-        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
+        verify(eventPublisher, never()).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 재고 부족")
+    @DisplayName("주문 실패 - 재고 부족")
     void createOrder_Failure_InsufficientStock() {
         // given
         Long userId = 1L;
+        Long productId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L,         200);   // 재고보다 많은 수량
+            new CreateOrderUseCase.OrderItemCommand(productId, 5);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.success());
+         
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE"); // 재고 100개
-
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
+            productId, "테스트 상품", "테스트 상품 설명", 2, new BigDecimal("10000"), "ACTIVE"
+        );
+        when(loadProductPort.loadProductByIdWithLock(productId))
+            .thenReturn(java.util.Optional.of(productInfo));
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("재고가 부족합니다");        
+        assertThat(result.getErrorMessage()).contains("재고가 부족합니다");
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort, never()).deductStockWithPessimisticLock(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
+        verify(eventPublisher, never()).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 재고 차감 실패")
-    void createOrder_Failure_StockDeductionFailed() {
+    @DisplayName("주문 실패 - 잔액 부족")
+    void createOrder_Failure_InsufficientBalance() {
         // given
         Long userId = 1L;
+        Long productId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
+            new CreateOrderUseCase.OrderItemCommand(productId, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
 
-        LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.success());
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)   ).thenReturn(false); // 재고 차감 실패
+        LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
+            productId, "테스트 상품", "테스트 상품 설명", 10, new BigDecimal("10000"), "ACTIVE"
+        );
+        when(loadProductPort.loadProductByIdWithLock(productId))
+            .thenReturn(java.util.Optional.of(productInfo));
+
+        when(updateProductStockPort.deductStockWithPessimisticLock(productId, 2))
+            .thenReturn(true);
+
+        Balance balance = Balance.builder()
+            .userId(userId)
+            .amount(new BigDecimal("5000"))
+            .status(Balance.BalanceStatus.ACTIVE)
+            .build(); // 부족한 잔액
+        when(loadBalancePort.loadActiveBalanceByUserIdWithLock(userId))
+            .thenReturn(java.util.Optional.of(balance));
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).contains("재고 차감에 실패했습니다");
+        assertThat(result.getErrorMessage()).contains("잔액이 부족합니다");
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(deductBalancePort, never()).deductBalance(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
+        // 재고 롤백이 호출되었는지 확인
+        verify(updateProductStockPort).restoreStock(productId, 2);
+        verify(eventPublisher, never()).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 쿠폰 사용 실패")
-    void createOrder_Failure_CouponUsageFailed() {
+    @DisplayName("주문 처리 - 쿠폰이 있는 경우 쿠폰 ID 포함")
+    void createOrder_WithCoupon() {
         // given
         Long userId = 1L;
-        Long userCouponId = 1L;
+        Long userCouponId = 100L;
+        Long productId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
+            new CreateOrderUseCase.OrderItemCommand(productId, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), userCouponId);
 
-        LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
-
-        UseCouponUseCase.UseCouponResult couponResult = 
-            UseCouponUseCase.UseCouponResult.failure("쿠폰을 사용할 수 없습니다.");
-
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);       
-        when(useCouponUseCase.useCoupon(any(UseCouponUseCase.UseCouponCommand.class))).thenReturn(couponResult);
-
-        // when
-        CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
-
-        // then
-        assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
-        
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(useCouponUseCase, never()).useCoupon(any(UseCouponUseCase.UseCouponCommand.class));
-        verify(deductBalancePort, never()).deductBalance(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
-    }
-
-    @Test
-    @DisplayName("주문 생성 실패 - 잔액 차감 실패")
-    void createOrder_Failure_BalanceDeductionFailed() {
-        // given
-        Long userId = 1L;
-        CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
-        CreateOrderUseCase.CreateOrderCommand command = 
-            new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
+        when(orderDomainService.validateOrder(command))
+            .thenReturn(OrderDomainService.OrderValidationResult.success());
 
         LoadProductPort.ProductInfo productInfo = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
+            productId, "테스트 상품", "테스트 상품 설명", 10, new BigDecimal("10000"), "ACTIVE"
+        );
+        when(loadProductPort.loadProductByIdWithLock(productId))
+            .thenReturn(java.util.Optional.of(productInfo));
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(deductBalancePort.deductBalance(eq(userId), eq(BigDecimal.valueOf(20000)))).thenReturn(false);
+        when(updateProductStockPort.deductStockWithPessimisticLock(productId, 2))
+            .thenReturn(true);
 
-        // when
-        CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
-
-        // then
-        assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("재고 차감에 실패했습니다: 상품A");
-        
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(deductBalancePort, never()).deductBalance(any(), any());
-        verify(saveOrderPort, never()).saveOrder(any());
-    }
-
-    @Test
-    @DisplayName("주문 생성 성공 - 여러 상품")
-    void createOrder_Success_MultipleProducts() {
-        // given
-        Long userId = 1L;
-        CreateOrderUseCase.OrderItemCommand orderItem1 = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 2);
-        CreateOrderUseCase.OrderItemCommand orderItem2 = 
-            new CreateOrderUseCase.OrderItemCommand(2L, 1);
-        CreateOrderUseCase.CreateOrderCommand command = 
-            new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItem1, orderItem2), null);
-
-        LoadProductPort.ProductInfo product1 = new LoadProductPort.ProductInfo(
-            1L, "상품A", "상품A 설명", 100, BigDecimal.valueOf(10000), "ACTIVE");
-        LoadProductPort.ProductInfo product2 = new LoadProductPort.ProductInfo(
-            2L, "상품B", "상품B 설명", 50, BigDecimal.valueOf(15000), "ACTIVE");
-
-        Order savedOrder = Order.builder()
-            .id(1L)
+        Balance balance = Balance.builder()
             .userId(userId)
-            .orderItems(List.of())
-            .totalAmount(BigDecimal.valueOf(35000))
-            .discountedAmount(BigDecimal.valueOf(35000))
-            .orderedAt(LocalDateTime.now())
-            .status(Order.OrderStatus.COMPLETED)
+            .amount(new BigDecimal("50000"))
+            .status(Balance.BalanceStatus.ACTIVE)
             .build();
+        when(loadBalancePort.loadActiveBalanceByUserIdWithLock(userId))
+            .thenReturn(java.util.Optional.of(balance));
 
-        when(loadUserPort.existsById(userId)).thenReturn(true);
-        when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(product1));
-        when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(product2));
-        when(updateProductStockPort.deductStockWithPessimisticLock(1L, 2)).thenReturn(true);
-        when(updateProductStockPort.deductStockWithPessimisticLock(2L, 1)).thenReturn(true);
-        when(deductBalancePort.deductBalanceWithPessimisticLock(eq(userId), eq(BigDecimal.valueOf(35000)))).thenReturn(true);
-        when(saveOrderPort.saveOrder(any(Order.class))).thenReturn(savedOrder);
+        when(deductBalancePort.deductBalanceWithPessimisticLock(userId, new BigDecimal("20000")))
+            .thenReturn(true);
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isTrue();
-        assertThat(result.getOrderId()).isEqualTo(1L);
-        assertThat(result.getTotalAmount()).isEqualTo(BigDecimal.valueOf(35000)); // 20000 + 15000
-        assertThat(result.getDiscountedAmount()).isEqualTo(BigDecimal.valueOf(35000));
+        assertThat(result.getUserCouponId()).isEqualTo(userCouponId);
         
-        verify(loadUserPort).existsById(userId);
-        verify(loadProductPort).loadProductById(1L);
-        verify(loadProductPort).loadProductById(2L);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(1L, 2);
-        verify(updateProductStockPort).deductStockWithPessimisticLock(2L, 1);
-        verify(deductBalancePort).deductBalanceWithPessimisticLock(userId, BigDecimal.valueOf(35000));
-        verify(saveOrderPort).saveOrder(any(Order.class));
+        // 이벤트 발행 검증
+        verify(eventPublisher).publishAsync(any());
     }
 
     @Test
-    @DisplayName("주문 생성 실패 - 잘못된 주문 아이템 (빈 목록)")
-    void createOrder_Failure_EmptyOrderItems() {
-        // given
-        Long userId = 1L;
-        CreateOrderUseCase.CreateOrderCommand command = 
-            new CreateOrderUseCase.CreateOrderCommand(userId, List.of(), null);
-
-        // when
-        CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
-
-        // then
-        assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
-        
-        verify(loadUserPort, never()).existsById(any());
-        verify(loadProductPort, never()).loadProductById(any());
-    }
-
-    @Test
-    @DisplayName("주문 생성 실패 - 잘못된 수량 (0 또는 음수)")
-    void createOrder_Failure_InvalidQuantity() {
+    @DisplayName("주문 처리 - 예외 발생 시 실패 결과 반환")
+    void createOrder_ExceptionHandling() {
         // given
         Long userId = 1L;
         CreateOrderUseCase.OrderItemCommand orderItemCommand = 
-            new CreateOrderUseCase.OrderItemCommand(1L, 0); // 잘못된 수량
+            new CreateOrderUseCase.OrderItemCommand(1L, 2);
         CreateOrderUseCase.CreateOrderCommand command = 
             new CreateOrderUseCase.CreateOrderCommand(userId, List.of(orderItemCommand), null);
+
+        when(orderDomainService.validateOrder(command))
+            .thenThrow(new RuntimeException("데이터베이스 연결 오류"));
 
         // when
         CreateOrderUseCase.CreateOrderResult result = createOrderService.createOrder(command);
 
         // then
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isEqualTo("주문 검증에 실패했습니다.");
+        assertThat(result.getErrorMessage()).contains("주문 처리 중 오류가 발생했습니다");
         
-        verify(loadUserPort, never()).existsById(any());
-        verify(loadProductPort, never()).loadProductById(any());
+        // 예외 발생 시 이벤트가 발행되지 않았는지 확인
+        verify(eventPublisher, never()).publishAsync(any());
     }
-} 
+}

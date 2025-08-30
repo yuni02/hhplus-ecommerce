@@ -35,23 +35,23 @@ public class RedisCouponService {
     public CouponIssueResult checkAndIssueCoupon(Long couponId, Long userId, Integer maxIssuanceCount) {
         String issuedKey = generateIssuedKey(couponId);
         String userKey = userId.toString();
-        
+
         try {
             // 1. 이미 발급받았는지 확인
             Boolean isMember = redisTemplate.opsForSet().isMember(issuedKey, userKey);
             if (Boolean.TRUE.equals(isMember)) {
                 return CouponIssueResult.failure("이미 발급받은 쿠폰입니다.");
             }
-            
+
             // 2. 현재 발급 수량 확인
             Long currentCount = redisTemplate.opsForSet().size(issuedKey);
             if (currentCount != null && currentCount >= maxIssuanceCount) {
                 return CouponIssueResult.failure("쿠폰이 모두 소진되었습니다.");
             }
-            
+
             // 3. 발급 처리 (SADD는 이미 존재하면 0, 새로 추가되면 1 반환)
             Long added = redisTemplate.opsForSet().add(issuedKey, userKey);
-            
+
             if (added != null && added > 0) {
                 // 4. TTL 설정 (30일)
                 redisTemplate.expire(issuedKey, Duration.ofDays(30));
@@ -61,102 +61,11 @@ public class RedisCouponService {
                 // 동시 요청으로 인해 이미 추가된 경우
                 return CouponIssueResult.failure("이미 발급받은 쿠폰입니다.");
             }
-            
+
         } catch (Exception e) {
             log.warn("Redis 쿠폰 발급 체크 실패 - couponId: {}, userId: {}", couponId, userId, e);
             // Redis 실패 시 DB 로직으로 fallback
             return CouponIssueResult.fallbackToDb();
-        }
-    }
-
-    /**
-     * Redis 기반 선착순 쿠폰 발급 체크 (원자적 처리)
-     * Redis의 WATCH/MULTI/EXEC를 사용하여 원자성 보장
-     */
-    public CouponIssueResult checkAndIssueCouponAtomic(Long couponId, Long userId, Integer maxIssuanceCount) {
-        String issuedKey = generateIssuedKey(couponId);
-        String userKey = userId.toString();
-        
-        try {
-            // Redis의 WATCH/MULTI/EXEC를 사용한 원자적 처리
-            return redisTemplate.execute((RedisCallback<CouponIssueResult>) connection -> {
-                while (true) {
-                    // 1. 키 감시 시작
-                    connection.watch(issuedKey.getBytes());
-                    
-                    // 2. 현재 상태 확인
-                    Boolean isMember = connection.sIsMember(issuedKey.getBytes(), userKey.getBytes());
-                    if (Boolean.TRUE.equals(isMember)) {
-                        connection.unwatch();
-                        return CouponIssueResult.failure("이미 발급받은 쿠폰입니다.");
-                    }
-                    
-                    Long currentCount = connection.sCard(issuedKey.getBytes());
-                    if (currentCount != null && currentCount >= maxIssuanceCount) {
-                        connection.unwatch();
-                        return CouponIssueResult.failure("쿠폰이 모두 소진되었습니다.");
-                    }
-                    
-                    // 3. 트랜잭션 시작
-                    connection.multi();
-                    
-                    // 4. 발급 처리
-                    connection.sAdd(issuedKey.getBytes(), userKey.getBytes());
-                    connection.expire(issuedKey.getBytes(), 2592000); // 30일
-                    
-                    // 5. 트랜잭션 실행
-                    List<Object> results = connection.exec();
-                    
-                    if (results != null) {
-                        // 트랜잭션 성공
-                        log.debug("Redis 원자적 쿠폰 발급 성공 - couponId: {}, userId: {}", couponId, userId);
-                        return CouponIssueResult.success();
-                    } else {
-                        // 트랜잭션 실패 (다른 클라이언트가 키를 변경함)
-                        // 재시도
-                        continue;
-                    }
-                }
-            });
-            
-        } catch (Exception e) {
-            log.warn("Redis 원자적 쿠폰 발급 실패 - couponId: {}, userId: {}", couponId, userId, e);
-            return CouponIssueResult.fallbackToDb();
-        }
-    }
-
-
-
-    /**
-     * 쿠폰 발급 정보 초기화 (신규 쿠폰 등록 시)
-     */
-    public void initializeCouponData(Long couponId, Integer maxIssuanceCount) {
-        String issuedKey = generateIssuedKey(couponId);
-        
-        try {
-            // 발급자 집합 초기화
-            redisTemplate.delete(issuedKey);
-            
-            // TTL 설정 (30일)
-            redisTemplate.expire(issuedKey, Duration.ofDays(30));
-            
-            log.debug("쿠폰 Redis 데이터 초기화 - couponId: {}, maxCount: {}", couponId, maxIssuanceCount);
-        } catch (Exception e) {
-            log.warn("쿠폰 Redis 데이터 초기화 실패 - couponId: {}", couponId, e);
-        }
-    }
-
-    /**
-     * 현재 발급 수량 조회
-     */
-    public Long getCurrentIssuedCount(Long couponId) {
-        String issuedKey = generateIssuedKey(couponId);
-        
-        try {
-            return redisTemplate.opsForSet().size(issuedKey);
-        } catch (Exception e) {
-            log.warn("발급 수량 조회 실패 - couponId: {}", couponId, e);
-            return null;
         }
     }
 
@@ -174,19 +83,6 @@ public class RedisCouponService {
         }
     }
 
-    /**
-     * Redis 데이터 정리 (만료된 쿠폰)
-     */
-    public void cleanupExpiredCouponData(Long couponId) {
-        String issuedKey = generateIssuedKey(couponId);
-        
-        try {
-            redisTemplate.delete(issuedKey);
-            log.debug("만료된 쿠폰 Redis 데이터 정리 - couponId: {}", couponId);
-        } catch (Exception e) {
-            log.warn("쿠폰 Redis 데이터 정리 실패 - couponId: {}", couponId, e);
-        }
-    }
 
     /**
      * Redis 기반 선착순 쿠폰 발급 체크 (최적화된 방법)

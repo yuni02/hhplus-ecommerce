@@ -116,6 +116,30 @@ public class RedisProductRankingService implements ProductRankingUseCase {
         }
     }
 
+    @Override
+    public ProductRankingInfo getProductRankingInfo(Long productId) {
+        LocalDate today = LocalDate.now();
+        String aggregateKey = RedisKeyConstants.getProductRankingRecent3DaysKey(today);
+        
+        try {
+            if (!redisTemplate.hasKey(aggregateKey)) {
+                aggregateRecentDaysRankingWithLock(aggregateKey, today, 3);
+            }
+            
+            String productIdStr = productId.toString();
+            
+            // 한 번의 Redis 통신으로 랭킹과 점수를 동시에 조회
+            Long rank = redisTemplate.opsForZSet().reverseRank(aggregateKey, productIdStr);
+            Double score = redisTemplate.opsForZSet().score(aggregateKey, productIdStr);
+            
+            return new ProductRankingInfo(rank, score);
+            
+        } catch (Exception e) {
+            log.warn("상품 랭킹 정보 조회 실패 - productId: {}", productId, e);
+            return new ProductRankingInfo(null, null);
+        }
+    }
+
     /**
      * 분산락을 사용한 최근 N일간 랭킹 집계
      * 동시 집계 요청을 방지하여 자정 시간대 요청 집중 문제 해결

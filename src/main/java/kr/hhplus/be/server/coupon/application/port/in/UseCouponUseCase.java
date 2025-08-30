@@ -18,6 +18,11 @@ public interface UseCouponUseCase {
     UseCouponResult useCouponWithPessimisticLock(UseCouponCommand command);
     
     /**
+     * 쿠폰 사용 취소 (복원)
+     */
+    RestoreCouponResult restoreCoupon(RestoreCouponCommand command);
+    
+    /**
      * 쿠폰 사용 명령
      */
     class UseCouponCommand {
@@ -80,6 +85,62 @@ public interface UseCouponUseCase {
         
         public Integer getDiscountAmount() {
             return discountAmount;
+        }
+        
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+    }
+    
+    /**
+     * 쿠폰 복원 명령
+     */
+    class RestoreCouponCommand {
+        private final Long userId;
+        private final Long userCouponId;
+        private final String reason;
+        
+        public RestoreCouponCommand(Long userId, Long userCouponId, String reason) {
+            this.userId = userId;
+            this.userCouponId = userCouponId;
+            this.reason = reason;
+        }
+        
+        public Long getUserId() {
+            return userId;
+        }
+        
+        public Long getUserCouponId() {
+            return userCouponId;
+        }
+        
+        public String getReason() {
+            return reason;
+        }
+    }
+    
+    /**
+     * 쿠폰 복원 결과
+     */
+    class RestoreCouponResult {
+        private final boolean success;
+        private final String errorMessage;
+        
+        private RestoreCouponResult(boolean success, String errorMessage) {
+            this.success = success;
+            this.errorMessage = errorMessage;
+        }
+        
+        public static RestoreCouponResult success() {
+            return new RestoreCouponResult(true, null);
+        }
+        
+        public static RestoreCouponResult failure(String errorMessage) {
+            return new RestoreCouponResult(false, errorMessage);
+        }
+        
+        public boolean isSuccess() {
+            return success;
         }
         
         public String getErrorMessage() {

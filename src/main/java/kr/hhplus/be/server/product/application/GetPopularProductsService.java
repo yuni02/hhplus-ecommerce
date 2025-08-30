@@ -65,15 +65,11 @@ public class GetPopularProductsService implements GetPopularProductsUseCase {
             
             LoadProductPort.ProductInfo productInfo = productInfoOpt.get();
             
-            // Redis에서 랭킹 정보 조회
-            Long rank = productRankingService.getProductRank(productId);
-            if (rank == null) {
-                rank = 0L; // 랭킹 정보가 없으면 0으로 설정
-            }
+            // Redis에서 랭킹과 판매량 정보를 한 번에 조회 (통신 최적화)
+            ProductRankingUseCase.ProductRankingInfo rankingInfo = productRankingService.getProductRankingInfo(productId);
             
-            // Redis에서 판매량 정보 조회 (점수로 저장된 값)
-            Double salesScore = productRankingService.getProductSalesScore(productId);
-            Integer recentSalesCount = salesScore != null ? salesScore.intValue() : 0;
+            Long rank = rankingInfo.getRank() != null ? rankingInfo.getRank() : 0L;
+            Integer recentSalesCount = rankingInfo.getSalesCount();
 
             return Optional.of(new PopularProductInfo(
                     productId,

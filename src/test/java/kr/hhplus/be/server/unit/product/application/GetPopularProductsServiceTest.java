@@ -55,10 +55,10 @@ class GetPopularProductsServiceTest {
             2L, "상품B", "상품B 설명", 15000, 50, "ACTIVE", "의류", now, now);
 
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(1L)).thenReturn(0L); // 1위
-        when(productRankingService.getProductRank(2L)).thenReturn(1L); // 2위
-        when(productRankingService.getProductSalesScore(1L)).thenReturn(100.0);
-        when(productRankingService.getProductSalesScore(2L)).thenReturn(80.0);
+        when(productRankingService.getProductRankingInfo(1L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(0L, 100.0));
+        when(productRankingService.getProductRankingInfo(2L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(1L, 80.0));
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo1));
         when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(productInfo2));
 
@@ -86,10 +86,8 @@ class GetPopularProductsServiceTest {
         assertThat(product2.getRank()).isEqualTo(2); // Redis rank 1 + 1
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(1L);
-        verify(productRankingService).getProductRank(2L);
-        verify(productRankingService).getProductSalesScore(1L);
-        verify(productRankingService).getProductSalesScore(2L);
+        verify(productRankingService).getProductRankingInfo(1L);
+        verify(productRankingService).getProductRankingInfo(2L);
         verify(loadProductPort).loadProductById(1L);
         verify(loadProductPort).loadProductById(2L);
     }
@@ -128,8 +126,7 @@ class GetPopularProductsServiceTest {
         List<Long> topProductIds = List.of(999L);
         
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(999L)).thenReturn(0L);
-        when(productRankingService.getProductSalesScore(999L)).thenReturn(50.0);
+        // getProductRankingInfo Mock 제거 - 상품 정보가 없으면 호출되지 않음
         when(loadProductPort.loadProductById(999L)).thenReturn(Optional.empty());
 
         // when
@@ -140,8 +137,7 @@ class GetPopularProductsServiceTest {
         assertThat(result.getPopularProducts()).isEmpty(); // 상품 정보가 없으면 필터링됨
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(999L);
-        verify(productRankingService).getProductSalesScore(999L);
+        verify(productRankingService, never()).getProductRankingInfo(999L); // 상품 정보가 없으므로 호출되지 않음
         verify(loadProductPort).loadProductById(999L);
     }
 
@@ -160,8 +156,8 @@ class GetPopularProductsServiceTest {
             1L, "최고 인기 상품", "최고 인기 상품 설명", 20000, 200, "ACTIVE", "베스트", now, now);
 
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(1L)).thenReturn(0L);
-        when(productRankingService.getProductSalesScore(1L)).thenReturn(200.0);
+        when(productRankingService.getProductRankingInfo(1L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(0L, 200.0));
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo));
 
         // when
@@ -180,8 +176,7 @@ class GetPopularProductsServiceTest {
         assertThat(product.getRank()).isEqualTo(1);
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(1L);
-        verify(productRankingService).getProductSalesScore(1L);
+        verify(productRankingService).getProductRankingInfo(1L);
         verify(loadProductPort).loadProductById(1L);
     }
 
@@ -204,12 +199,12 @@ class GetPopularProductsServiceTest {
             3L, "상품3", "상품3 설명", 8000, 60, "ACTIVE", "카테고리3", now, now);
 
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(1L)).thenReturn(0L);
-        when(productRankingService.getProductRank(2L)).thenReturn(1L);
-        when(productRankingService.getProductRank(3L)).thenReturn(2L);
-        when(productRankingService.getProductSalesScore(1L)).thenReturn(50.0);
-        when(productRankingService.getProductSalesScore(2L)).thenReturn(40.0);
-        when(productRankingService.getProductSalesScore(3L)).thenReturn(30.0);
+        when(productRankingService.getProductRankingInfo(1L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(0L, 50.0));
+        when(productRankingService.getProductRankingInfo(2L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(1L, 40.0));
+        when(productRankingService.getProductRankingInfo(3L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(2L, 30.0));
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo1));
         when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(productInfo2));
         when(loadProductPort.loadProductById(3L)).thenReturn(Optional.of(productInfo3));
@@ -227,12 +222,9 @@ class GetPopularProductsServiceTest {
         assertThat(result.getPopularProducts().get(2).getRank()).isEqualTo(3);
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(1L);
-        verify(productRankingService).getProductRank(2L);
-        verify(productRankingService).getProductRank(3L);
-        verify(productRankingService).getProductSalesScore(1L);
-        verify(productRankingService).getProductSalesScore(2L);
-        verify(productRankingService).getProductSalesScore(3L);
+        verify(productRankingService).getProductRankingInfo(1L);
+        verify(productRankingService).getProductRankingInfo(2L);
+        verify(productRankingService).getProductRankingInfo(3L);
         verify(loadProductPort).loadProductById(1L);
         verify(loadProductPort).loadProductById(2L);
         verify(loadProductPort).loadProductById(3L);
@@ -302,12 +294,11 @@ class GetPopularProductsServiceTest {
             2L, "상품2", "상품2 설명", 12000, 80, "ACTIVE", "카테고리2", now, now);
 
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(1L)).thenReturn(0L);
-        when(productRankingService.getProductRank(2L)).thenReturn(1L);
-        when(productRankingService.getProductRank(999L)).thenReturn(2L);
-        when(productRankingService.getProductSalesScore(1L)).thenReturn(50.0);
-        when(productRankingService.getProductSalesScore(2L)).thenReturn(40.0);
-        when(productRankingService.getProductSalesScore(999L)).thenReturn(30.0);
+        when(productRankingService.getProductRankingInfo(1L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(0L, 50.0));
+        when(productRankingService.getProductRankingInfo(2L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(1L, 40.0));
+        // 999L에 대한 getProductRankingInfo Mock 제거 - 상품 정보가 없으면 호출되지 않음
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo1));
         when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(productInfo2));
         when(loadProductPort.loadProductById(999L)).thenReturn(Optional.empty()); // 삭제된 상품
@@ -324,12 +315,9 @@ class GetPopularProductsServiceTest {
         assertThat(result.getPopularProducts().get(1).getCurrentPrice()).isEqualTo(12000);
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(1L);
-        verify(productRankingService).getProductRank(2L);
-        verify(productRankingService).getProductRank(999L);
-        verify(productRankingService).getProductSalesScore(1L);
-        verify(productRankingService).getProductSalesScore(2L);
-        verify(productRankingService).getProductSalesScore(999L);
+        verify(productRankingService).getProductRankingInfo(1L);
+        verify(productRankingService).getProductRankingInfo(2L);
+        verify(productRankingService, never()).getProductRankingInfo(999L); // 상품 정보가 없으므로 호출되지 않음
         verify(loadProductPort).loadProductById(1L);
         verify(loadProductPort).loadProductById(2L);
         verify(loadProductPort).loadProductById(999L);
@@ -352,10 +340,10 @@ class GetPopularProductsServiceTest {
             2L, "상품2", "상품2 설명", 12000, 80, "ACTIVE", "카테고리2", now, now);
 
         when(productRankingService.getTopProductIds(limit)).thenReturn(topProductIds);
-        when(productRankingService.getProductRank(1L)).thenReturn(null); // 랭킹 정보 없음
-        when(productRankingService.getProductRank(2L)).thenReturn(1L);
-        when(productRankingService.getProductSalesScore(1L)).thenReturn(null); // 판매량 정보 없음
-        when(productRankingService.getProductSalesScore(2L)).thenReturn(40.0);
+        when(productRankingService.getProductRankingInfo(1L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(null, null)); // 랭킹 정보 없음
+        when(productRankingService.getProductRankingInfo(2L))
+            .thenReturn(new ProductRankingUseCase.ProductRankingInfo(1L, 40.0));
         when(loadProductPort.loadProductById(1L)).thenReturn(Optional.of(productInfo1));
         when(loadProductPort.loadProductById(2L)).thenReturn(Optional.of(productInfo2));
 
@@ -375,10 +363,8 @@ class GetPopularProductsServiceTest {
         assertThat(result.getPopularProducts().get(1).getRecentSalesCount()).isEqualTo(40);
         
         verify(productRankingService).getTopProductIds(limit);
-        verify(productRankingService).getProductRank(1L);
-        verify(productRankingService).getProductRank(2L);
-        verify(productRankingService).getProductSalesScore(1L);
-        verify(productRankingService).getProductSalesScore(2L);
+        verify(productRankingService).getProductRankingInfo(1L);
+        verify(productRankingService).getProductRankingInfo(2L);
         verify(loadProductPort).loadProductById(1L);
         verify(loadProductPort).loadProductById(2L);
     }
