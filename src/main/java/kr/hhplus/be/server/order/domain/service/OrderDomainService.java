@@ -91,10 +91,10 @@ public class OrderDomainService {
             // Order 저장
             Order savedOrder = saveOrderPort.saveOrder(order);
             
-            // OrderItem들의 orderId 업데이트
-            for (OrderItem item : orderItems) {
-                item.setOrderId(savedOrder.getId());
-            }
+            // OrderItem들의 orderId 업데이트 - Builder로 새 객체 생성
+            List<OrderItem> updatedOrderItems = orderItems.stream()
+                    .map(item -> item.toBuilder().orderId(savedOrder.getId()).build())
+                    .toList();
             
             // 비동기 이벤트 발행
             publishAsyncEvents(savedOrder, orderItems);

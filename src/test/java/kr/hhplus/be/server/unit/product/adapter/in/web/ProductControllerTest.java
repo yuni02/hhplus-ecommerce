@@ -12,9 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,26 +27,20 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(ProductController.class)
 class ProductControllerTest {
 
-    @Mock
+    @MockBean
     private GetProductDetailUseCase getProductDetailUseCase;
     
-    @Mock
+    @MockBean
     private GetPopularProductsUseCase getPopularProductsUseCase;
 
+    @Autowired
     private MockMvc mockMvc;
+    
+    @Autowired
     private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {              
-        objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new ProductController(getProductDetailUseCase, getPopularProductsUseCase))
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-    }
 
     @Test
     @DisplayName("상품 상세 조회 성공")

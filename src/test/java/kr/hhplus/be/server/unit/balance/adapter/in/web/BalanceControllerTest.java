@@ -13,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -26,26 +28,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(BalanceController.class)
 class BalanceControllerTest {
 
-    @Mock
+    @MockBean
     private GetBalanceUseCase getBalanceUseCase;
     
-    @Mock
+    @MockBean
     private ChargeBalanceUseCase chargeBalanceUseCase;
 
+    @Autowired
     private MockMvc mockMvc;
+    
+    @Autowired
     private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new BalanceController(getBalanceUseCase, chargeBalanceUseCase))
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-    }
 
     @Test
     @DisplayName("잔액 조회 성공")

@@ -141,56 +141,55 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
      */
     private Order mapToOrder(OrderEntity orderEntity, List<OrderItemEntity> orderItemEntities, 
                            List<OrderHistoryEventEntity> historyEventEntities) {
-        Order order = new Order();
-        order.setId(orderEntity.getId());
-        order.setUserId(orderEntity.getUser() != null ? orderEntity.getUser().getUserId() : null);
-        order.setTotalAmount(orderEntity.getTotalAmount());
-        order.setDiscountedAmount(orderEntity.getDiscountedAmount());
-        order.setDiscountAmount(orderEntity.getDiscountAmount());
-        order.setUserCouponId(orderEntity.getUserCouponId());
-        order.setStatus(Order.OrderStatus.valueOf(orderEntity.getStatus())); // string을 enum으로 변환
-        order.setOrderedAt(orderEntity.getOrderedAt());
-        order.setUpdatedAt(orderEntity.getUpdatedAt());
-        
         // OrderItem들 변환
         List<OrderItem> orderItems = orderItemEntities.stream()
                 .map(this::mapToOrderItem)
                 .toList();
-        order.setOrderItems(orderItems);
         
         // OrderHistoryEvent들 변환
         List<OrderHistoryEvent> historyEvents = historyEventEntities.stream()
                 .map(this::mapToOrderHistoryEvent)
                 .toList();
-        order.setHistoryEvents(historyEvents);
         
-        return order;
+        return Order.builder()
+                .id(orderEntity.getId())
+                .userId(orderEntity.getUser() != null ? orderEntity.getUser().getUserId() : null)
+                .totalAmount(orderEntity.getTotalAmount())
+                .discountedAmount(orderEntity.getDiscountedAmount())
+                .discountAmount(orderEntity.getDiscountAmount())
+                .userCouponId(orderEntity.getUserCouponId())
+                .status(Order.OrderStatus.valueOf(orderEntity.getStatus()))
+                .orderedAt(orderEntity.getOrderedAt())
+                .updatedAt(orderEntity.getUpdatedAt())
+                .orderItems(orderItems)
+                .historyEvents(historyEvents)
+                .build();
     }
 
     /**
      * OrderItemEntity를 OrderItem 도메인 객체로 변환
      */
     private OrderItem mapToOrderItem(OrderItemEntity entity) {
-        OrderItem orderItem = new OrderItem();
-        orderItem.setId(entity.getId());
-        orderItem.setOrderId(entity.getOrder().getId()); // OrderEntity의 ID를 사용
-        orderItem.setProductId(entity.getProduct().getId()); // ProductEntity의 ID를 사용
-        orderItem.setProductName(entity.getProductName());
-        orderItem.setQuantity(entity.getQuantity());
-        orderItem.setUnitPrice(entity.getUnitPrice());
-        orderItem.setTotalPrice(entity.getTotalPrice());
-        return orderItem;
+        return OrderItem.builder()
+                .id(entity.getId())
+                .orderId(entity.getOrder().getId())
+                .productId(entity.getProduct().getId())
+                .productName(entity.getProductName())
+                .quantity(entity.getQuantity())
+                .unitPrice(entity.getUnitPrice())
+                .totalPrice(entity.getTotalPrice())
+                .build();
     }
 
     /**
      * OrderHistoryEventEntity를 OrderHistoryEvent 도메인 객체로 변환
      */
     private OrderHistoryEvent mapToOrderHistoryEvent(OrderHistoryEventEntity entity) {
-        OrderHistoryEvent event = new OrderHistoryEvent();
-        event.setId(entity.getId());
-        event.setOrderId(entity.getOrderId());
-        event.setEventType(OrderHistoryEvent.OrderEventType.valueOf(entity.getEventType())); // string을 enum으로 변환
-        event.setOccurredAt(entity.getOccurredAt());
-        return event;
+        return OrderHistoryEvent.builder()
+                .id(entity.getId())
+                .orderId(entity.getOrderId())
+                .eventType(OrderHistoryEvent.OrderEventType.valueOf(entity.getEventType()))
+                .occurredAt(entity.getOccurredAt())
+                .build();
     }
 }

@@ -13,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,22 +28,17 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(OrderController.class)
 class OrderControllerTest {
 
-    @Mock
+    @MockBean
     private CreateOrderService createOrderService;
 
+    @Autowired
     private MockMvc mockMvc;
+    
+    @Autowired
     private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        objectMapper = new ObjectMapper();
-        mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(createOrderService))
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-    }
 
     @Test
     @DisplayName("주문 생성 성공 - 쿠폰 없이")

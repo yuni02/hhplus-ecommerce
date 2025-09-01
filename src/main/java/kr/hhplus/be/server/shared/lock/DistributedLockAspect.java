@@ -8,13 +8,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.core.DefaultParameterNameDiscoverer;
-import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -29,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class DistributedLockAspect {
 
     private final RedissonClient redissonClient;
-    private final ExpressionParser expressionParser = new SpelExpressionParser();
-    private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+    private final LockKeyGeneratorFactory keyGeneratorFactory;
 
     @Around("@annotation(distributedLock)")
     public Object around(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) throws Throwable {
@@ -76,58 +68,17 @@ public class DistributedLockAspect {
     private String generateLockKey(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
+        String keyExpression = distributedLock.key();
         
-        // 1. 어노테이션에 key가 지정된 경우 SpEL로 평가
-        if (!distributedLock.key().isEmpty()) {
-            return evaluateSpEL(distributedLock.key(), method, joinPoint.getArgs());
+        LockKeyGenerator generator = keyGeneratorFactory.getGenerator(keyExpression);
+        
+        // 파라미터 기반 생성기인 경우
+        if (generator instanceof ParameterBasedLockKeyGenerator) {
+            return ((ParameterBasedLockKeyGenerator) generator).generateKey(keyExpression, method, joinPoint.getArgs());
         }
         
-        // 2. 기본 키 생성: 클래스명.메서드명.파라미터값들
-        String className = method.getDeclaringClass().getSimpleName();
-        String methodName = method.getName();
-        String params = generateParamString(method, joinPoint.getArgs());
-        
-        return String.format("lock:%s.%s:%s", className, methodName, params);
+        // 기본 생성기인 경우
+        return generator.generateKey(method, joinPoint.getArgs());
     }
 
-    /**
-     * SpEL 표현식 평가
-     */
-    private String evaluateSpEL(String expression, Method method, Object[] args) {
-        try {
-            Expression exp = expressionParser.parseExpression(expression);
-            EvaluationContext context = new StandardEvaluationContext();
-            
-            // 파라미터 이름과 값을 컨텍스트에 추가
-            String[] paramNames = parameterNameDiscoverer.getParameterNames(method);
-            if (paramNames != null) {
-                for (int i = 0; i < paramNames.length && i < args.length; i++) {
-                    context.setVariable(paramNames[i], args[i]);
-                }
-            }
-            
-            Object result = exp.getValue(context);
-            return result != null ? result.toString() : expression;
-            
-        } catch (Exception e) {
-            log.warn("Failed to evaluate SpEL expression: {}, using fallback", expression, e);
-            return "lock:" + expression;
-        }
-    }
-
-    /**
-     * 파라미터 문자열 생성
-     */
-    private String generateParamString(Method method, Object[] args) {
-        if (args == null || args.length == 0) {
-            return "no-params";
-        }
-        
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < args.length; i++) {
-            if (i > 0) sb.append("-");
-            sb.append(args[i] != null ? args[i].toString() : "null");
-        }
-        return sb.toString();
-    }
 }

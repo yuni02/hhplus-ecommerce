@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -15,10 +14,9 @@ import java.math.BigDecimal;
  * 순수한 비즈니스 로직만 포함 (JPA 어노테이션 없음)
  */
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder(toBuilder = true)
 public class OrderItem {
 
     private Long id;
@@ -32,20 +30,22 @@ public class OrderItem {
     private Product product;
 
     // 비즈니스 로직 메서드들
-    // Note: 현재 사용되지 않는 메서드 (addOrderItem에서만 사용되었으나 해당 메서드 제거됨)
-    public void setOrder(Order order) {
-        this.order = order;
-        if (order != null) {
-            this.orderId = order.getId();
-        }
+    // 비즈니스 로직에 필요한 경우 toBuilder()를 사용하여 불변 객체로 처리
+    public OrderItem withOrder(Order order) {
+        if (order == null) return this;
+        return this.toBuilder()
+                .order(order)
+                .orderId(order.getId())
+                .build();
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
-        if (product != null) {
-            this.productId = product.getId();
-            this.productName = product.getName();
-        }
+    public OrderItem withProduct(Product product) {
+        if (product == null) return this;
+        return this.toBuilder()
+                .product(product)
+                .productId(product.getId())
+                .productName(product.getName())
+                .build();
     }
 
     public void calculateTotalPrice() {
