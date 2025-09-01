@@ -65,7 +65,10 @@ dependencies {
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	
+
+	implementation("org.springframework.kafka:spring-kafka")
+    implementation("org.springframework.kafka:spring-kafka-test")
+
 
 }
 

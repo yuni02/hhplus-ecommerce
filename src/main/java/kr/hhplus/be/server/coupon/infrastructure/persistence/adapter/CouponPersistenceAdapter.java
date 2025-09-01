@@ -94,7 +94,7 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
     public List<LoadCouponPort.CouponInfo> loadAllCoupons() {
         return couponJpaRepository.findAll().stream()
                 .map(this::mapToCouponInfo)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private LoadCouponPort.CouponInfo mapToCouponInfo(CouponEntity entity) {

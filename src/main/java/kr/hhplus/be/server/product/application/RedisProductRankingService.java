@@ -74,7 +74,7 @@ public class RedisProductRankingService implements ProductRankingUseCase {
             
             return topProducts.stream()
                     .map(o -> Long.parseLong(o.toString()))
-                    .collect(Collectors.toList());
+                    .toList();
                     
         } catch (Exception e) {
             log.warn("Redis에서 인기상품 조회 실패", e);

@@ -26,7 +26,7 @@ public class LoadOrderStatsPersistenceAdapter implements LoadOrderStatsPort {
         return orderItemJpaRepository.findProductSalesStatsByDateRange(startDate, endDate)
             .stream()
             .map(this::mapToProductSalesStats)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private ProductSalesStats mapToProductSalesStats(Object[] result) {

@@ -92,7 +92,7 @@ public class ProductController {
                         product.getLastOrderDate(),
                         product.getRank()
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         return ResponseEntity.ok(responses);
     }

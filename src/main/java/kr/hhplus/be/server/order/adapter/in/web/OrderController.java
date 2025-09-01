@@ -43,7 +43,7 @@ public class OrderController {
         // OrderRequest를 CreateOrderCommand로 변환
         List<CreateOrderUseCase.OrderItemCommand> orderItemCommands = request.getOrderItems().stream()
                 .map(item -> new CreateOrderUseCase.OrderItemCommand(item.getProductId(), item.getQuantity()))
-                .collect(Collectors.toList());
+                .toList();
 
         CreateOrderUseCase.CreateOrderCommand command = new CreateOrderUseCase.CreateOrderCommand(
                 request.getUserId(), orderItemCommands, request.getUserCouponId());
@@ -63,7 +63,7 @@ public class OrderController {
                         item.getQuantity(),
                         item.getUnitPrice().intValue(),
                         item.getTotalPrice().intValue()))
-                .collect(Collectors.toList());
+                .toList();
 
         // 할인 금액 계산 (MSA 버전에서는 getDiscountAmount() 사용)
         int discountAmount = result.getDiscountAmount().intValue();

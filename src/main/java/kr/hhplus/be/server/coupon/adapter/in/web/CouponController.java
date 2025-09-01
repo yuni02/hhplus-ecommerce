@@ -93,7 +93,7 @@ public class CouponController implements CouponApiDocumentation {
                         userCoupon.getIssuedAt(),
                         userCoupon.getUsedAt()
                 ))
-                .collect(Collectors.toList());
+                .toList();
         
         return ResponseEntity.ok(responses);
     }

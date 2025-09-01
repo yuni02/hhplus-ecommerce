@@ -63,7 +63,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         // 4. OrderItem들 저장
         List<OrderItemEntity> orderItemEntities = order.getOrderItems().stream()
                 .map(item -> mapToOrderItemEntity(item, savedOrderEntity.getId()))
-                .collect(Collectors.toList());
+                .toList();
         if (!orderItemEntities.isEmpty()) {
             orderItemJpaRepository.saveAll(orderItemEntities);
         }
@@ -71,7 +71,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         // 5. OrderHistoryEvent들 저장
         List<OrderHistoryEventEntity> historyEventEntities = order.getHistoryEvents().stream()
                 .map(event -> mapToOrderHistoryEventEntity(event, savedOrderEntity.getId()))
-                .collect(Collectors.toList());
+                .toList();
         if (!historyEventEntities.isEmpty()) {
             orderHistoryEventJpaRepository.saveAll(historyEventEntities);
         }
@@ -155,13 +155,13 @@ public class OrderPersistenceAdapter implements SaveOrderPort {
         // OrderItem들 변환
         List<OrderItem> orderItems = orderItemEntities.stream()
                 .map(this::mapToOrderItem)
-                .collect(Collectors.toList());
+                .toList();
         order.setOrderItems(orderItems);
         
         // OrderHistoryEvent들 변환
         List<OrderHistoryEvent> historyEvents = historyEventEntities.stream()
                 .map(this::mapToOrderHistoryEvent)
-                .collect(Collectors.toList());
+                .toList();
         order.setHistoryEvents(historyEvents);
         
         return order;

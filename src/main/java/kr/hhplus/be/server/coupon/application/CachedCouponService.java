@@ -65,7 +65,7 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
                             info.getUsedAt() != null ? java.time.LocalDateTime.parse(info.getUsedAt()) : null
                     );
                 })
-                .collect(Collectors.toList());
+                .toList();
         
         return new GetUserCouponsResult(userCoupons);
     }

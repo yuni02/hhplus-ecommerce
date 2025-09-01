@@ -42,7 +42,7 @@ public class GetPopularProductsService implements GetPopularProductsUseCase {
                     .map(this::enrichProductInfoWithRanking)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .collect(Collectors.toList());
+                    .toList();
 
             return new GetPopularProductsResult(popularProducts);
 

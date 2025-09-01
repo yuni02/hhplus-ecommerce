@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
  * 잔액 전용 엔티티
  * 동시성 제어를 위해 별도 테이블로 분리
  */
+@Slf4j
 @Entity
 @Table(name = "balances")
 @Getter
@@ -56,21 +58,21 @@ public class BalanceEntity extends BaseEntity {
 
     // 잔액 차감 비즈니스 메서드
     public boolean deductAmount(BigDecimal amount) {
-        System.out.println("DEBUG: BalanceEntity.deductAmount() 호출 - 현재 잔액: " + this.amount + ", 차감 금액: " + amount);
+        log.debug("BalanceEntity.deductAmount() 호출 - 현재 잔액: {}, 차감 금액: {}", this.amount, amount);
         
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            System.out.println("DEBUG: 차감 금액이 유효하지 않습니다: " + amount);
+            log.debug("차감 금액이 유효하지 않습니다: {}", amount);
             throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
         }
         if (this.amount.compareTo(amount) < 0) {
-            System.out.println("DEBUG: 잔액 부족 - 현재: " + this.amount + ", 필요: " + amount);
+            log.debug("잔액 부족 - 현재: {}, 필요: {}", this.amount, amount);
             return false; // 잔액 부족
         }
         
         BigDecimal oldAmount = this.amount;
         this.amount = this.amount.subtract(amount);
         
-        System.out.println("DEBUG: 잔액 차감 완료 - 이전: " + oldAmount + ", 차감: " + amount + ", 이후: " + this.amount);
+        log.debug("잔액 차감 완료 - 이전: {}, 차감: {}, 이후: {}", oldAmount, amount, this.amount);
         return true;
     }
 

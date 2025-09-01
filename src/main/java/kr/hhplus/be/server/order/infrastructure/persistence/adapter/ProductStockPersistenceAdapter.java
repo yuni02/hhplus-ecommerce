@@ -3,6 +3,7 @@ package kr.hhplus.be.server.order.infrastructure.persistence.adapter;
 import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Product 재고 업데이트 영속성 Adapter (Order 도메인용)
  * Order 도메인에서 상품 재고 차감/복구를 위한 어댑터
  */
+@Slf4j
 @Component("orderProductStockPersistenceAdapter")
 public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
@@ -82,11 +84,9 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
         Integer stockAfter = productJpaRepository.findCurrentStock(productId);
         if (stockAfter == null) stockAfter = -1;
         
-        System.out.println(String.format(
-            "[STOCK_DEBUG] productId=%d, quantity=%d, stockBefore=%d, stockAfter=%d, updatedRows=%d, result=%s, threadId=%d",
+        log.debug("[STOCK_DEBUG] productId={}, quantity={}, stockBefore={}, stockAfter={}, updatedRows={}, result={}, threadId={}",
             productId, quantity, stockBefore, stockAfter, updatedRows, 
-            (updatedRows == 1 ? "SUCCESS" : "FAILED"), Thread.currentThread().getId()
-        ));
+            (updatedRows == 1 ? "SUCCESS" : "FAILED"), Thread.currentThread().getId());
         
         // 업데이트된 행이 1개면 성공, 0개면 재고 부족으로 실패
         return updatedRows == 1;

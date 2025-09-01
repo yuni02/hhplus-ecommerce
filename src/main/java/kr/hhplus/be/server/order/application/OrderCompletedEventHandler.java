@@ -36,7 +36,7 @@ public class OrderCompletedEventHandler {
             log.info("데이터 플랫폼 전송 시작 - orderId: {}", event.getOrderId());
             
             // 주문 데이터를 데이터 플랫폼 형식으로 변환
-            DataPlatformOrderDto orderData = convertToDataPlatformFormat(event);
+            DataPlatformOrderResponse orderData = convertToDataPlatformFormat(event);
             
             // 데이터 플랫폼으로 전송 (Mock API 호출)
             boolean success = dataPlatformService.sendOrderData(orderData);
@@ -57,12 +57,12 @@ public class OrderCompletedEventHandler {
     /**
      * 주문 데이터를 데이터 플랫폼 형식으로 변환
      */
-    private DataPlatformOrderDto convertToDataPlatformFormat(OrderCompletedEvent event) {
-        List<DataPlatformOrderItemDto> items = event.getOrderItems().stream()
+    private DataPlatformOrderResponse convertToDataPlatformFormat(OrderCompletedEvent event) {
+        List<DataPlatformOrderItemResponse> items = event.getOrderItems().stream()
                 .map(this::convertOrderItem)
                 .toList();
         
-        return DataPlatformOrderDto.builder()
+        return DataPlatformOrderResponse.builder()
                 .orderId(event.getOrderId())
                 .userId(event.getUserId())
                 .orderItems(items)
@@ -78,8 +78,8 @@ public class OrderCompletedEventHandler {
     /**
      * 주문 아이템을 데이터 플랫폼 형식으로 변환
      */
-    private DataPlatformOrderItemDto convertOrderItem(OrderItem item) {
-        return DataPlatformOrderItemDto.builder()
+    private DataPlatformOrderItemResponse convertOrderItem(OrderItem item) {
+        return DataPlatformOrderItemResponse.builder()
                 .productId(item.getProductId())
                 .productName(item.getProductName())
                 .quantity(item.getQuantity())
@@ -92,10 +92,10 @@ public class OrderCompletedEventHandler {
     // DTO 클래스들
     @lombok.Builder
     @lombok.Getter
-    public static class DataPlatformOrderDto {
+    public static class DataPlatformOrderResponse {
         private final Long orderId;
         private final Long userId;
-        private final List<DataPlatformOrderItemDto> orderItems;
+        private final List<DataPlatformOrderItemResponse> orderItems;
         private final BigDecimal totalAmount;
         private final BigDecimal discountedAmount;
         private final BigDecimal discountAmount;
@@ -106,7 +106,7 @@ public class OrderCompletedEventHandler {
 
     @lombok.Builder
     @lombok.Getter
-    public static class DataPlatformOrderItemDto {
+    public static class DataPlatformOrderItemResponse {
         private final Long productId;
         private final String productName;
         private final Integer quantity;

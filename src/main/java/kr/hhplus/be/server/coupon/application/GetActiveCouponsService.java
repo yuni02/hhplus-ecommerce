@@ -31,7 +31,7 @@ public class GetActiveCouponsService implements GetActiveCouponsUseCase {
             List<ActiveCouponInfo> activeCoupons = allCoupons.stream()
                 .filter(coupon -> isActiveCoupon(coupon, now))
                 .map(this::mapToActiveCouponInfo)
-                .collect(Collectors.toList());
+                .toList();
             
             log.debug("활성 쿠폰 조회 완료 - count: {}", activeCoupons.size());
             return new GetActiveCouponsResult(activeCoupons);

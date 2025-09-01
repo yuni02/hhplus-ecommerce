@@ -133,7 +133,7 @@ public class CreateOrderService implements CreateOrderUseCase {
                     .quantity(item.getQuantity())
                     .unitPrice(item.getUnitPrice())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             OrderDomainService.OrderCreationResult orderCreationResult = orderDomainService.createAndSaveOrder(
                 command, orderItems, totalAmount, totalAmount, BigDecimal.ZERO

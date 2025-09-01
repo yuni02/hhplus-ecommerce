@@ -39,7 +39,7 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
         return userCouponJpaRepository.findByUserId(userId)
                 .stream()
                 .map(this::toUserCouponInfo)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
