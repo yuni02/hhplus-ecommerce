@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.application;
+package kr.hhplus.be.server.product.domain.service;
 
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.out.LoadProductPort;

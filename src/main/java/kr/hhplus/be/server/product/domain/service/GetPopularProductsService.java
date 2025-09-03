@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.application;
+package kr.hhplus.be.server.product.domain.service;
 
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import kr.hhplus.be.server.product.application.port.in.ProductRankingUseCase;
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 인기 상품 조회 Application 서비스

@@ -21,6 +21,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Slf4j
 @Service
@@ -32,6 +34,7 @@ public class CreateOrderService implements CreateOrderUseCase {
     private final UpdateProductStockPort updateProductStockPort;
     private final LoadBalancePort loadBalancePort;
     private final DeductBalancePort deductBalancePort;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -147,6 +150,9 @@ public class CreateOrderService implements CreateOrderUseCase {
             
             Order savedOrder = orderCreationResult.getOrder();
             
+            // 5. 주문 완료 이벤트 발행 (트랜잭션 완료 후 처리)
+            publishOrderCompletedEvent(savedOrder, orderItems);
+            
             return CreateOrderUseCase.CreateOrderResult.success(
                 savedOrder.getId(),
                 command.getUserId(),
@@ -176,6 +182,32 @@ public class CreateOrderService implements CreateOrderUseCase {
             } catch (Exception e) {
                 log.error("재고 롤백 실패 - productId: {}", itemCommand.getProductId(), e);
             }
+        }
+    }
+    
+    /**
+     * 주문 완료 이벤트 발행
+     */
+    private void publishOrderCompletedEvent(Order order, List<OrderItem> orderItems) {
+        try {
+            OrderCompletedEvent event = new OrderCompletedEvent(
+                this,
+                order.getId(),
+                order.getUserId(),
+                orderItems,
+                order.getTotalAmount(),
+                order.getDiscountedAmount(),
+                order.getDiscountAmount(),
+                order.getUserCouponId(),
+                order.getOrderedAt()
+            );
+            
+            eventPublisher.publishEvent(event);
+            log.debug("OrderCompletedEvent 발행 완료 - orderId: {}", order.getId());
+            
+        } catch (Exception e) {
+            log.error("OrderCompletedEvent 발행 실패 - orderId: {}", order.getId(), e);
+            // 이벤트 발행 실패는 메인 트랜잭션에 영향 주지 않음
         }
     }
 

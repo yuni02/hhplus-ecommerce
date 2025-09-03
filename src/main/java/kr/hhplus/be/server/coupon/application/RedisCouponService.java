@@ -185,14 +185,36 @@ public class RedisCouponService {
     /**
      * Redis에서 쿠폰 정보 업데이트 (발급 수량 증가)
      */
-    public void updateCouponIssuedCount(Long couponId, int newIssuedCount) {
+    public void updateCouponIssuedCount(Long couponId, Integer newIssuedCount) {
         String couponKey = generateCouponInfoKey(couponId);
         
         try {
-            redisTemplate.opsForHash().put(couponKey, "issuedCount", String.valueOf(newIssuedCount));
+            if (newIssuedCount != null) {
+                redisTemplate.opsForHash().put(couponKey, "issuedCount", String.valueOf(newIssuedCount));
+            } else {
+                // newIssuedCount가 null인 경우 현재 값을 증가
+                redisTemplate.opsForHash().increment(couponKey, "issuedCount", 1);
+            }
             log.debug("쿠폰 발급 수량 업데이트 - couponId: {}, newCount: {}", couponId, newIssuedCount);
         } catch (Exception e) {
             log.warn("쿠폰 발급 수량 업데이트 실패 - couponId: {}", couponId, e);
+        }
+    }
+    
+    /**
+     * 쿠폰 발급 롤백 (실패 시 Redis에서 사용자 제거)
+     */
+    public void rollbackCouponIssuance(Long couponId, Long userId) {
+        String issuedKey = generateIssuedKey(couponId);
+        String userKey = userId.toString();
+        
+        try {
+            Long removed = redisTemplate.opsForSet().remove(issuedKey, userKey);
+            if (removed != null && removed > 0) {
+                log.info("쿠폰 발급 롤백 완료 - couponId: {}, userId: {}", couponId, userId);
+            }
+        } catch (Exception e) {
+            log.error("쿠폰 발급 롤백 실패 - couponId: {}, userId: {}", couponId, userId, e);
         }
     }
 

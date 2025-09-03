@@ -4,6 +4,7 @@ import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "event.publisher.type", havingValue = "spring", matchIfMissing = true)
 public class OrderCompletedEventHandler {
 
     private final DataPlatformService dataPlatformService;

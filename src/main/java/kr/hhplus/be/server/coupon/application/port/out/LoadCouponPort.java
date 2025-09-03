@@ -30,6 +30,11 @@ public interface LoadCouponPort {
     boolean incrementIssuedCount(Long couponId);
     
     /**
+     * 쿠폰 발급 수량을 원자적으로 감소 (롤백용)
+     */
+    boolean decrementIssuedCount(Long couponId);
+    
+    /**
      * 쿠폰 정보
      */
     class CouponInfo {

@@ -55,6 +55,13 @@ public interface CouponJpaRepository extends JpaRepository<CouponEntity, Long> {
     @Modifying
     @Query("UPDATE CouponEntity c SET c.issuedCount = c.issuedCount + :increment, c.updatedAt = CURRENT_TIMESTAMP WHERE c.id = :couponId AND c.issuedCount + :increment <= c.maxIssuanceCount AND c.status = 'ACTIVE'")
     int incrementIssuedCountByBatch(@Param("couponId") Long couponId, @Param("increment") int increment);
+    
+    /**
+     * 쿠폰 발급 수량 감소 (롤백용)
+     */
+    @Modifying
+    @Query("UPDATE CouponEntity c SET c.issuedCount = c.issuedCount - 1, c.updatedAt = CURRENT_TIMESTAMP WHERE c.id = :couponId AND c.issuedCount > 0")
+    int decrementIssuedCount(@Param("couponId") Long couponId);
 
     /**
      * 발급 가능한 쿠폰 조회

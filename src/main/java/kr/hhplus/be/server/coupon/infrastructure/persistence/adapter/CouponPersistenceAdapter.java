@@ -89,6 +89,28 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
         
         return updatedRows > 0;
     }
+    
+    @Override
+    @Transactional
+    public boolean decrementIssuedCount(Long couponId) {
+        int updatedRows = couponJpaRepository.decrementIssuedCount(couponId);
+        
+        if (updatedRows > 0) {
+            // DB 업데이트 성공 시 Redis 캐시도 업데이트
+            try {
+                // 현재 발급 수량 조회
+                Optional<CouponEntity> couponOpt = couponJpaRepository.findById(couponId);
+                if (couponOpt.isPresent()) {
+                    CouponEntity coupon = couponOpt.get();
+                    redisCouponService.updateCouponIssuedCount(couponId, coupon.getIssuedCount());
+                }
+            } catch (Exception e) {
+                // Redis 업데이트 실패는 로그만 남기고 DB 업데이트는 성공으로 처리
+            }
+        }
+        
+        return updatedRows > 0;
+    }
 
     @Override
     public List<LoadCouponPort.CouponInfo> loadAllCoupons() {

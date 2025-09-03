@@ -1,3 +1,6 @@
+server:
+  port: 8083
+
 spring:
   application:
     name: hhplus
@@ -24,6 +27,22 @@ spring:
     redis:
       host: localhost
       port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: ecommerce-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "kr.hhplus.be.server"
+        spring.json.add.type.headers: false
+      auto-offset-reset: earliest
+      enable-auto-commit: true
 
 ---
 spring.config.activate.on-profile: local, test
@@ -40,21 +59,14 @@ springdoc:
 # Event Publisher 설정
 event:
   publisher:
-    type: spring  # spring(기본값) 또는 kafka
-    
-# 차주 Kafka 설정 준비
+    type: kafka  # spring 또는 kafka
+
+# Kafka 설정은 위의 spring 섹션에 통합
+
+# 토픽 설정
 kafka:
-  bootstrap-servers: localhost:9092
-  producer:
-    key-serializer: org.apache.kafka.common.serialization.StringSerializer
-    value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-  consumer:
-    group-id: ecommerce-group
-    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-    properties:
-      spring.json.trusted.packages: "kr.hhplus.be.server"
   topics:
     order-completed: order-completed-topic
     product-ranking: product-ranking-topic
     data-platform-transfer: data-platform-transfer-topic
+    coupon-issue: coupon-issue-events

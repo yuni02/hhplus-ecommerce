@@ -1,6 +1,6 @@
 package kr.hhplus.be.server.product.infrastructure.scheduler;
 
-import kr.hhplus.be.server.product.application.GetPopularProductsService;
+import kr.hhplus.be.server.product.domain.service.GetPopularProductsService;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

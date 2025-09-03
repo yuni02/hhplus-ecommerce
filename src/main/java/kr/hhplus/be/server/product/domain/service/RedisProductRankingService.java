@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.application;
+package kr.hhplus.be.server.product.domain.service;
 
 import kr.hhplus.be.server.product.application.port.in.ProductRankingUseCase;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
@@ -6,16 +6,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import kr.hhplus.be.server.shared.constants.RedisKeyConstants;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Redis 기반 상품 랭킹 서비스 (Primary)
