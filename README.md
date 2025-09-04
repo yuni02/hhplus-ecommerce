@@ -224,6 +224,25 @@ public class Balance {
 
 ### 1. 테스트 격리
 - **Mock/Stub 활용**: 의존성을 격리하여 단위 테스트 수행
+
+### 2. 테스트 실행 방법
+
+#### 일반 테스트 실행
+```bash
+./gradlew test
+```
+
+#### Kafka 통합 테스트 실행
+Kafka 관련 테스트는 별도 환경에서 실행됩니다:
+```bash
+# Kafka 테스트 포함하여 실행
+./gradlew test -Dtest.kafka.enabled=true
+
+# 특정 Kafka 테스트만 실행
+./gradlew test --tests "*Kafka*" -Dtest.kafka.enabled=true
+```
+
+**참고**: Kafka 테스트는 `@EnabledIfSystemProperty`로 제어되어 일반 CI/CD에서는 제외됩니다.
 - **@Mock**: Mockito를 사용한 Mock 객체 생성
 - **@ExtendWith(MockitoExtension.class)**: Mockito 확장 사용
 

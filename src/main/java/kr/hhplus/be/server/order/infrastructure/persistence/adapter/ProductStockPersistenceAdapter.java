@@ -63,7 +63,7 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "#result == true and ${spring.profiles.active:dev} != 'test'")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "#result == true and !@environment.acceptsProfiles('test')")
     public boolean deductStockWithPessimisticLock(Long productId, Integer quantity) {
         // 현재 재고 확인 (로깅용) - 캐시 우회
         Integer stockBefore = productJpaRepository.findCurrentStock(productId);

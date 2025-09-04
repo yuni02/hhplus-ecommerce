@@ -80,6 +80,13 @@ public class RedisCouponQueueService {
     }
 
     /**
+     * 스케줄러용 - 대기열에서 사용자 ID를 꺼냄 (별칭 메서드)
+     */
+    public Long pollFromQueue(Long couponId) {
+        return getNextUserFromQueue(couponId);
+    }
+
+    /**
      * 대기열에서 사용자 제거
      */
     public boolean removeFromQueue(Long couponId, Long userId) {

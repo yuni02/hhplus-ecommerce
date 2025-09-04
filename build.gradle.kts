@@ -81,4 +81,9 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("user.timezone", "UTC")
+	
+	// Kafka 테스트 활성화 속성 전달
+	if (project.hasProperty("test.kafka.enabled")) {
+		systemProperty("test.kafka.enabled", project.property("test.kafka.enabled"))
+	}
 }

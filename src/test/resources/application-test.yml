@@ -13,22 +13,32 @@ spring:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: test-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.add.type.headers: false
+        spring.json.use.type.headers: true
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
 
-# Event Publisher 설정 - 테스트에서는 spring 이벤트 사용
+# Event Publisher 설정 - 카프카 테스트를 위해 kafka 사용
 event:
   publisher:
-    type: spring
+    type: kafka
 
 # 카프카 토픽 설정 (사용되지 않음)
 kafka:
   topics:
-    order-completed: test-order-completed-topic
-    product-ranking: test-product-ranking-topic
-    data-platform-transfer: test-data-platform-transfer-topic
-    coupon-issue: test-coupon-issue-events
+    order-completed: order-completed-topic
+    product-ranking: product-ranking-topic
+    data-platform-transfer: data-platform-transfer-topic
+    coupon-issue: coupon-issue-events
 
 logging:
   level:

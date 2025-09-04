@@ -34,7 +34,7 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
 @EmbeddedKafka(
-    partitions = 1,
+    partitions = 3,
     topics = {"coupon-issue-events"},
     brokerProperties = {
         "listeners=PLAINTEXT://localhost:19092",
@@ -42,6 +42,7 @@ import static org.awaitility.Awaitility.await;
     }
 )
 @DisplayName("간단한 Kafka 이벤트 테스트")
+@org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "test.kafka.enabled", matches = "true")
 public class SimpleKafkaEventTest {
 
     @Autowired private KafkaCouponEventProducer producer;

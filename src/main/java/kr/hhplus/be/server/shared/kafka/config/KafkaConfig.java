@@ -51,8 +51,8 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.LINGER_MS_CONFIG, 5);
         configProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
         
-        // JSON 타입 헤더 비활성화
-        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        // JSON 타입 헤더 활성화 (테스트를 위해)
+        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, true);
         
         return new DefaultKafkaProducerFactory<>(configProps);
     }
@@ -79,9 +79,9 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10); // 한 번에 처리할 레코드 수
         
         // JSON Deserializer 설정
-        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "kr.hhplus.be.server");
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         configProps.put(JsonDeserializer.REMOVE_TYPE_INFO_HEADERS, false);
-        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
         
         return new DefaultKafkaConsumerFactory<>(configProps);
     }

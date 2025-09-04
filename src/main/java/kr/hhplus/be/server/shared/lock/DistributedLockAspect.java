@@ -77,6 +77,11 @@ public class DistributedLockAspect {
             return ((ParameterBasedLockKeyGenerator) generator).generateKey(keyExpression, method, joinPoint.getArgs());
         }
         
+        // SpEL 기반 생성기인 경우
+        if (generator instanceof SpelLockKeyGenerator) {
+            return ((SpelLockKeyGenerator) generator).generateKey(keyExpression, method, joinPoint.getArgs());
+        }
+        
         // 기본 생성기인 경우
         return generator.generateKey(method, joinPoint.getArgs());
     }
