@@ -1,19 +1,15 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.ArrayList;
 
 /**
  * Redis 기반 선착순 쿠폰 발급 서비스
@@ -81,6 +77,31 @@ public class RedisCouponService {
             log.warn("사용자 발급 여부 확인 실패 - couponId: {}, userId: {}", couponId, userId, e);
             return null;
         }
+    }
+    
+    /**
+     * 현재 발급 수량 조회 (빠른 실패 체크용)
+     */
+    public Long getCurrentIssuedCount(Long couponId) {
+        String issuedKey = generateIssuedKey(couponId);
+        
+        try {
+            return redisTemplate.opsForSet().size(issuedKey);
+        } catch (Exception e) {
+            log.warn("현재 발급 수량 조회 실패 - couponId: {}", couponId, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 쿠폰 소진 여부 확인 (빠른 실패 체크용)
+     */
+    public Boolean isCouponExhausted(Long couponId, Integer maxIssuanceCount) {
+        Long currentCount = getCurrentIssuedCount(couponId);
+        if (currentCount == null) {
+            return null; // Redis 오류 시 DB 체크로 넘어감
+        }
+        return currentCount >= maxIssuanceCount;
     }
 
 

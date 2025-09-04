@@ -1,5 +1,6 @@
-package kr.hhplus.be.server.order.domain;
+package kr.hhplus.be.server.order.domain.event;
 
+import kr.hhplus.be.server.order.domain.OrderItem;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

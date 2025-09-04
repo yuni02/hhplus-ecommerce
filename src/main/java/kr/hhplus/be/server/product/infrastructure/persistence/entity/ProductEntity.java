@@ -41,6 +41,10 @@ public class ProductEntity extends BaseEntity {
     @Builder.Default
     private String status = "ACTIVE";
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     // 비즈니스 메서드들
     public void updateStock(Integer quantity) {
         this.stockQuantity = quantity;

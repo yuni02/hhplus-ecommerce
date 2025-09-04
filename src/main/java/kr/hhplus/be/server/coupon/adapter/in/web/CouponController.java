@@ -2,7 +2,7 @@ package kr.hhplus.be.server.coupon.adapter.in.web;
 
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.application.RedisCouponQueueService;
+import kr.hhplus.be.server.coupon.domain.service.RedisCouponQueueService;
 import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;
 import kr.hhplus.be.server.coupon.adapter.in.dto.CouponQueueResponse;
 import kr.hhplus.be.server.coupon.adapter.in.dto.CouponQueueStatusResponse;
@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/coupons")
@@ -34,24 +33,34 @@ public class CouponController implements CouponApiDocumentation {
             @PathVariable(name = "id") Long id,
             @RequestParam(name = "userId", required = true) Long userId) {
         
-        // IssueCouponService를 통해 Kafka 이벤트 발행
+        // IssueCouponService를 통해 하이브리드 처리 (빠른 실패 + 비동기)
         IssueCouponUseCase.IssueCouponCommand command = 
             new IssueCouponUseCase.IssueCouponCommand(userId, id);
         
         IssueCouponUseCase.IssueCouponResult result = issueCouponUseCase.issueCoupon(command);
         
-        if (!result.isSuccess()) {
+        // 빠른 실패 (즉시 응답)
+        if (!result.isSuccess() && !"PROCESSING".equals(result.getStatus())) {
             return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
         
-        // 대기열 순서 조회
-        Long queuePosition = queueService.getUserQueuePosition(id, userId);
+        // 비동기 처리 중 (PROCESSING 상태)
+        if ("PROCESSING".equals(result.getStatus())) {
+            // 대기열 순서 조회
+            Long queuePosition = queueService.getUserQueuePosition(id, userId);
+            
+            return ResponseEntity.accepted().body(new CouponQueueResponse(
+                result.getErrorMessage() != null ? result.getErrorMessage() : "쿠폰 발급 요청이 처리 중입니다.",
+                queuePosition,
+                queueService.getQueueSize(id)
+            ));
+        }
         
-        // 비동기 처리 응답
-        return ResponseEntity.accepted().body(new CouponQueueResponse(
-            result.getErrorMessage() != null ? result.getErrorMessage() : "쿠폰 발급 요청이 처리 중입니다.",
-            queuePosition,
-            queueService.getQueueSize(id)
+        // 혹시나 하는 성공 케이스 (현재는 발생하지 않음)
+        return ResponseEntity.ok().body(new CouponQueueResponse(
+            "쿠폰 발급이 완료되었습니다.",
+            null,
+            null
         ));
     }
 

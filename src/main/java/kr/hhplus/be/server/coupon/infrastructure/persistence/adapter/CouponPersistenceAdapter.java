@@ -2,7 +2,7 @@ package kr.hhplus.be.server.coupon.infrastructure.persistence.adapter;
 
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveCouponPort;
-import kr.hhplus.be.server.coupon.application.RedisCouponService;
+import kr.hhplus.be.server.coupon.domain.service.RedisCouponService;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import org.springframework.stereotype.Component;
@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 쿠폰 영속성 Adapter (Outgoing)
@@ -55,7 +54,8 @@ public class CouponPersistenceAdapter implements LoadCouponPort, SaveCouponPort 
 
     @Override
     public Optional<LoadCouponPort.CouponInfo> loadCouponByIdWithLock(Long couponId) {
-        return couponJpaRepository.findByIdWithLock(couponId)
+        // 낙관적 락 사용 - @Version으로 동시성 제어, 원자적 쿼리 우선 사용
+        return couponJpaRepository.findByIdWithOptimisticLock(couponId)
                 .map(this::mapToCouponInfo);
     }
 

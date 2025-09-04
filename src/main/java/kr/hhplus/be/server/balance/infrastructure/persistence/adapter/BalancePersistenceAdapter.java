@@ -44,7 +44,8 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
     @Override
     @Transactional
     public Optional<Balance> loadActiveBalanceByUserIdWithLock(Long userId) {
-        return balanceJpaRepository.findByUserIdAndStatusWithLock(userId, "ACTIVE")
+        // 낙관적 락 사용 - @Version으로 동시성 제어
+        return balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
                 .map(this::mapToBalance);
     }
 

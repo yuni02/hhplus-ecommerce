@@ -70,6 +70,10 @@ public class UserCouponEntity extends BaseEntity {
     @Column(name = "order_id", insertable = false, updatable = false)
     private Long orderId;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     // 비즈니스 메서드들
     public void use(Long orderId) {
         this.status = "USED";

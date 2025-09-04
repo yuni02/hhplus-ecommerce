@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service

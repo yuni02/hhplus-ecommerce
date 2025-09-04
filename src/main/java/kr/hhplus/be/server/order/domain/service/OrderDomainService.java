@@ -5,7 +5,7 @@ import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.DataPlatformTransferRequestedEvent;
+import kr.hhplus.be.server.order.domain.event.DataPlatformTransferRequestedEvent;
 import kr.hhplus.be.server.shared.event.AsyncEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

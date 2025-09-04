@@ -1,7 +1,7 @@
-package kr.hhplus.be.server.order.application;
+package kr.hhplus.be.server.order.domain.service;
 
-import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
 import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.order.domain.event.OrderCompletedEvent;
 import kr.hhplus.be.server.shared.kafka.message.DataPlatformMessage;
 import kr.hhplus.be.server.shared.kafka.message.OrderCompletedMessage;
 import kr.hhplus.be.server.shared.kafka.message.ProductRankingMessage;

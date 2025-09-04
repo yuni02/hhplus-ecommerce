@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;

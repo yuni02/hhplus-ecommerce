@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -24,6 +25,7 @@ import java.util.Map;
 @Slf4j
 @EnableKafka
 @Configuration
+@ConditionalOnProperty(name = "event.publisher.type", havingValue = "kafka", matchIfMissing = true)
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
@@ -94,9 +96,6 @@ public class KafkaConfig {
         
         // 비동기 커밋 설정
         factory.getContainerProperties().setAsyncAcks(true);
-        
-        // 커밋 인터벌 설정 (5초마다 비동기 커밋)
-        factory.getContainerProperties().setCommitInterval(5000L);
         
         // 동시성 설정 (파티션 수만큼 설정 권장)
         factory.setConcurrency(3);

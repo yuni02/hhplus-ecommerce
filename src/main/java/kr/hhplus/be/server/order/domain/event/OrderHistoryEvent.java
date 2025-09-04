@@ -1,5 +1,6 @@
-package kr.hhplus.be.server.order.domain;
+package kr.hhplus.be.server.order.domain.event;
 
+import kr.hhplus.be.server.order.domain.Order;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

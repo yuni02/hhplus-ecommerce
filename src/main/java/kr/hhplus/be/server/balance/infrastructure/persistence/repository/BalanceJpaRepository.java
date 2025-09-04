@@ -27,15 +27,6 @@ public interface BalanceJpaRepository extends JpaRepository<BalanceEntity, Long>
      */
     Optional<BalanceEntity> findByUserId(Long userId);
 
-    /**
-     * 사용자 ID로 잔액 조회 (Pessimistic Lock)
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT b FROM BalanceEntity b WHERE b.userId = :userId AND b.status = :status")
-    Optional<BalanceEntity> findByUserIdAndStatusWithLock(
-        @Param("userId") Long userId, 
-        @Param("status") String status
-    );
 
     /**
      * 사용자 ID로 잔액 존재 여부 확인

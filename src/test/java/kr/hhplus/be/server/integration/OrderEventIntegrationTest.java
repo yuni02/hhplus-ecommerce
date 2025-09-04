@@ -173,9 +173,6 @@ class OrderEventIntegrationTest {
         assertThat(result.getOrderId()).isNotNull();
         assertThat(result.getUserId()).isEqualTo(userId);
         assertThat(result.getStatus()).isEqualTo("PROCESSING"); // 코레오그래피에서는 처리중 상태
-        // 코레오그래피에서는 금액들이 비동기적으로 계산되므로 null일 수 있음
-        // assertThat(result.getTotalAmount()).isGreaterThan(BigDecimal.ZERO);
-        // assertThat(result.getDiscountedAmount()).isGreaterThan(BigDecimal.ZERO);
     }
 
     @Test
@@ -217,10 +214,6 @@ class OrderEventIntegrationTest {
         // then
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getStatus()).isEqualTo("PROCESSING"); // 코레오그래피에서는 처리중 상태
-        // 코레오그래피에서는 orderItems가 비동기적으로 설정되므로 null일 수 있음
-        // assertThat(result.getOrderItems()).hasSize(1);
-        // assertThat(result.getOrderItems().get(0).getProductId()).isEqualTo(productId);
-        // assertThat(result.getOrderItems().get(0).getQuantity()).isEqualTo(3);
     }
 
     @Test
@@ -262,10 +255,5 @@ class OrderEventIntegrationTest {
         // then
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getStatus()).isEqualTo("PROCESSING"); // 코레오그래피에서는 처리중 상태
-        // 코레오그래피에서는 orderItems가 비동기적으로 설정되므로 null일 수 있음
-        // assertThat(result.getOrderItems()).hasSize(3);
-        // assertThat(result.getOrderItems().get(0).getProductId()).isEqualTo(1L);
-        // assertThat(result.getOrderItems().get(1).getProductId()).isEqualTo(2L);
-        // assertThat(result.getOrderItems().get(2).getProductId()).isEqualTo(3L);
     }
 }

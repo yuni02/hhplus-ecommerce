@@ -9,6 +9,26 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-group
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Event Publisher 설정 - 테스트에서는 spring 이벤트 사용
+event:
+  publisher:
+    type: spring
+
+# 카프카 토픽 설정 (사용되지 않음)
+kafka:
+  topics:
+    order-completed: test-order-completed-topic
+    product-ranking: test-product-ranking-topic
+    data-platform-transfer: test-data-platform-transfer-topic
+    coupon-issue: test-coupon-issue-events
 
 logging:
   level:

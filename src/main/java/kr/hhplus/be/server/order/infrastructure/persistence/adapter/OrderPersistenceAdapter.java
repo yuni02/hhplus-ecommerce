@@ -3,7 +3,7 @@ package kr.hhplus.be.server.order.infrastructure.persistence.adapter;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.OrderHistoryEvent;
+import kr.hhplus.be.server.order.domain.event.OrderHistoryEvent;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderItemEntity;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderHistoryEventEntity;

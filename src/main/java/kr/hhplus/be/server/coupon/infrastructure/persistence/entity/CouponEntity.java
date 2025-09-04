@@ -51,6 +51,10 @@ public class CouponEntity extends BaseEntity {
     @Column(name = "valid_to")
     private LocalDateTime validTo;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     // 비즈니스 메서드들
     public void incrementIssuedCount() {
         this.issuedCount++;

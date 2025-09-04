@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
+import kr.hhplus.be.server.order.domain.event.OrderCompletedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 @Slf4j

@@ -1,15 +1,13 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Set;
 
 /**
  * Redis 기반 쿠폰 대기열 서비스

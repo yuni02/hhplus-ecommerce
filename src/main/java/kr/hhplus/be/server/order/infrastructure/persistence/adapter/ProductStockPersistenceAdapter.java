@@ -25,35 +25,26 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "!@environment.acceptsProfiles('test')")
     public boolean deductStock(Long productId, Integer quantity) {
         try {
-            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
-                    .orElse(null);
-            
-            if (product == null) {
-                return false;
-            }
-            
-            if (!product.hasStock(quantity)) {
-                return false;
-            }
-            
-            product.decreaseStock(quantity);
-            productJpaRepository.save(product);
-            return true;
+            // 원자적 재고 차감 쿼리 사용
+            int updated = productJpaRepository.deductStockAtomic(productId, quantity);
+            return updated > 0;
             
         } catch (Exception e) {
+            log.warn("재고 차감 실패 - productId: {}, quantity: {}", productId, quantity, e);
             return false;
         }
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "!@environment.acceptsProfiles('test')")
     public boolean restoreStock(Long productId, Integer quantity) {
         try {
-            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
+            // 원자적 재고 복구를 위한 쿼리 필요 - 일단 findById로 낙관적 락 사용
+            ProductEntity product = productJpaRepository.findById(productId)
                     .orElse(null);
             
             if (product == null) {
@@ -61,10 +52,11 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
             }
             
             product.increaseStock(quantity);
-            productJpaRepository.save(product);
+            productJpaRepository.save(product); // @Version으로 낙관적 락 적용
             return true;
             
         } catch (Exception e) {
+            log.warn("재고 복구 실패 - productId: {}, quantity: {}", productId, quantity, e);
             return false;
         }
     }
@@ -94,11 +86,11 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
 
     @Override
     @Transactional
-    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "${spring.profiles.active:dev} != 'test'")
+    @CacheEvict(value = "productDetail", key = "#productId", cacheManager = "shortTermCacheManager", condition = "!@environment.acceptsProfiles('test')")
     public boolean restoreStockWithPessimisticLock(Long productId, Integer quantity) {
         try {
-            // 비관적 락으로 상품 조회
-            ProductEntity product = productJpaRepository.findByIdWithLock(productId)
+            // 낙관적 락으로 상품 조회
+            ProductEntity product = productJpaRepository.findById(productId)
                     .orElse(null);
             
             if (product == null) {
@@ -106,10 +98,11 @@ public class ProductStockPersistenceAdapter implements UpdateProductStockPort {
             }
             
             product.increaseStock(quantity);
-            productJpaRepository.save(product);
+            productJpaRepository.save(product); // @Version으로 낙관적 락 적용
             return true;
             
         } catch (Exception e) {
+            log.warn("재고 복구 실패 - productId: {}, quantity: {}", productId, quantity, e);
             return false;
         }
     }

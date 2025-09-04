@@ -29,7 +29,8 @@ public class ProductPersistenceAdapter implements LoadProductPort {
 
     @Override
     public Optional<LoadProductPort.ProductInfo> loadProductByIdWithLock(Long productId) {
-        return productJpaRepository.findByIdWithLock(productId)
+        // 낙관적 락 사용 - @Version으로 동시성 제어
+        return productJpaRepository.findById(productId)
                 .map(this::mapToProductInfo);
     }
 

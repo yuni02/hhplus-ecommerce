@@ -27,13 +27,6 @@ public interface CouponJpaRepository extends JpaRepository<CouponEntity, Long> {
      */
     List<CouponEntity> findByStatus(String status);  
 
-    /** 
-     * 발급 가능한 쿠폰 조회 (PESSIMISTIC 락 사용)
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value = "1000")}) // 타임아웃 1초로 단축
-    @Query("SELECT c FROM CouponEntity c WHERE c.id = :couponId")
-    Optional<CouponEntity> findByIdWithLock(@Param("couponId") Long couponId);
 
     /**
      * 발급 가능한 쿠폰 조회 (OPTIMISTIC 락 사용 - 성능 향상)

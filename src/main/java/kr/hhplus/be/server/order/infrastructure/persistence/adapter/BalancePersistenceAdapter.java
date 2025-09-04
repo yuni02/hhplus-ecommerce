@@ -75,8 +75,8 @@ public class BalancePersistenceAdapter implements DeductBalancePort {
     @Transactional
     public boolean deductBalanceWithPessimisticLock(Long userId, BigDecimal amount) {
         try {
-            // 비관적 락으로 잔액 조회
-            BalanceEntity balance = balanceJpaRepository.findByUserIdAndStatusWithLock(userId, "ACTIVE")
+            // 낙관적 락으로 잔액 조회
+            BalanceEntity balance = balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
                     .orElse(null);
             
             if (balance == null) {
