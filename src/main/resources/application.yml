@@ -42,7 +42,7 @@ spring:
         spring.json.trusted.packages: "kr.hhplus.be.server"
         spring.json.add.type.headers: false
       auto-offset-reset: earliest
-      enable-auto-commit: true
+      enable-auto-commit: false  # 비동기 수동 커밋을 위해 자동 커밋 비활성화
 
 ---
 spring.config.activate.on-profile: local, test

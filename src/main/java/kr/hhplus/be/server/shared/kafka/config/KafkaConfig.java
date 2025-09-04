@@ -89,14 +89,36 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         
-        // 수동 커밋 모드 설정
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        // 비동기 수동 커밋 모드 설정 (MANUAL로 변경하여 비동기 커밋 사용)
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        
+        // 비동기 커밋 설정
+        factory.getContainerProperties().setAsyncAcks(true);
+        
+        // 커밋 인터벌 설정 (5초마다 비동기 커밋)
+        factory.getContainerProperties().setCommitInterval(5000L);
         
         // 동시성 설정 (파티션 수만큼 설정 권장)
         factory.setConcurrency(3);
         
         // 에러 핸들링
         factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler());
+        
+        return factory;
+    }
+    
+    /**
+     * 배치 처리용 Kafka Listener Factory (선택적)
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> batchKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
+        factory.setBatchListener(true);
+        
+        // 배치 처리시 비동기 커밋
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
+        factory.getContainerProperties().setAsyncAcks(true);
         
         return factory;
     }

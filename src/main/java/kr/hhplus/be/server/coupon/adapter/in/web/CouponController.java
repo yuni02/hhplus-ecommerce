@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.coupon.adapter.in.web;
 
 import kr.hhplus.be.server.coupon.application.port.in.GetUserCouponsUseCase;
+import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.RedisCouponQueueService;
 import kr.hhplus.be.server.coupon.adapter.in.dto.UserCouponResponse;
 import kr.hhplus.be.server.coupon.adapter.in.dto.CouponQueueResponse;
@@ -17,11 +18,14 @@ import java.util.stream.Collectors;
 public class CouponController implements CouponApiDocumentation {
 
     private final GetUserCouponsUseCase getUserCouponsUseCase;
+    private final IssueCouponUseCase issueCouponUseCase;
     private final RedisCouponQueueService queueService;
 
     public CouponController(GetUserCouponsUseCase getUserCouponsUseCase,
+                          IssueCouponUseCase issueCouponUseCase,
                           RedisCouponQueueService queueService) {
         this.getUserCouponsUseCase = getUserCouponsUseCase;
+        this.issueCouponUseCase = issueCouponUseCase;
         this.queueService = queueService;
     }
 
@@ -30,19 +34,22 @@ public class CouponController implements CouponApiDocumentation {
             @PathVariable(name = "id") Long id,
             @RequestParam(name = "userId", required = true) Long userId) {
         
-        // 1. 대기열에 추가 시도
-        boolean addedToQueue = queueService.addToQueue(id, userId);
+        // IssueCouponService를 통해 Kafka 이벤트 발행
+        IssueCouponUseCase.IssueCouponCommand command = 
+            new IssueCouponUseCase.IssueCouponCommand(userId, id);
         
-        if (!addedToQueue) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("이미 대기열에 등록되어 있습니다."));
+        IssueCouponUseCase.IssueCouponResult result = issueCouponUseCase.issueCoupon(command);
+        
+        if (!result.isSuccess()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(result.getErrorMessage()));
         }
         
-        // 2. 대기열 순서 조회
+        // 대기열 순서 조회
         Long queuePosition = queueService.getUserQueuePosition(id, userId);
         
-        // 3. 비동기 처리 응답
+        // 비동기 처리 응답
         return ResponseEntity.accepted().body(new CouponQueueResponse(
-            "쿠폰 발급 요청이 대기열에 등록되었습니다.",
+            result.getErrorMessage() != null ? result.getErrorMessage() : "쿠폰 발급 요청이 처리 중입니다.",
             queuePosition,
             queueService.getQueueSize(id)
         ));

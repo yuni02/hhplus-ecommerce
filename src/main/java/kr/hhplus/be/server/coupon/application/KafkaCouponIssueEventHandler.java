@@ -50,12 +50,17 @@ public class KafkaCouponIssueEventHandler {
         
         try {
             processCouponIssuance(message);
+            
+            // 비동기 커밋 수행
             acknowledgment.acknowledge();
-            log.info("쿠폰 발급 처리 완료 - couponId: {}, userId: {}", 
+            
+            log.info("쿠폰 발급 처리 및 비동기 커밋 완료 - couponId: {}, userId: {}", 
                     message.getCouponId(), message.getUserId());
+                    
         } catch (Exception e) {
             log.error("쿠폰 발급 처리 실패 - couponId: {}, userId: {}", 
                     message.getCouponId(), message.getUserId(), e);
+            
             // 실패 시 Redis에 실패 결과 저장
             queueService.saveIssueResult(
                 message.getCouponId(), 
@@ -63,8 +68,9 @@ public class KafkaCouponIssueEventHandler {
                 false, 
                 "쿠폰 발급 처리 중 오류가 발생했습니다: " + e.getMessage()
             );
-            // 재시도 또는 DLQ로 전송하는 로직 추가 가능
-            throw e;
+            
+            // 오류 발생 시 커밋하지 않음 (재처리를 위해)
+            // acknowledgment를 호출하지 않으면 메시지는 재처리됨
         }
     }
     
