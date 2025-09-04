@@ -42,8 +42,9 @@ public class DataPlatformConsumer {
             boolean success = dataPlatformService.sendOrderData(message);
             
             if (success) {
-                log.info("Data platform transfer completed successfully - orderId: {}", message.getOrderId());
+                // 비동기 커밋
                 acknowledgment.acknowledge();
+                log.info("Data platform transfer completed and async commit done - orderId: {}", message.getOrderId());
             } else {
                 log.warn("Data platform transfer failed - orderId: {}, will retry", message.getOrderId());
                 // 실패 시 재시도를 위해 acknowledge하지 않음
@@ -60,7 +61,7 @@ public class DataPlatformConsumer {
                 // acknowledge하지 않아 재시도됨
             } else {
                 log.error("Non-retryable exception occurred - orderId: {}, skipping message", message.getOrderId());
-                acknowledgment.acknowledge(); // 스킵
+                acknowledgment.acknowledge(); // 비동기 커밋으로 스킵
             }
         }
     }

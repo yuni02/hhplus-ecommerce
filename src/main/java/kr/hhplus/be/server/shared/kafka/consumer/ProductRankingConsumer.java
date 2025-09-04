@@ -44,18 +44,17 @@ public class ProductRankingConsumer {
                     message.getQuantity()
             );
 
-            log.info("Product ranking updated successfully - productId: {}, orderId: {}",
-                    message.getProductId(), message.getOrderId());
-
-            // 수동 커밋
+            // 비동기 커밋
             acknowledgment.acknowledge();
+            
+            log.info("Product ranking updated and async commit done - productId: {}, orderId: {}",
+                    message.getProductId(), message.getOrderId());
 
         } catch (Exception e) {
             log.error("Failed to process product ranking message - productId: {}, orderId: {}",
                     message.getProductId(), message.getOrderId(), e);
-            // 에러 발생 시 재시도 또는 Dead Letter Queue로 전송
-            // 현재는 단순히 로그만 남기고 acknowledge하여 메시지 스킵
-            acknowledgment.acknowledge();
+            // 에러 발생 시 커밋하지 않음 (재처리를 위해)
+            // acknowledgment를 호출하지 않으면 메시지는 재처리됨
         }
     }
 }
