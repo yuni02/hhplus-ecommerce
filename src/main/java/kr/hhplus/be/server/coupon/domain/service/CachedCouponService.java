@@ -73,12 +73,6 @@ public class CachedCouponService implements GetUserCouponsUseCase, UseCouponUseC
     @Override
     @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
     public UseCouponResult useCoupon(UseCouponCommand command) {
-        return useCouponWithPessimisticLock(command);
-    }
-
-    @Override
-    @CacheEvict(value = "userCouponsAvailable", key = "#command.userId", condition = "#result.success")
-    public UseCouponResult useCouponWithPessimisticLock(UseCouponCommand command) {
         try {
             // 1. 비관적 락으로 사용자 쿠폰 조회
             Optional<UserCoupon> userCouponOpt = loadUserCouponPort.loadUserCouponWithLock(command.getUserCouponId());

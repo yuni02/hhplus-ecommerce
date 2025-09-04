@@ -13,11 +13,6 @@ public interface UseCouponUseCase {
     UseCouponResult useCoupon(UseCouponCommand command);
     
     /**
-     * 쿠폰 사용 실행 (비관적 락 적용)
-     */
-    UseCouponResult useCouponWithPessimisticLock(UseCouponCommand command);
-    
-    /**
      * 쿠폰 사용 취소 (복원)
      */
     RestoreCouponResult restoreCoupon(RestoreCouponCommand command);

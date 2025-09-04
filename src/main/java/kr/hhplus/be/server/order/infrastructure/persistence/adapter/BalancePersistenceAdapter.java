@@ -71,35 +71,4 @@ public class BalancePersistenceAdapter implements DeductBalancePort {
         }
     }
 
-    @Override
-    @Transactional
-    public boolean deductBalanceWithPessimisticLock(Long userId, BigDecimal amount) {
-        try {
-            // 낙관적 락으로 잔액 조회
-            BalanceEntity balance = balanceJpaRepository.findByUserIdAndStatus(userId, "ACTIVE")
-                    .orElse(null);
-            
-            if (balance == null) {
-                log.debug("잔액 정보가 없습니다. userId: {}", userId);
-                return false; // 잔액 정보가 없음
-            }
-            
-            log.debug("차감 전 잔액: {}, 차감 금액: {}", balance.getAmount(), amount);
-            
-            // 잔액 차감 (비관적 락 적용)
-            boolean success = balance.deductAmount(amount);
-            if (success) {
-                balanceJpaRepository.save(balance);
-                log.debug("차감 후 잔액: {}", balance.getAmount());
-                return true;
-            } else {
-                log.debug("잔액 차감 실패 - 잔액 부족");
-                return false;
-            }
-            
-        } catch (Exception e) {
-            log.warn("잔액 차감 중 예외 발생: {}", e.getMessage());
-            return false;   
-        }
-    }
 }

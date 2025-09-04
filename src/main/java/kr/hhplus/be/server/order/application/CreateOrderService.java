@@ -79,8 +79,8 @@ public class CreateOrderService implements CreateOrderUseCase {
                     return CreateOrderUseCase.CreateOrderResult.failure("재고가 부족합니다: " + productInfo.getName() + " (남은 재고: " + productInfo.getStock() + ")");
                 }
                 
-                // 재고 차감 (비관적 락)
-                boolean stockDeducted = updateProductStockPort.deductStockWithPessimisticLock(
+                // 재고 차감
+                boolean stockDeducted = updateProductStockPort.deductStock(
                     itemCommand.getProductId(), itemCommand.getQuantity()
                 );
                 
@@ -118,7 +118,7 @@ public class CreateOrderService implements CreateOrderUseCase {
             }
             
             // 잔액 차감
-            boolean balanceDeducted = deductBalancePort.deductBalanceWithPessimisticLock(
+            boolean balanceDeducted = deductBalancePort.deductBalance(
                 command.getUserId(), totalAmount
             );
             
