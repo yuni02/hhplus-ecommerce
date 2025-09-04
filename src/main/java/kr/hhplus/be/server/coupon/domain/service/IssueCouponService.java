@@ -1,21 +1,17 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
-import kr.hhplus.be.server.coupon.domain.UserCoupon;
 import kr.hhplus.be.server.shared.kafka.CouponIssueMessage;
 import kr.hhplus.be.server.shared.kafka.KafkaCouponEventProducer;
-import kr.hhplus.be.server.shared.lock.DistributedLock;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
+
 import lombok.RequiredArgsConstructor;
 import java.util.Optional;
 
@@ -56,7 +52,16 @@ public class IssueCouponService implements IssueCouponUseCase {
                 return IssueCouponResult.failure("사용자를 찾을 수 없습니다.");
             }
             
-            // 3. Redis에서 쿠폰 정보 조회 (캐시된 정보만)
+            // *** 3. 빠른 실패 체크 (Redis 기반) ***
+            // 이미 발급받은 사용자인지 확인
+            Boolean alreadyIssued = redisCouponService.isUserIssued(command.getCouponId(), command.getUserId());
+            if (Boolean.TRUE.equals(alreadyIssued)) {
+                log.info("빠른 실패: 이미 발급받은 쿠폰 - couponId: {}, userId: {}", 
+                        command.getCouponId(), command.getUserId());
+                return IssueCouponResult.failure("이미 발급받은 쿠폰입니다.");
+            }
+            
+            // 4. Redis에서 쿠폰 정보 조회 (캐시된 정보만)
             Optional<RedisCouponService.CouponInfo> cachedCouponInfo = 
                 redisCouponService.getCouponInfoFromCache(command.getCouponId());
             
@@ -88,18 +93,26 @@ public class IssueCouponService implements IssueCouponUseCase {
                 );
             }
             
-            // 4. 기본적인 발급 가능 여부만 체크
+            // 쿠폰 소진 여부 빠른 체크 (Redis 기반)
+            Boolean isExhausted = redisCouponService.isCouponExhausted(command.getCouponId(), couponInfo.getMaxIssuanceCount());
+            if (Boolean.TRUE.equals(isExhausted)) {
+                log.info("빠른 실패: 쿠폰 소진 - couponId: {}, userId: {}", 
+                        command.getCouponId(), command.getUserId());
+                return IssueCouponResult.failure("쿠폰이 모두 소진되었습니다.");
+            }
+            
+            // 5. 기본적인 발급 가능 여부 체크 (상태, 기간 등)
             if (!canIssueCoupon(couponInfo)) {
                 return IssueCouponResult.failure("발급할 수 없는 쿠폰입니다.");
             }
             
-            // 5. 대기열에 추가
+            // 6. 대기열에 추가
             boolean addedToQueue = queueService.addToQueue(command.getCouponId(), command.getUserId());
             if (!addedToQueue) {
                 return IssueCouponResult.failure("이미 쿠폰 발급 요청이 처리 중입니다.");
             }
             
-            // 6. Kafka 이벤트 발행 (실제 처리는 비동기)
+            // 7. Kafka 이벤트 발행 (실제 처리는 비동기)
             CouponIssueMessage message = CouponIssueMessage.of(
                 command.getUserId(),
                 command.getCouponId(),
@@ -113,7 +126,7 @@ public class IssueCouponService implements IssueCouponUseCase {
             log.info("쿠폰 발급 이벤트 발행 완료 - couponId: {}, userId: {}", 
                     command.getCouponId(), command.getUserId());
             
-            // 7. 즉시 처리 중 응답 반환
+            // 8. 즉시 처리 중 응답 반환
             return IssueCouponResult.processing(
                 command.getCouponId(),
                 couponInfo.getName(),

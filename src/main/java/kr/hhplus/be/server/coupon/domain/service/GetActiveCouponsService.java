@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.coupon.application;
+package kr.hhplus.be.server.coupon.domain.service;
 
 import kr.hhplus.be.server.coupon.application.port.in.GetActiveCouponsUseCase;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 활성 쿠폰 조회 서비스
