@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.shared.kafka.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
@@ -33,6 +35,18 @@ public class KafkaConfig {
 
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
+    
+    @Value("${kafka.topics.order-completed}")
+    private String orderCompletedTopic;
+    
+    @Value("${kafka.topics.product-ranking}")
+    private String productRankingTopic;
+    
+    @Value("${kafka.topics.data-platform-transfer}")
+    private String dataPlatformTopic;
+    
+    @Value("${kafka.topics.coupon-issue}")
+    private String couponIssueTopic;
 
     /**
      * Kafka Producer 설정
@@ -120,5 +134,63 @@ public class KafkaConfig {
         factory.getContainerProperties().setAsyncAcks(true);
         
         return factory;
+    }
+    
+    /**
+     * Kafka Admin - 토픽 자동 생성을 위해 필요
+     */
+    @Bean
+    public KafkaAdmin kafkaAdmin() {
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        return new KafkaAdmin(configs);
+    }
+    
+    /**
+     * 주문 완료 토픽 생성 (파티션 3개)
+     */
+    @Bean
+    public NewTopic orderCompletedTopic() {
+        log.info("Creating Kafka topic: {} with 3 partitions", orderCompletedTopic);
+        return TopicBuilder.name(orderCompletedTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+    
+    /**
+     * 상품 랭킹 토픽 생성 (파티션 3개)
+     */
+    @Bean
+    public NewTopic productRankingTopic() {
+        log.info("Creating Kafka topic: {} with 3 partitions", productRankingTopic);
+        return TopicBuilder.name(productRankingTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+    
+    /**
+     * 데이터 플랫폼 전송 토픽 생성 (파티션 3개)
+     */
+    @Bean
+    public NewTopic dataPlatformTopic() {
+        log.info("Creating Kafka topic: {} with 3 partitions", dataPlatformTopic);
+        return TopicBuilder.name(dataPlatformTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+    
+    /**
+     * 쿠폰 발급 토픽 생성 (파티션 3개)
+     */
+    @Bean
+    public NewTopic couponIssueTopic() {
+        log.info("Creating Kafka topic: {} with 3 partitions", couponIssueTopic);
+        return TopicBuilder.name(couponIssueTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
     }
 }
