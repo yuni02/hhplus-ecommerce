@@ -48,8 +48,10 @@ class BalanceTest {
     void chargeBalance_Success() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal chargeAmount = new BigDecimal("10000");
 
@@ -65,8 +67,10 @@ class BalanceTest {
     void chargeBalance_NegativeAmount() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal negativeAmount = new BigDecimal("-1000");
 
@@ -81,8 +85,10 @@ class BalanceTest {
     void chargeBalance_ZeroAmount() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal zeroAmount = BigDecimal.ZERO;
 
@@ -97,8 +103,10 @@ class BalanceTest {
     void deductBalance_Success() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal deductAmount = new BigDecimal("20000");
 
@@ -114,8 +122,10 @@ class BalanceTest {
     void deductBalance_InsufficientBalance() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal deductAmount = new BigDecimal("60000");
 
@@ -131,8 +141,10 @@ class BalanceTest {
     void deductBalance_NegativeAmount() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal negativeAmount = new BigDecimal("-1000");
 
@@ -147,8 +159,10 @@ class BalanceTest {
     void deductBalance_ZeroAmount() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
         
         BigDecimal zeroAmount = BigDecimal.ZERO;
 
@@ -159,50 +173,61 @@ class BalanceTest {
     }
 
     @Test
-    @DisplayName("Balance 상태 변경")
-    void changeBalanceStatus() {
+    @DisplayName("잔액 충분 여부 확인")
+    void hasSufficientBalance() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-
-        // when
-        balance.setStatus(Balance.BalanceStatus.INACTIVE);
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
 
         // then
-        assertThat(balance.getStatus()).isEqualTo(Balance.BalanceStatus.INACTIVE);
+        assertThat(balance.hasSufficientBalance(new BigDecimal("30000"))).isTrue();
+        assertThat(balance.hasSufficientBalance(new BigDecimal("50000"))).isTrue();
+        assertThat(balance.hasSufficientBalance(new BigDecimal("50001"))).isFalse();
+        assertThat(balance.hasSufficientBalance(new BigDecimal("100000"))).isFalse();
     }
 
     @Test
-    @DisplayName("Balance ID 설정")
-    void setBalanceId() {
+    @DisplayName("Balance 충전 금액 null 처리")
+    void chargeBalance_NullAmount() {
         // given
         Long userId = 1L;
-        Long balanceId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
 
-        // when
-        balance.setId(balanceId);
-
-        // then
-        assertThat(balance.getId()).isEqualTo(balanceId);
+        // when & then
+        assertThatThrownBy(() -> balance.charge(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("충전 금액은 0보다 커야 합니다.");
     }
 
     @Test
-    @DisplayName("Balance 충전 금액 검증")
-    void chargeBalance_Validation() {
+    @DisplayName("Balance 차감 금액 null 처리")
+    void deductBalance_NullAmount() {
         // given
         Long userId = 1L;
-        Balance balance = Balance.builder().userId(userId).build();
-        balance.setAmount(new BigDecimal("50000"));
-        
-        BigDecimal chargeAmount = new BigDecimal("10000");
+        Balance balance = Balance.builder()
+                .userId(userId)
+                .amount(new BigDecimal("50000"))
+                .build();
 
-        // when
-        balance.charge(chargeAmount);
+        // when & then
+        assertThatThrownBy(() -> balance.deduct(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("차감 금액은 0보다 커야 합니다.");
+    }
 
+    @Test
+    @DisplayName("BalanceStatus enum 검증")
+    void balanceStatusEnum() {
         // then
-        assertThat(balance.getAmount()).isEqualTo(new BigDecimal("60000"));
-        assertThat(balance.hasSufficientBalance(new BigDecimal("60000"))).isTrue();
-        assertThat(balance.hasSufficientBalance(new BigDecimal("70000"))).isFalse();
+        assertThat(Balance.BalanceStatus.values()).containsExactly(
+                Balance.BalanceStatus.ACTIVE,
+                Balance.BalanceStatus.INACTIVE
+        );
     }
 } 

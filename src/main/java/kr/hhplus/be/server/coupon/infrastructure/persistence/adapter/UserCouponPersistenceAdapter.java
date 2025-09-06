@@ -39,7 +39,7 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
         return userCouponJpaRepository.findByUserId(userId)
                 .stream()
                 .map(this::toUserCouponInfo)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -50,7 +50,8 @@ public class UserCouponPersistenceAdapter implements LoadUserCouponPort, SaveUse
 
     @Override
     public Optional<UserCoupon> loadUserCouponWithLock(Long userCouponId) {
-        return userCouponJpaRepository.findByIdWithLock(userCouponId)
+        // 낙관적 락 사용 - @Version으로 동시성 제어
+        return userCouponJpaRepository.findById(userCouponId)
                 .map(this::mapToUserCoupon);
     }
 

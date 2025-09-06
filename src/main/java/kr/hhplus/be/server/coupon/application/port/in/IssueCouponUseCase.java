@@ -67,6 +67,10 @@ public interface IssueCouponUseCase {
             return new IssueCouponResult(false, null, null, null, null, null, null, errorMessage);
         }
         
+        public static IssueCouponResult processing(Long couponId, String couponName, String message) {
+            return new IssueCouponResult(true, null, couponId, couponName, null, "PROCESSING", null, message);
+        }
+        
         public boolean isSuccess() {
             return success;
         }

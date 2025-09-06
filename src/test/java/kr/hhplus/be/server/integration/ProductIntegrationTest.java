@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.integration;
 
 import kr.hhplus.be.server.TestcontainersConfiguration;
-import kr.hhplus.be.server.product.application.GetProductDetailService;
-import kr.hhplus.be.server.product.application.GetPopularProductsService;
+import kr.hhplus.be.server.product.domain.service.GetProductDetailService;
+import kr.hhplus.be.server.product.domain.service.GetPopularProductsService;
 import kr.hhplus.be.server.product.application.port.in.GetProductDetailUseCase;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
@@ -14,11 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
 import java.util.Optional;

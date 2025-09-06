@@ -1,9 +1,9 @@
 package kr.hhplus.be.server.integration;
 
 import kr.hhplus.be.server.TestcontainersConfiguration;
-import kr.hhplus.be.server.coupon.application.IssueCouponService;
+import kr.hhplus.be.server.coupon.domain.service.IssueCouponService;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.application.CachedCouponService;
+import kr.hhplus.be.server.coupon.domain.service.CachedCouponService;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserCouponPort;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;

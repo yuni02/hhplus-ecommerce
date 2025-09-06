@@ -34,7 +34,7 @@ public class ProductPersistenceAdapter implements LoadProductPort, SaveProductPo
         return productJpaRepository.findByStatus("ACTIVE")
                 .stream()
                 .map(this::mapToProductInfo)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

@@ -65,97 +65,41 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("Order ID 설정")
-    void setOrderId() {
+    @DisplayName("Order 할인 금액 계산")
+    void calculateDiscountedAmount() {
         // given
-        Long userId = 1L;
-        List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
-        Long userCouponId = null;
+        BigDecimal discountAmount = new BigDecimal("2000");
         Order order = Order.builder()
-            .userId(userId)
-            .orderItems(orderItems)
+            .userId(1L)
+            .orderItems(new ArrayList<>())
             .totalAmount(totalAmount)
-            .userCouponId(userCouponId)
+            .discountAmount(discountAmount)
             .build();
-        
-        Long orderId = 1L;
 
         // when
-        order.setId(orderId);
+        order.calculateDiscountedAmount();
 
         // then
-        assertThat(order.getId()).isEqualTo(orderId);
+        assertThat(order.getDiscountedAmount()).isEqualTo(new BigDecimal("18000"));
     }
 
     @Test
-    @DisplayName("Order 할인 금액 설정")
-    void setOrderDiscountedAmount() {
+    @DisplayName("Order 할인 금액 계산 - 할인 없음")
+    void calculateDiscountedAmount_NoDiscount() {
         // given
-        Long userId = 1L;
-        List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = new BigDecimal("20000");
-        Long userCouponId = 1L;
         Order order = Order.builder()
-            .userId(userId)
-            .orderItems(orderItems)
+            .userId(1L)
+            .orderItems(new ArrayList<>())
             .totalAmount(totalAmount)
-            .userCouponId(userCouponId)
-            .build();
-        
-        BigDecimal discountedAmount = new BigDecimal("18000");
-
-        // when
-        order.setDiscountedAmount(discountedAmount);
-
-        // then
-        assertThat(order.getDiscountedAmount()).isEqualTo(discountedAmount);
-    }
-
-    @Test
-    @DisplayName("Order 상태 변경")
-    void changeOrderStatus() {
-        // given
-        Long userId = 1L;
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalAmount = new BigDecimal("20000");
-        Long userCouponId = null;
-        Order order = Order.builder()
-            .userId(userId)
-            .orderItems(orderItems)
-            .totalAmount(totalAmount)
-            .userCouponId(userCouponId)
             .build();
 
         // when
-        order.setStatus(Order.OrderStatus.COMPLETED);
+        order.calculateDiscountedAmount();
 
         // then
-        assertThat(order.getStatus()).isEqualTo(Order.OrderStatus.COMPLETED);
-    }
-
-    @Test
-    @DisplayName("Order 주문 시간 설정")
-    void setOrderOrderedAt() {
-        // given
-        Long userId = 1L;
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalAmount = new BigDecimal("20000");
-        Long userCouponId = null;
-            Order order = Order.builder()
-            .userId(userId)
-            .orderItems(orderItems)
-            .totalAmount(totalAmount)
-            .userCouponId(userCouponId)
-            .build();
-        
-        LocalDateTime orderedAt = LocalDateTime.now();
-
-        // when
-        order.setOrderedAt(orderedAt);
-
-        // then
-        assertThat(order.getOrderedAt()).isEqualTo(orderedAt);
+        assertThat(order.getDiscountedAmount()).isEqualTo(totalAmount);
     }
 
     @Test
@@ -213,54 +157,48 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("Order 기본 생성자")
-    void createOrder_DefaultConstructor() {
-        // when
-        Order order = new Order();
+    @DisplayName("주문 완료 여부 확인")
+    void isCompleted() {
+        // given
+        Order pendingOrder = Order.builder()
+            .userId(1L)
+            .orderItems(new ArrayList<>())
+            .totalAmount(new BigDecimal("20000"))
+            .status(Order.OrderStatus.PENDING)
+            .build();
+
+        Order completedOrder = Order.builder()
+            .userId(1L)
+            .orderItems(new ArrayList<>())
+            .totalAmount(new BigDecimal("20000"))
+            .status(Order.OrderStatus.COMPLETED)
+            .build();
 
         // then
-        assertThat(order.getUserId()).isNull();
-        assertThat(order.getOrderItems()).isEmpty();
-        assertThat(order.getTotalAmount()).isNull();
-        assertThat(order.getUserCouponId()).isNull();
-        assertThat(order.getStatus()).isEqualTo(Order.OrderStatus.PENDING);
+        assertThat(pendingOrder.isCompleted()).isFalse();
+        assertThat(completedOrder.isCompleted()).isTrue();
     }
 
     @Test
-    @DisplayName("Order 모든 필드 설정")
-    void setOrderAllFields() {
+    @DisplayName("주문 취소 여부 확인")
+    void isCancelled() {
         // given
-        Long userId = 1L;
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalAmount = new BigDecimal("20000");
-        Long userCouponId = 1L;
-        BigDecimal discountedAmount = new BigDecimal("18000");
-        Order.OrderStatus status = Order.OrderStatus.COMPLETED;
-        LocalDateTime orderedAt = LocalDateTime.now();
-        
-        Order order = Order.builder()
-            .userId(userId)
-            .orderItems(orderItems)
-            .totalAmount(totalAmount)
-            .userCouponId(userCouponId)
+        Order pendingOrder = Order.builder()
+            .userId(1L)
+            .orderItems(new ArrayList<>())
+            .totalAmount(new BigDecimal("20000"))
+            .status(Order.OrderStatus.PENDING)
             .build();
 
-        // when
-        order.setUserId(userId);
-        order.setOrderItems(orderItems);
-        order.setTotalAmount(totalAmount);
-        order.setUserCouponId(userCouponId);
-        order.setDiscountedAmount(discountedAmount);
-        order.setStatus(status);
-        order.setOrderedAt(orderedAt);
+        Order cancelledOrder = Order.builder()
+            .userId(1L)
+            .orderItems(new ArrayList<>())
+            .totalAmount(new BigDecimal("20000"))
+            .status(Order.OrderStatus.CANCELLED)
+            .build();
 
         // then
-        assertThat(order.getUserId()).isEqualTo(userId);
-        assertThat(order.getOrderItems()).isEqualTo(orderItems);
-        assertThat(order.getTotalAmount()).isEqualTo(totalAmount);
-        assertThat(order.getUserCouponId()).isEqualTo(userCouponId);
-        assertThat(order.getDiscountedAmount()).isEqualTo(discountedAmount);
-        assertThat(order.getStatus()).isEqualTo(status);
-        assertThat(order.getOrderedAt()).isEqualTo(orderedAt);
+        assertThat(pendingOrder.isCancelled()).isFalse();
+        assertThat(cancelledOrder.isCancelled()).isTrue();
     }
 } 

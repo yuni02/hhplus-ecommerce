@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.integration.cache;
 
 import kr.hhplus.be.server.TestcontainersConfiguration;
-import kr.hhplus.be.server.product.application.GetPopularProductsService;
+import kr.hhplus.be.server.product.domain.service.GetPopularProductsService;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase.GetPopularProductsCommand;
 import kr.hhplus.be.server.product.application.port.in.GetPopularProductsUseCase.GetPopularProductsResult;
 import org.junit.jupiter.api.BeforeEach;

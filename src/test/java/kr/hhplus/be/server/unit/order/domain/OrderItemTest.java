@@ -1,6 +1,8 @@
 package kr.hhplus.be.server.unit.order.domain;
 
+import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.product.domain.Product;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +21,7 @@ class OrderItemTest {
         String productName = "테스트 상품";
         Integer quantity = 2;
         BigDecimal unitPrice = new BigDecimal("10000");
+        BigDecimal totalPrice = new BigDecimal("20000");
 
         // when
         OrderItem orderItem = OrderItem.builder()
@@ -27,6 +30,7 @@ class OrderItemTest {
                 .productName(productName)
                 .quantity(quantity)
                 .unitPrice(unitPrice)
+                .totalPrice(totalPrice)
                 .build();
 
         // then
@@ -35,234 +39,128 @@ class OrderItemTest {
         assertThat(orderItem.getProductName()).isEqualTo(productName);
         assertThat(orderItem.getQuantity()).isEqualTo(quantity);
         assertThat(orderItem.getUnitPrice()).isEqualTo(unitPrice);
-        assertThat(orderItem.getTotalPrice()).isEqualTo(new BigDecimal("20000"));
+        assertThat(orderItem.getTotalPrice()).isEqualTo(totalPrice);
     }
 
     @Test
-    @DisplayName("OrderItem ID 설정")
-    void setOrderItemId() {
+    @DisplayName("OrderItem withOrder 메서드 테스트")
+    void withOrder() {
         // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
         OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+                .productId(1L)
+                .productName("테스트 상품")
+                .quantity(2)
+                .unitPrice(new BigDecimal("10000"))
                 .build();
-
-        Long itemId = 1L;
-
-        // when
-        orderItem.setId(itemId);
-
-        // then
-        assertThat(orderItem.getId()).isEqualTo(itemId);
-    }
-
-    @Test
-    @DisplayName("OrderItem 기본 생성자")
-    void createOrderItem_DefaultConstructor() {
-        // when
-        OrderItem orderItem = new OrderItem();
-
-        // then
-        assertThat(orderItem.getOrderId()).isNull();
-        assertThat(orderItem.getProductId()).isNull();
-        assertThat(orderItem.getProductName()).isNull();
-        assertThat(orderItem.getQuantity()).isNull();
-        assertThat(orderItem.getUnitPrice()).isNull();
-    }
-
-    @Test
-    @DisplayName("OrderItem 모든 필드 설정")
-    void setOrderItemAllFields() {
-        // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
-
-        OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+        
+        Order order = Order.builder()
+                .id(100L)
+                .userId(1L)
+                .totalAmount(new BigDecimal("20000"))
                 .build();
 
         // when
-        orderItem.setOrderId(orderId);
-        orderItem.setProductId(productId);
-        orderItem.setProductName(productName);
-        orderItem.setQuantity(quantity);
-        orderItem.setUnitPrice(unitPrice);
+        OrderItem updatedItem = orderItem.withOrder(order);
 
         // then
-        assertThat(orderItem.getOrderId()).isEqualTo(orderId);
-        assertThat(orderItem.getProductId()).isEqualTo(productId);
-        assertThat(orderItem.getProductName()).isEqualTo(productName);
-        assertThat(orderItem.getQuantity()).isEqualTo(quantity);
-        assertThat(orderItem.getUnitPrice()).isEqualTo(unitPrice);
+        assertThat(updatedItem.getOrder()).isEqualTo(order);
+        assertThat(updatedItem.getOrderId()).isEqualTo(100L);
+        assertThat(updatedItem.getProductId()).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("OrderItem 총 가격 계산")
-    void calculateOrderItemTotalPrice() {
+    @DisplayName("OrderItem withProduct 메서드 테스트")
+    void withProduct() {
         // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 3;
-        BigDecimal unitPrice = new BigDecimal("5000");
-
-        // when
         OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+                .orderId(1L)
+                .quantity(2)
+                .unitPrice(new BigDecimal("10000"))
+                .build();
+        
+        Product product = Product.builder()
+                .id(200L)
+                .name("새로운 상품")
                 .build();
 
+        // when
+        OrderItem updatedItem = orderItem.withProduct(product);
+
         // then
-        assertThat(orderItem.getTotalPrice()).isEqualTo(new BigDecimal("15000"));
+        assertThat(updatedItem.getProduct()).isEqualTo(product);
+        assertThat(updatedItem.getProductId()).isEqualTo(200L);
+        assertThat(updatedItem.getProductName()).isEqualTo("새로운 상품");
     }
 
     @Test
-    @DisplayName("OrderItem 수량 변경")
-    void changeOrderItemQuantity() {
+    @DisplayName("OrderItem withOrder null 처리")
+    void withOrder_NullHandling() {
         // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
         OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+                .productId(1L)
+                .productName("테스트 상품")
+                .quantity(2)
+                .unitPrice(new BigDecimal("10000"))
                 .build();
 
-        Integer newQuantity = 5;
-
         // when
-        orderItem.setQuantity(newQuantity);
+        OrderItem result = orderItem.withOrder(null);
 
         // then
-        assertThat(orderItem.getQuantity()).isEqualTo(newQuantity);
-        assertThat(orderItem.getTotalPrice()).isEqualTo(new BigDecimal("50000"));
+        assertThat(result).isEqualTo(orderItem);
+        assertThat(result.getOrder()).isNull();
+        assertThat(result.getOrderId()).isNull();
     }
 
     @Test
-    @DisplayName("OrderItem 단가 변경")
-    void changeOrderItemUnitPrice() {
+    @DisplayName("OrderItem withProduct null 처리")
+    void withProduct_NullHandling() {
         // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
         OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+                .orderId(1L)
+                .quantity(2)
+                .unitPrice(new BigDecimal("10000"))
                 .build();
 
-        BigDecimal newUnitPrice = new BigDecimal("8000");
-
         // when
-        orderItem.setUnitPrice(newUnitPrice);
+        OrderItem result = orderItem.withProduct(null);
 
         // then
-        assertThat(orderItem.getUnitPrice()).isEqualTo(newUnitPrice);
-        assertThat(orderItem.getTotalPrice()).isEqualTo(new BigDecimal("16000"));
+        assertThat(result).isEqualTo(orderItem);
+        assertThat(result.getProduct()).isNull();
+        assertThat(result.getProductId()).isNull();
     }
 
     @Test
-    @DisplayName("OrderItem 상품명 변경")
-    void changeOrderItemProductName() {
+    @DisplayName("OrderItem toBuilder 테스트")
+    void toBuilderTest() {
         // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+        OrderItem original = OrderItem.builder()
+                .id(1L)
+                .orderId(10L)
+                .productId(20L)
+                .productName("원본 상품")
+                .quantity(2)
+                .unitPrice(new BigDecimal("10000"))
+                .totalPrice(new BigDecimal("20000"))
                 .build();
 
-        String newProductName = "새로운 상품명";
-
         // when
-        orderItem.setProductName(newProductName);
-
-        // then
-        assertThat(orderItem.getProductName()).isEqualTo(newProductName);
-    }
-
-    @Test
-    @DisplayName("OrderItem 주문 ID 변경")
-    void changeOrderItemOrderId() {
-        // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
+        OrderItem modified = original.toBuilder()
+                .quantity(3)
+                .totalPrice(new BigDecimal("30000"))
                 .build();
 
-        Long newOrderId = 2L;
-
-        // when
-        orderItem.setOrderId(newOrderId);
-
         // then
-        assertThat(orderItem.getOrderId()).isEqualTo(newOrderId);
-    }
-
-    @Test
-    @DisplayName("OrderItem 상품 ID 변경")
-    void changeOrderItemProductId() {
-        // given
-        Long orderId = 1L;
-        Long productId = 1L;
-        String productName = "테스트 상품";
-        Integer quantity = 2;
-        BigDecimal unitPrice = new BigDecimal("10000");
-        OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)
-                .productName(productName)
-                .quantity(quantity)
-                .unitPrice(unitPrice)
-                .build();
-
-        Long newProductId = 2L;
-
-        // when
-        orderItem.setProductId(newProductId);
-
-        // then
-        assertThat(orderItem.getProductId()).isEqualTo(newProductId);
+        assertThat(modified.getId()).isEqualTo(1L);
+        assertThat(modified.getOrderId()).isEqualTo(10L);
+        assertThat(modified.getProductId()).isEqualTo(20L);
+        assertThat(modified.getProductName()).isEqualTo("원본 상품");
+        assertThat(modified.getQuantity()).isEqualTo(3);
+        assertThat(modified.getTotalPrice()).isEqualTo(new BigDecimal("30000"));
+        
+        // 원본 객체는 변경되지 않음
+        assertThat(original.getQuantity()).isEqualTo(2);
+        assertThat(original.getTotalPrice()).isEqualTo(new BigDecimal("20000"));
     }
 }

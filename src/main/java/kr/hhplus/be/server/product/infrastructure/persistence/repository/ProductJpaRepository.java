@@ -25,12 +25,6 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     List<ProductEntity> findByStatus(String status);
 
 
-    /**
-     * 재고 차감을 위한 비관적 락 조회
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM ProductEntity p WHERE p.id = :productId")
-    Optional<ProductEntity> findByIdWithLock(@Param("productId") Long productId);
     
     /**
      * 원자적 재고 차감 (조건부 업데이트)

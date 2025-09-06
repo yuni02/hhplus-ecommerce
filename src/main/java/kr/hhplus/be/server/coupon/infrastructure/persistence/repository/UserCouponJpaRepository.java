@@ -44,10 +44,4 @@ public interface UserCouponJpaRepository extends JpaRepository<UserCouponEntity,
      */
     Optional<UserCouponEntity> findByOrderId(Long orderId);
 
-    /**
-     * 사용자 쿠폰 ID로 개별 쿠폰 조회 (비관적 락 적용)
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT uc FROM UserCouponEntity uc WHERE uc.id = :userCouponId")
-    Optional<UserCouponEntity> findByIdWithLock(@Param("userCouponId") Long userCouponId);
 }

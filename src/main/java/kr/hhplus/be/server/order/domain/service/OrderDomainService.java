@@ -5,8 +5,7 @@ import kr.hhplus.be.server.order.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.order.application.port.out.SaveOrderPort;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.DataPlatformTransferRequestedEvent;
-import kr.hhplus.be.server.product.domain.ProductRankingUpdateEvent;
+import kr.hhplus.be.server.order.domain.event.DataPlatformTransferRequestedEvent;
 import kr.hhplus.be.server.shared.event.AsyncEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,10 +90,10 @@ public class OrderDomainService {
             // Order 저장
             Order savedOrder = saveOrderPort.saveOrder(order);
             
-            // OrderItem들의 orderId 업데이트
-            for (OrderItem item : orderItems) {
-                item.setOrderId(savedOrder.getId());
-            }
+            // OrderItem들의 orderId 업데이트 - Builder로 새 객체 생성
+            List<OrderItem> updatedOrderItems = orderItems.stream()
+                    .map(item -> item.toBuilder().orderId(savedOrder.getId()).build())
+                    .toList();
             
             // 비동기 이벤트 발행
             publishAsyncEvents(savedOrder, orderItems);
@@ -126,11 +125,7 @@ public class OrderDomainService {
         );
         asyncEventPublisher.publishAsync(dataPlatformEvent, "data-platform-transfer");
         
-        // 상품 랭킹 업데이트 이벤트 발행
-        for (OrderItem item : orderItems) {
-            ProductRankingUpdateEvent rankingEvent = new ProductRankingUpdateEvent(this, item.getProductId(), item.getQuantity());
-            asyncEventPublisher.publishAsync(rankingEvent, "product-ranking");
-        }
+        // 상품 랭킹 업데이트는 Kafka로만 처리 (KafkaOrderEventHandler에서 처리)
     }
     
     // 결과 클래스들

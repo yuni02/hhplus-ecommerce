@@ -5,12 +5,12 @@ import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository;
 import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
-import kr.hhplus.be.server.coupon.application.AsyncCouponIssueWorker;
+import kr.hhplus.be.server.coupon.domain.service.AsyncCouponIssueWorker;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
 import kr.hhplus.be.server.order.application.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
-import kr.hhplus.be.server.coupon.application.RedisCouponQueueService;
+import kr.hhplus.be.server.coupon.domain.service.RedisCouponQueueService;
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderJpaRepository;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

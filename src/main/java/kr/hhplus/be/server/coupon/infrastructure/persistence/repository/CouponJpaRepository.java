@@ -27,13 +27,6 @@ public interface CouponJpaRepository extends JpaRepository<CouponEntity, Long> {
      */
     List<CouponEntity> findByStatus(String status);  
 
-    /** 
-     * 발급 가능한 쿠폰 조회 (PESSIMISTIC 락 사용)
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value = "1000")}) // 타임아웃 1초로 단축
-    @Query("SELECT c FROM CouponEntity c WHERE c.id = :couponId")
-    Optional<CouponEntity> findByIdWithLock(@Param("couponId") Long couponId);
 
     /**
      * 발급 가능한 쿠폰 조회 (OPTIMISTIC 락 사용 - 성능 향상)
@@ -55,6 +48,13 @@ public interface CouponJpaRepository extends JpaRepository<CouponEntity, Long> {
     @Modifying
     @Query("UPDATE CouponEntity c SET c.issuedCount = c.issuedCount + :increment, c.updatedAt = CURRENT_TIMESTAMP WHERE c.id = :couponId AND c.issuedCount + :increment <= c.maxIssuanceCount AND c.status = 'ACTIVE'")
     int incrementIssuedCountByBatch(@Param("couponId") Long couponId, @Param("increment") int increment);
+    
+    /**
+     * 쿠폰 발급 수량 감소 (롤백용)
+     */
+    @Modifying
+    @Query("UPDATE CouponEntity c SET c.issuedCount = c.issuedCount - 1, c.updatedAt = CURRENT_TIMESTAMP WHERE c.id = :couponId AND c.issuedCount > 0")
+    int decrementIssuedCount(@Param("couponId") Long couponId);
 
     /**
      * 발급 가능한 쿠폰 조회
