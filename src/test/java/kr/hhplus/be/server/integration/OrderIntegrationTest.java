@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.integration;
 
 import kr.hhplus.be.server.TestcontainersConfiguration;
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderEntity;
 import kr.hhplus.be.server.order.infrastructure.persistence.entity.OrderItemEntity;
@@ -24,10 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,6 +1,6 @@
 package kr.hhplus.be.server.shared.kafka.consumer;
 
-import kr.hhplus.be.server.order.application.DataPlatformService;
+import kr.hhplus.be.server.order.domain.service.DataPlatformService;
 import kr.hhplus.be.server.shared.kafka.message.DataPlatformMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

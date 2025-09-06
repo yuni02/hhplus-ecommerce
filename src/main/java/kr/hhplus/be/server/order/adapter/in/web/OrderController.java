@@ -1,6 +1,6 @@
 package kr.hhplus.be.server.order.adapter.in.web;
 
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.adapter.in.dto.OrderResponse;
 import kr.hhplus.be.server.shared.response.ErrorResponse;
@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/orders")

@@ -1,6 +1,9 @@
 package kr.hhplus.be.server.order.domain.service;
 
-import kr.hhplus.be.server.order.application.DataPlatformService;
+<<<<<<< Updated upstream:src/main/java/kr/hhplus/be/server/order/application/DataPlatformEventHandler.java
+import kr.hhplus.be.server.order.domain.DataPlatformTransferRequestedEvent;
+=======
+>>>>>>> Stashed changes:src/main/java/kr/hhplus/be/server/order/domain/service/DataPlatformEventHandler.java
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.event.DataPlatformTransferRequestedEvent;
 import lombok.RequiredArgsConstructor;

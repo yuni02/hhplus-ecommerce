@@ -9,7 +9,7 @@ import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.CouponEntity
 import kr.hhplus.be.server.coupon.infrastructure.persistence.entity.UserCouponEntity;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.product.domain.service.RedisProductRankingService;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
@@ -21,8 +21,6 @@ import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRep
 import kr.hhplus.be.server.TestcontainersConfiguration;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,9 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;

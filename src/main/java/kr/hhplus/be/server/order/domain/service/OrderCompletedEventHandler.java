@@ -1,12 +1,18 @@
 package kr.hhplus.be.server.order.domain.service;
 
-import kr.hhplus.be.server.order.application.DataPlatformService;
+<<<<<<< Updated upstream:src/main/java/kr/hhplus/be/server/order/application/OrderCompletedEventHandler.java
+import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
+=======
+>>>>>>> Stashed changes:src/main/java/kr/hhplus/be/server/order/domain/service/OrderCompletedEventHandler.java
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.event.OrderCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+<<<<<<< Updated upstream:src/main/java/kr/hhplus/be/server/order/application/OrderCompletedEventHandler.java
 import org.springframework.context.event.EventListener;
+=======
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+>>>>>>> Stashed changes:src/main/java/kr/hhplus/be/server/order/domain/service/OrderCompletedEventHandler.java
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -14,7 +20,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 주문 완료 이벤트 핸들러

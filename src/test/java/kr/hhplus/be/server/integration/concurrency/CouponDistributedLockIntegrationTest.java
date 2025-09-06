@@ -8,7 +8,7 @@ import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.domain.service.AsyncCouponIssueWorker;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository;
 import kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository;
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.coupon.domain.service.RedisCouponQueueService;
 import kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderJpaRepository;

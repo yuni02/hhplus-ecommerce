@@ -1,10 +1,9 @@
 package kr.hhplus.be.server.integration.concurrency;
 
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.balance.application.port.in.ChargeBalanceUseCase;
-import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;

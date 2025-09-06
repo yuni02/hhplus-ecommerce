@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.application;
+package kr.hhplus.be.server.order.domain.service;
 
 
 import lombok.RequiredArgsConstructor;

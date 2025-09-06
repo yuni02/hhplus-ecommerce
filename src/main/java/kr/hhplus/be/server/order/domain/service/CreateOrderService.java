@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.application;
+package kr.hhplus.be.server.order.domain.service;
 
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.application.port.out.LoadProductPort;
@@ -6,7 +6,6 @@ import kr.hhplus.be.server.order.application.port.out.UpdateProductStockPort;
 import kr.hhplus.be.server.order.application.port.out.DeductBalancePort;
 import kr.hhplus.be.server.balance.application.port.out.LoadBalancePort;
 import kr.hhplus.be.server.balance.domain.Balance;
-import kr.hhplus.be.server.order.domain.service.OrderDomainService;
 import kr.hhplus.be.server.shared.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.event.OrderCompletedEvent;

@@ -1,11 +1,9 @@
 package kr.hhplus.be.server.integration;
 import kr.hhplus.be.server.TestcontainersConfiguration;
 
-import kr.hhplus.be.server.order.application.CreateOrderService;
+import kr.hhplus.be.server.order.domain.service.CreateOrderService;
 import kr.hhplus.be.server.order.application.port.in.CreateOrderUseCase;
 import kr.hhplus.be.server.order.application.port.out.*;
-import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.coupon.application.port.in.UseCouponUseCase;
 import kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository;
 import kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository;
@@ -13,7 +11,6 @@ import kr.hhplus.be.server.balance.infrastructure.persistence.repository.Balance
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import kr.hhplus.be.server.product.infrastructure.persistence.entity.ProductEntity;
 import kr.hhplus.be.server.balance.infrastructure.persistence.entity.BalanceEntity;
-import kr.hhplus.be.server.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.annotation.Commit;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
