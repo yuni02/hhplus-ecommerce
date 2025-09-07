@@ -4,6 +4,8 @@ import kr.hhplus.be.server.coupon.application.port.in.IssueCouponUseCase;
 import kr.hhplus.be.server.coupon.application.port.out.LoadUserPort;
 import kr.hhplus.be.server.coupon.application.port.out.LoadCouponPort;
 import kr.hhplus.be.server.coupon.application.port.out.SaveUserCouponPort;
+import kr.hhplus.be.server.coupon.domain.CouponStatus;
+import kr.hhplus.be.server.coupon.domain.CouponIssueStatus;
 import kr.hhplus.be.server.shared.kafka.CouponIssueMessage;
 import kr.hhplus.be.server.shared.kafka.KafkaCouponEventProducer;
 

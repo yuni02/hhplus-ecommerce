@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.coupon.application.port.in;
 
+import kr.hhplus.be.server.coupon.domain.CouponIssueStatus;
 import java.time.LocalDateTime;
 
 /**
@@ -68,7 +69,7 @@ public interface IssueCouponUseCase {
         }
         
         public static IssueCouponResult processing(Long couponId, String couponName, String message) {
-            return new IssueCouponResult(true, null, couponId, couponName, null, "PROCESSING", null, message);
+            return new IssueCouponResult(true, null, couponId, couponName, null, CouponIssueStatus.PROCESSING.getValue(), null, message);
         }
         
         public boolean isSuccess() {
