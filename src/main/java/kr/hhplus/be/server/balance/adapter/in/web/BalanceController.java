@@ -26,7 +26,7 @@ public class BalanceController implements BalanceApiDocumentation {
         this.chargeBalanceUseCase = chargeBalanceUseCase;
     }
 
-    @Override
+    @GetMapping("/balance")
     public ResponseEntity<?> getBalance(
             @RequestParam("userId") Long userId) {
         
@@ -42,7 +42,7 @@ public class BalanceController implements BalanceApiDocumentation {
         return ResponseEntity.ok(response);
     }
 
-    @Override
+    @PostMapping("/balance/charge")
     public ResponseEntity<?> chargeBalance(@Valid @RequestBody ChargeBalanceRequest request) {
         
         ChargeBalanceUseCase.ChargeBalanceCommand command = 
