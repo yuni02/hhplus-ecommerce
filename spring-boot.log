@@ -1,0 +1,189 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :resolveMainClassName
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.1)
+
+2025-09-10T23:11:56.391+09:00  INFO 45124 --- [hhplus] [  restartedMain] kr.hhplus.be.server.ServerApplication    : Starting ServerApplication using Java 17.0.13 with PID 45124 (/Users/jang-yungyeong/Documents/sparta99-hhplus/mine/ecommerce-real-source/build/classes/java/main started by jang-yungyeong in /Users/jang-yungyeong/Documents/sparta99-hhplus/mine/ecommerce-real-source)
+2025-09-10T23:11:56.394+09:00  INFO 45124 --- [hhplus] [  restartedMain] kr.hhplus.be.server.ServerApplication    : The following 1 profile is active: "local"
+2025-09-10T23:11:56.461+09:00  INFO 45124 --- [hhplus] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-09-10T23:11:56.461+09:00  INFO 45124 --- [hhplus] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-09-10T23:11:58.537+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-10T23:11:58.540+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-10T23:11:58.986+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 436 ms. Found 9 JPA repository interfaces.
+2025-09-10T23:11:59.004+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-10T23:11:59.006+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-10T23:11:59.034+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.035+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.balance.infrastructure.persistence.repository.BalanceTransactionJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.036+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.coupon.infrastructure.persistence.repository.CouponJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.036+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.coupon.infrastructure.persistence.repository.UserCouponJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.036+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderHistoryEventJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.037+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderItemJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.037+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.order.infrastructure.persistence.repository.OrderJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.037+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.product.infrastructure.persistence.repository.ProductJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.038+09:00  INFO 45124 --- [hhplus] [  restartedMain] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface kr.hhplus.be.server.user.infrastructure.persistence.repository.UserJpaRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-10T23:11:59.038+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 19 ms. Found 0 Redis repository interfaces.
+2025-09-10T23:12:00.118+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
+2025-09-10T23:12:00.135+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-09-10T23:12:00.135+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
+2025-09-10T23:12:00.183+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-09-10T23:12:00.184+09:00  INFO 45124 --- [hhplus] [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3723 ms
+2025-09-10T23:12:00.527+09:00  INFO 45124 --- [hhplus] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HangHaePlusDataSource - Starting...
+2025-09-10T23:12:00.808+09:00  INFO 45124 --- [hhplus] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HangHaePlusDataSource - Added connection com.mysql.cj.jdbc.ConnectionImpl@5747fd39
+2025-09-10T23:12:00.809+09:00  INFO 45124 --- [hhplus] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HangHaePlusDataSource - Start completed.
+2025-09-10T23:12:00.916+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-10T23:12:00.975+09:00  INFO 45124 --- [hhplus] [  restartedMain] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.4.Final
+2025-09-10T23:12:01.020+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-09-10T23:12:01.378+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-10T23:12:01.512+09:00  INFO 45124 --- [hhplus] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'p6SpyDataSourceDecorator [com.p6spy.engine.spy.P6DataSource] -> dataSource [com.zaxxer.hikari.HikariDataSource]']
+	Database driver: undefined/unknown
+	Database version: 8.0.43
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-09-10T23:12:02.876+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-10T23:12:02.880+09:00  INFO 45124 --- [hhplus] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-10T23:12:03.384+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-09-10T23:12:04.081+09:00  INFO 45124 --- [hhplus] [  restartedMain] org.redisson.Version                     : Redisson 3.27.1
+2025-09-10T23:12:04.187+09:00  WARN 45124 --- [hhplus] [  restartedMain] i.n.r.d.DnsServerAddressStreamProviders  : Can not find io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider in the classpath, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'
+2025-09-10T23:12:04.423+09:00  INFO 45124 --- [hhplus] [isson-netty-1-5] o.redisson.connection.ConnectionsHolder  : 1 connections initialized for localhost/127.0.0.1:6379
+2025-09-10T23:12:04.445+09:00  INFO 45124 --- [hhplus] [sson-netty-1-14] o.redisson.connection.ConnectionsHolder  : 5 connections initialized for localhost/127.0.0.1:6379
+2025-09-10T23:12:05.370+09:00  INFO 45124 --- [hhplus] [  restartedMain] k.h.b.s.shared.kafka.config.KafkaConfig  : Creating Kafka topic: order-completed-topic with 3 partitions
+2025-09-10T23:12:05.374+09:00  INFO 45124 --- [hhplus] [  restartedMain] k.h.b.s.shared.kafka.config.KafkaConfig  : Creating Kafka topic: product-ranking-topic with 3 partitions
+2025-09-10T23:12:05.375+09:00  INFO 45124 --- [hhplus] [  restartedMain] k.h.b.s.shared.kafka.config.KafkaConfig  : Creating Kafka topic: data-platform-transfer-topic with 3 partitions
+2025-09-10T23:12:05.376+09:00  INFO 45124 --- [hhplus] [  restartedMain] k.h.b.s.shared.kafka.config.KafkaConfig  : Creating Kafka topic: coupon-issue-events with 3 partitions
+2025-09-10T23:12:06.651+09:00  WARN 45124 --- [hhplus] [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : Unable to start LiveReload server
+2025-09-10T23:12:06.664+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2025-09-10T23:12:06.744+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = hhplus-admin-0
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2025-09-10T23:12:06.805+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.8.1
+2025-09-10T23:12:06.805+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 70d6ff42debf7e17
+2025-09-10T23:12:06.805+09:00  INFO 45124 --- [hhplus] [  restartedMain] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1757513526804
+2025-09-10T23:12:07.137+09:00  WARN 45124 --- [hhplus] [ hhplus-admin-0] o.a.k.clients.admin.KafkaAdminClient     : [AdminClient clientId=hhplus-admin-0] The DescribeTopicPartitions API is not supported, using Metadata API to describe topics.
+2025-09-10T23:12:07.142+09:00  INFO 45124 --- [hhplus] [ hhplus-admin-0] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for hhplus-admin-0 unregistered
+2025-09-10T23:12:07.146+09:00  INFO 45124 --- [hhplus] [ hhplus-admin-0] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2025-09-10T23:12:07.146+09:00  INFO 45124 --- [hhplus] [ hhplus-admin-0] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2025-09-10T23:12:07.146+09:00  INFO 45124 --- [hhplus] [ hhplus-admin-0] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2025-09-10T23:12:07.202+09:00  WARN 45124 --- [hhplus] [  restartedMain] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2025-09-10T23:12:07.227+09:00  INFO 45124 --- [hhplus] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-10T23:12:07.230+09:00  INFO 45124 --- [hhplus] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HangHaePlusDataSource - Shutdown initiated...
+2025-09-10T23:12:07.242+09:00  INFO 45124 --- [hhplus] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HangHaePlusDataSource - Shutdown completed.
+2025-09-10T23:12:07.268+09:00  INFO 45124 --- [hhplus] [  restartedMain] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-09-10T23:12:07.286+09:00 ERROR 45124 --- [hhplus] [  restartedMain] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8083 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8083 or configure this application to listen on another port.
+
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command '/Users/jang-yungyeong/Library/Java/JavaVirtualMachines/corretto-17.0.13/Contents/Home/bin/java'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 19s
+4 actionable tasks: 2 executed, 2 up-to-date
