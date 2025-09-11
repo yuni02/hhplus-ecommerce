@@ -23,6 +23,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@AttributeOverrides({
+    @AttributeOverride(name = "id", column = @Column(name = "coupon_id"))
+})
 public class CouponEntity extends BaseEntity {
 
     @Column(name = "name", nullable = false)

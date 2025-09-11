@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@AttributeOverrides({
+    @AttributeOverride(name = "id", column = @Column(name = "user_coupon_id"))
+})
 public class UserCouponEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,7 +38,7 @@ public class UserCouponEntity extends BaseEntity {
     private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coupon_id", referencedColumnName = "id",
+    @JoinColumn(name = "coupon_id", referencedColumnName = "coupon_id",
             foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private CouponEntity coupon;
 
