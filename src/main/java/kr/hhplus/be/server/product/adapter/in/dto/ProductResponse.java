@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.adapter.in.dto;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class ProductResponse {
     private Long id;
@@ -8,7 +9,9 @@ public class ProductResponse {
     private Integer currentPrice;
     private Integer stock;
     private String status;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
     public ProductResponse() {

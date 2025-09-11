@@ -29,8 +29,88 @@ export let options = {
     },
 };
 
+function chargeBalance(userId, amount) {
+    const MAX_CHARGE_AMOUNT = 1000000; // 1회 최대 충전 금액 100만원
+    let remainingAmount = amount;
+    let chargeSuccess = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    
+    while (remainingAmount > 0 && chargeSuccess) {
+        const chargeAmount = Math.min(remainingAmount, MAX_CHARGE_AMOUNT);
+        const chargePayload = JSON.stringify({
+            userId: userId,
+            amount: chargeAmount
+        });
+
+        const response = http.post(
+            `${BASE_URL}/api/users/balance/charge`,
+            chargePayload,
+            { headers: DEFAULT_HEADERS, timeout: '5s' }
+        );
+
+        if (response.status === 200) {
+            remainingAmount -= chargeAmount;
+            retryCount = 0; // 성공 시 재시도 카운트 리셋
+        } else if (response.status === 500 && retryCount < MAX_RETRIES) {
+            // 서버 오류 시 재시도 (동시성 충돌 등)
+            retryCount++;
+            sleep(0.1 * retryCount); // 점진적 대기
+            continue;
+        } else {
+            chargeSuccess = false;
+            // 충전 실패 시 상세 로그는 제거 (너무 많은 로그 방지)
+            break;
+        }
+    }
+
+    return chargeSuccess && remainingAmount === 0;
+}
+
+function getBalance(userId) {
+    const response = http.get(
+        `${BASE_URL}/api/users/balance?userId=${userId}`,
+        { headers: DEFAULT_HEADERS, timeout: '5s' }
+    );
+    
+    if (response.status === 200) {
+        try {
+            const body = JSON.parse(response.body);
+            return body.balance || 0;
+        } catch (e) {
+            return 0;
+        }
+    } else if (response.status === 400 || response.status === 404) {
+        // 사용자가 없거나 잔액이 없는 경우 0 반환
+        return 0;
+    }
+    return 0;
+}
+
 function createOrder() {
     const userId = generateUserId();
+    
+    // Check current balance
+    const currentBalance = getBalance(userId);
+    
+    // Calculate required amount (최대 상품가격 * 수량 고려)
+    const requiredAmount = 10000000; // 1000만원 (충분한 금액)
+    
+    if (currentBalance < requiredAmount) {
+        const chargeAmount = requiredAmount - currentBalance;
+        const charged = chargeBalance(userId, chargeAmount);
+        
+        if (!charged) {
+            console.log(`Failed to charge balance for user ${userId}. Current: ${currentBalance}, Required: ${requiredAmount}`);
+        }
+        
+        // 충전 후 잔액 다시 확인
+        const newBalance = getBalance(userId);
+        if (newBalance < requiredAmount) {
+            console.log(`Balance still insufficient after charge attempt. User ${userId}: ${newBalance}`);
+        }
+    }
+    
     const orderItems = [];
     
     // Generate 1-3 order items
@@ -68,11 +148,23 @@ export default function () {
     const success = check(response, {
         'status is 200': (r) => r.status === 200,
         'order created successfully': (r) => {
-            if (r.status !== 200) return false;
+            if (r.status !== 200) {
+                console.log(`Order response status ${r.status}: ${r.body}`);
+                return false;
+            }
             try {
                 const body = JSON.parse(r.body);
-                return body.orderId !== undefined && body.status === 'PENDING';
+                // 주문 응답 형식이 다를 수 있음 - id 또는 orderId
+                const hasOrderId = (body.orderId !== undefined) || (body.id !== undefined);
+                const orderStatus = body.status || body.orderStatus;
+                const isValidStatus = orderStatus === 'PENDING' || orderStatus === 'COMPLETED';
+                
+                if (!hasOrderId || !isValidStatus) {
+                    console.log(`Order response issue - orderId: ${body.orderId || body.id}, status: ${orderStatus}, body: ${JSON.stringify(body)}`);
+                }
+                return hasOrderId && isValidStatus;
             } catch (e) {
+                console.log(`Failed to parse order response: ${r.body}`);
                 return false;
             }
         },

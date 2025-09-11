@@ -6,6 +6,14 @@ spring:
     name: hhplus
   profiles:
     active: local
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      read-date-timestamps-as-nanoseconds: false
+    date-format: "yyyy-MM-dd HH:mm:ss"
+    time-zone: "UTC"
   datasource:
     name: HangHaePlusDataSource
     type: com.zaxxer.hikari.HikariDataSource

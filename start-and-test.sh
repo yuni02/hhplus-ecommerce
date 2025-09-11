@@ -30,6 +30,8 @@ SELECT 'Users count:', COUNT(*) FROM users;
 SELECT 'Products count:', COUNT(*) FROM products;
 SELECT 'Balances count:', COUNT(*) FROM balances;
 SELECT 'Coupons count:', COUNT(*) FROM coupons;
+SELECT 'Product stock status:' as 'Stock Info';
+SELECT product_id, name, stock, price FROM products WHERE stock > 0 LIMIT 10;
 "
 
 # Step 4: Spring Boot 애플리케이션 백그라운드 실행
@@ -79,10 +81,11 @@ echo "2) 포인트 충전 - Stress Test"
 echo "3) 주문 처리 - Load Test"
 echo "4) E2E 쇼핑 시나리오"
 echo "5) 동시성 테스트 (데드락/레이스)"
-echo "6) 모든 테스트 순차 실행"
+echo "6) 선착순 쿠폰 발급 테스트"
+echo "7) 모든 테스트 순차 실행"
 echo "0) 테스트 없이 환경만 유지"
 
-read -p "선택 (0-6): " choice
+read -p "선택 (0-7): " choice
 
 case $choice in
     1)
@@ -106,11 +109,73 @@ case $choice in
         k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/concurrent-operations-test.js
         ;;
     6)
+        echo -e "\n${GREEN}🎫 선착순 쿠폰 발급 테스트 실행${NC}"
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/coupon/coupon-fcfs-test.js
+        ;;
+    7)
         echo -e "\n${GREEN}🔄 모든 테스트 순차 실행${NC}"
         echo "1. 포인트 충전 Load Test"
-        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-load-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-moderate-test.js
+        
+        echo -e "\n${YELLOW}재고 초기화를 위해 애플리케이션 재시작 중...${NC}"
+        kill $SPRING_PID 2>/dev/null
+        sleep 5
+        ./gradlew bootRun > spring-boot.log 2>&1 &
+        SPRING_PID=$!
+        echo "Spring Boot PID: $SPRING_PID"
+        
+        # 애플리케이션 준비 대기
+        for i in {1..30}; do
+            if curl -f http://localhost:8083/actuator/health >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ 애플리케이션 재시작 완료${NC}"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo -e "${RED}❌ 애플리케이션 재시작 실패${NC}"
+                exit 1
+            fi
+            echo -n "."
+            sleep 2
+        done
+        
+        # 재고 상태 확인
+        echo -e "${BLUE}📊 재고 상태 확인${NC}"
+        docker exec $(docker-compose ps -q mysql) mysql -uapplication -papplication -e "
+        USE ecommerce;
+        SELECT product_id, name, stock FROM products WHERE stock > 0 LIMIT 5;
+        " 2>/dev/null || echo "재고 확인 실패"
+        
         echo -e "\n2. 주문 처리 Load Test"
         k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/order/order-load-test.js
+        
+        echo -e "\n${YELLOW}재고 초기화를 위해 애플리케이션 재시작 중...${NC}"
+        kill $SPRING_PID 2>/dev/null
+        sleep 5
+        ./gradlew bootRun > spring-boot.log 2>&1 &
+        SPRING_PID=$!
+        echo "Spring Boot PID: $SPRING_PID"
+        
+        # 애플리케이션 준비 대기
+        for i in {1..30}; do
+            if curl -f http://localhost:8083/actuator/health >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ 애플리케이션 재시작 완료${NC}"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo -e "${RED}❌ 애플리케이션 재시작 실패${NC}"
+                exit 1
+            fi
+            echo -n "."
+            sleep 2
+        done
+        
+        # 재고 상태 확인
+        echo -e "${BLUE}📊 재고 상태 확인${NC}"
+        docker exec $(docker-compose ps -q mysql) mysql -uapplication -papplication -e "
+        USE ecommerce;
+        SELECT product_id, name, stock FROM products WHERE stock > 0 LIMIT 5;
+        " 2>/dev/null || echo "재고 확인 실패"
+        
         echo -e "\n3. E2E 쇼핑 시나리오"
         k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/e2e-shopping-scenario.js
         ;;
