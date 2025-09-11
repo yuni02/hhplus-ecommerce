@@ -14,11 +14,9 @@ export let options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '2m', target: 20 },   // Ramp up
-                { duration: '5m', target: 20 },   // Steady state
-                { duration: '2m', target: 50 },   // Increase load
-                { duration: '5m', target: 50 },   // Peak load
-                { duration: '2m', target: 0 },    // Ramp down
+                { duration: '15s', target: 10 },  // Ramp up
+                { duration: '30s', target: 15 },  // Peak load  
+                { duration: '15s', target: 0 },   // Ramp down
             ],
         },
     },

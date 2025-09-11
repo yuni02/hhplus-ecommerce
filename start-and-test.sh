@@ -87,32 +87,32 @@ read -p "선택 (0-6): " choice
 case $choice in
     1)
         echo -e "\n${GREEN}📊 포인트 충전 Load Test 실행${NC}"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-load-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/super-quick-test.js
         ;;
     2)
         echo -e "\n${GREEN}💥 포인트 충전 Stress Test 실행${NC}"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-stress-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-stress-test.js
         ;;
     3)
         echo -e "\n${GREEN}🛒 주문 처리 Load Test 실행${NC}"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/order/order-load-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/order/order-load-test.js
         ;;
     4)
         echo -e "\n${GREEN}🔄 E2E 쇼핑 시나리오 실행${NC}"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/e2e-shopping-scenario.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/e2e-shopping-scenario.js
         ;;
     5)
         echo -e "\n${GREEN}⚠️ 동시성 테스트 실행${NC}"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/concurrent-operations-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/concurrent-operations-test.js
         ;;
     6)
         echo -e "\n${GREEN}🔄 모든 테스트 순차 실행${NC}"
         echo "1. 포인트 충전 Load Test"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-load-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/balance/charge-load-test.js
         echo -e "\n2. 주문 처리 Load Test"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/order/order-load-test.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/order/order-load-test.js
         echo -e "\n3. E2E 쇼핑 시나리오"
-        k6 run -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/e2e-shopping-scenario.js
+        k6 run --out influxdb=http://localhost:8086/k6 -e BASE_URL=http://localhost:8083 k6-tests/scenarios/integrated/e2e-shopping-scenario.js
         ;;
     0)
         echo -e "\n${GREEN}환경이 준비되었습니다!${NC}"

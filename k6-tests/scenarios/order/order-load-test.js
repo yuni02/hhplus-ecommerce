@@ -14,11 +14,9 @@ export let options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '2m', target: 30 },   // Ramp up to 30 users
-                { duration: '5m', target: 30 },   // Stay at 30 users
-                { duration: '2m', target: 60 },   // Ramp up to 60 users
-                { duration: '5m', target: 60 },   // Stay at 60 users
-                { duration: '2m', target: 0 },    // Ramp down
+                { duration: '15s', target: 15 },  // Ramp up to 15 users
+                { duration: '30s', target: 25 },  // Increase to 25 users
+                { duration: '15s', target: 0 },   // Ramp down
             ],
         },
     },

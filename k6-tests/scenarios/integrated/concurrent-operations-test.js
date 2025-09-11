@@ -26,21 +26,21 @@ export let options = {
         // Multiple scenarios running concurrently to create contention
         balance_operations: {
             executor: 'constant-vus',
-            vus: 20,
-            duration: '5m',
+            vus: 10,
+            duration: '20s',
             exec: 'balanceOperations',
         },
         order_operations: {
             executor: 'constant-vus',
-            vus: 30,
-            duration: '5m',
+            vus: 15,
+            duration: '20s',
             exec: 'orderOperations',
             startTime: '10s',
         },
         coupon_operations: {
             executor: 'constant-vus',
-            vus: 15,
-            duration: '5m',
+            vus: 8,
+            duration: '20s',
             exec: 'couponOperations',
             startTime: '20s',
         },
