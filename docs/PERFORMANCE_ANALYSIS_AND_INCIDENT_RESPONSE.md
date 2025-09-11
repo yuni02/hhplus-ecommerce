@@ -1,6 +1,6 @@
 # 성능 지표 분석 및 장애 대응 문서
 
-![K6 Load Testing Results](docs/Disability_Response/k6-Load-Testing-Results-K6-Performance-Tests-Dashboards-Grafana-09-12-2025_12_16_AM.png)
+![K6 Load Testing Results](https://github.com/yuni02/hhplus-ecommerce/edit/Step19-20/docs/Disability_Response/k6-Load-Testing-Results-K6-Performance-Tests-Dashboards-Grafana-09-12-2025_12_16_AM.png)
 
 ## 1. 성능 테스트 결과 분석
 
