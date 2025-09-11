@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.adapter.in.dto;    
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * 인기상품 판매 통계 응답 DTO
@@ -15,6 +16,7 @@ public class PopularProductStatsResponse {
     private Integer recentSalesCount; // 최근 3일 판매 수량
     private Long recentSalesAmount; // 최근 3일 매출액
     private Double conversionRate; // 전환율 (판매량/조회수 등)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastOrderDate; // 마지막 주문 날짜
     private Integer rank; // 인기 순위
 

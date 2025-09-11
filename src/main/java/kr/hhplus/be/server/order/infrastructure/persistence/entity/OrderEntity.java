@@ -45,7 +45,7 @@ public class OrderEntity extends BaseEntity {
     private BigDecimal discountAmount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_coupon_id", referencedColumnName = "id",
+    @JoinColumn(name = "user_coupon_id", referencedColumnName = "user_coupon_id",
                 foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private UserCouponEntity userCoupon;
 

@@ -21,7 +21,8 @@ public class GetProductDetailService implements GetProductDetailUseCase {
     }
 
     @Override
-    @Cacheable(value = "productDetail", key = "#command.productId", unless = "#result.isEmpty()", cacheManager = "shortTermCacheManager")
+    // 임시로 캐시 비활성화 - Redis 직렬화 문제로 인해
+    // @Cacheable(value = "productDetail", key = "#command.productId", unless = "#result == null or #result.empty", cacheManager = "shortTermCacheManager")
     public Optional<GetProductDetailResult> getProductDetail(GetProductDetailCommand command) {
         try {
             // 1. 입력값 검증

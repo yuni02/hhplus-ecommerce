@@ -1,7 +1,6 @@
 package kr.hhplus.be.server.balance.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import kr.hhplus.be.server.shared.domain.BaseEntity;
 import kr.hhplus.be.server.user.infrastructure.persistence.entity.UserEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -10,8 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 잔액 전용 엔티티
@@ -20,12 +23,18 @@ import java.math.BigDecimal;
 @Slf4j
 @Entity
 @Table(name = "balances")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter(AccessLevel.PRIVATE)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BalanceEntity extends BaseEntity {
+public class BalanceEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "balance_id")
+    private Long balanceId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "user_id", 
@@ -46,6 +55,14 @@ public class BalanceEntity extends BaseEntity {
     @Version
     @Column(name = "version")
     private Long version;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     // 잔액 관련 비즈니스 메서드들
     public void updateAmount(BigDecimal amount) {

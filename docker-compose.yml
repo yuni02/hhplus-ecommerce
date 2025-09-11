@@ -8,11 +8,15 @@ services:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_USER=application
       - MYSQL_PASSWORD=application
-      - MYSQL_DATABASE=hhplus
+      - MYSQL_DATABASE=ecommerce
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      timeout: 20s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -77,12 +81,50 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     restart: unless-stopped
+    
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=k6
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - INFLUXDB_USER=k6
+      - INFLUXDB_USER_PASSWORD=k6password
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    healthcheck:
+      test: ["CMD", "influx", "-execute", "SHOW DATABASES"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - influxdb
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
 volumes:
   mysql_data:
   redis_data:
   zookeeper-data:
   zookeeper-logs:
   kafka-data:
+  influxdb_data:
+  grafana_data:
 
 networks:
   default:

@@ -104,7 +104,7 @@ public class KafkaConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-        ㅑ
+
         // 비동기 수동 커밋 모드 설정 (MANUAL로 변경하여 비동기 커밋 사용)
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
         

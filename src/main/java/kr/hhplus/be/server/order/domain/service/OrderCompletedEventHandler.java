@@ -1,18 +1,10 @@
 package kr.hhplus.be.server.order.domain.service;
 
-<<<<<<< Updated upstream:src/main/java/kr/hhplus/be/server/order/application/OrderCompletedEventHandler.java
-import kr.hhplus.be.server.order.domain.OrderCompletedEvent;
-=======
->>>>>>> Stashed changes:src/main/java/kr/hhplus/be/server/order/domain/service/OrderCompletedEventHandler.java
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.event.OrderCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-<<<<<<< Updated upstream:src/main/java/kr/hhplus/be/server/order/application/OrderCompletedEventHandler.java
-import org.springframework.context.event.EventListener;
-=======
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
->>>>>>> Stashed changes:src/main/java/kr/hhplus/be/server/order/domain/service/OrderCompletedEventHandler.java
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

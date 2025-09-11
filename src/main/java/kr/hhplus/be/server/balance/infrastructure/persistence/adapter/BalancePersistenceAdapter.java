@@ -84,7 +84,7 @@ public class BalancePersistenceAdapter implements LoadBalancePort, SaveBalanceTr
      */
     private Balance mapToBalance(BalanceEntity entity) {
         return new Balance(
-                entity.getId(),
+                entity.getBalanceId(),
                 entity.getUserId(),
                 entity.getAmount(),
                 Balance.BalanceStatus.valueOf(entity.getStatus())

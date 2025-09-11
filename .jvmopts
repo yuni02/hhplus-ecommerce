@@ -1,0 +1,8 @@
+# JVM 성능 최적화 옵션
+-Xms1g
+-Xmx2g
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=200
+-XX:+DisableExplicitGC
+-XX:+UseStringDeduplication
+-server

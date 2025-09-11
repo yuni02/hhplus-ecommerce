@@ -6,23 +6,35 @@ spring:
     name: hhplus
   profiles:
     active: local
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      read-date-timestamps-as-nanoseconds: false
+    date-format: "yyyy-MM-dd HH:mm:ss"
+    time-zone: "UTC"
   datasource:
     name: HangHaePlusDataSource
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      maximum-pool-size: 3
-      connection-timeout: 10000
-      max-lifetime: 60000
+      maximum-pool-size: 20          # 3 → 20 (100 VU 대응)
+      minimum-idle: 10               # 최소 유지 커넥션
+      connection-timeout: 3000       # 10s → 3s (빠른 실패)
+      idle-timeout: 300000           # 5분 유휴 타임아웃
+      max-lifetime: 1800000          # 30분 최대 생명주기
+      leak-detection-threshold: 10000 # 10초 후 누수 탐지
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
     generate-ddl: false
-    show-sql: false
+    show-sql: false              # SQL 로깅 비활성화 (성능 향상)
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
+      hibernate.hbm2ddl.auto: none
   data:
     redis:
       host: localhost
@@ -49,7 +61,7 @@ spring.config.activate.on-profile: local, test
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/hhplus?characterEncoding=UTF-8&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/ecommerce?characterEncoding=UTF-8&serverTimezone=UTC
     username: application
     password: application
 
