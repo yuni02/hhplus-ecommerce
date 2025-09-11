@@ -11,6 +11,9 @@
 - [x] 테스트를 진행하며 획득한 다양한 성능 지표를 분석 및 시스템 내의 병목을 탐색 및 개선함
 - [x] 가상의 장애 대응 문서를 작성하고 제출함
 
+#### 📊 성능 테스트 결과 대시보드
+![K6 Load Testing Results](docs/Disability_Response/k6-Load-Testing-Results-K6-Performance-Tests-Dashboards-Grafana-09-12-2025_12_16_AM.png)
+
 ### **간단 회고** (3줄 이내)
 - **잘한 점**:
   - 발제 Q&A, 여러코치님들의 멘토링 수강 등을 통해서 장애대응의 개념에 익숙해지고 실무에서의 경험을 들으면서 지식을 쌓으려고 노력했다. 
