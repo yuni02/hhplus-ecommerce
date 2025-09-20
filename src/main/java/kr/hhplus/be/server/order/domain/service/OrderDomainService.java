@@ -62,9 +62,8 @@ public class OrderDomainService {
     }
     
     /**
-     * 주문 생성 및 저장 (트랜잭션)
+     * 주문 생성 및 저장
      */
-    @Transactional
     public OrderCreationResult createAndSaveOrder(CreateOrderUseCase.CreateOrderCommand command,
                                                  List<OrderItem> orderItems,
                                                  BigDecimal totalAmount,

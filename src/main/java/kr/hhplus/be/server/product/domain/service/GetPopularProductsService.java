@@ -26,7 +26,8 @@ public class GetPopularProductsService implements GetPopularProductsUseCase {
     }
 
     @Override
-    @Cacheable(value = "popularProducts", key = "#command.limit", unless = "#result.popularProducts.isEmpty()", cacheManager = "dailyAggregationCacheManager")
+    // 임시로 캐시 비활성화 - Redis 직렬화 문제로 인해
+    // @Cacheable(value = "popularProducts", key = "#command.limit", unless = "#result == null or #result.popularProducts.empty", cacheManager = "dailyAggregationCacheManager")
     public GetPopularProductsResult getPopularProducts(GetPopularProductsCommand command) {
         try {
             // 1. Redis에서 인기 상품 ID 목록 조회 (상위 N개)

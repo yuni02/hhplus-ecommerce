@@ -43,8 +43,8 @@ public class ChargeBalanceService implements ChargeBalanceUseCase {
     @Override
     @DistributedLock(
         key = "balance-#{#command.userId}",
-        waitTime = 3,
-        leaseTime = 10,
+        waitTime = 1,              // 3초 → 1초 (빠른 실패)
+        leaseTime = 5,             // 10초 → 5초 (락 홀드 시간 단축)
         timeUnit = TimeUnit.SECONDS,
         throwException = true
     )
